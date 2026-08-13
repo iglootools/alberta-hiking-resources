@@ -52,8 +52,14 @@ production + GitHub Pages pipeline on top. The major additions and changes:
 ### SEO / discoverability stack (added modules)
 
 - Added `@nuxtjs/sitemap`, `@nuxtjs/robots`, and `@nuxt/fonts` to `nuxt.config.ts`.
-- `server/api/__sitemap__/urls.ts` — custom endpoint, since the sitemap module
-  doesn't auto-discover Content v3 pages (wired via `sitemap.sources`).
+- Sitemap entries come from `defineSitemapSchema()` on both collections in
+  [content.config.ts](../content.config.ts) — `@nuxtjs/sitemap` discovers Content v3
+  collections natively. This replaced a hand-rolled `server/api/__sitemap__/urls.ts`
+  endpoint wired via `sitemap.sources` (dropped in `28f5a1a9`), which also emitted a
+  dead `/meetup-groups/meetup.com` URL and omitted `/changelog`; auto-discovery lists
+  only rendered pages.
+  - Auto-discovery is why `@nuxt/content` is registered **after** `@nuxtjs/sitemap` in
+    `modules` — the comment on that line is load-order-significant, not cosmetic.
 - `site` block + `runtimeConfig.public.siteUrl`; custom static landing OG image
   (`public/images/og.png`) alongside the ejected `Docs` community OG template.
 
@@ -97,7 +103,9 @@ production + GitHub Pages pipeline on top. The major additions and changes:
   devtools/vueuse chunks.
 - `llms.sections` rewritten from the 2 demo sections to the 8 real sections;
   `mcp.name` set to the site title; dropped the template's experimental SQLite flag.
-- `content.config.ts` is left unchanged from upstream.
+- [content.config.ts](../content.config.ts) keeps the template's two collections and
+  their sources, and adds two schema entries: `sitemap` (see above) and the optional
+  `links` array that content frontmatter uses.
 
 ### Content, components & docs
 

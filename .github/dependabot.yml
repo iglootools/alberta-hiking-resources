@@ -1,0 +1,49 @@
+version: 2
+
+# Division of labour with renovate.json, which handles routine version updates: it groups
+# them into a single PR and holds each release for 14 days (minimumReleaseAge) as a
+# supply-chain measure. That delay is deliberately wrong for a published advisory, where the
+# fix is already known and every day of waiting is another day of exposure, so the two tools
+# are given opposite latencies rather than being pointed at different ecosystems.
+#
+# open-pull-requests-limit: 0 is the documented way to disable *version* updates for an
+# ecosystem. Security update PRs are exempt from both that limit and `cooldown`, so they keep
+# flowing — which is the only thing Dependabot is here for. Letting both tools do version
+# updates would produce duplicate PRs, and Dependabot's half ignores the 14-day delay,
+# quietly defeating the measure the delay exists for.
+#
+# This file does NOT enable the security half on its own. Dependabot security updates are a
+# repository setting; the config file only shapes the PRs once they are switched on. Verify
+# with:
+#
+#   gh api repos/iglootools/alberta-hiking-resources/vulnerability-alerts -i | head -1
+#   gh api repos/iglootools/alberta-hiking-resources/automated-security-fixes
+#
+# expecting HTTP 204 and `"enabled": true`. A 404 or `false` means this file is inert and
+# nothing is watching for advisories.
+#
+# `target-branch` is deliberately absent. Pointing it at a non-default branch switches
+# security updates off for the ecosystem — the one option that silently undoes the purpose of
+# this file.
+updates:
+  # "npm" is the ecosystem value for pnpm too; there is no "pnpm" value. What Dependabot
+  # actually reads is the lockfile format, and pnpm-lock.yaml here is lockfileVersion 9.0,
+  # which it understands. Worth re-checking when pnpm changes that number: GitHub documents
+  # support for pnpm v7-v10 while mise.toml pins v11, so we are already relying on the
+  # lockfile format rather than the release being on their list. The failure mode is silent —
+  # Dependabot keeps running, finds nothing, and reports green — so treat a lockfileVersion
+  # bump as a prompt to confirm alerts are still being raised.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+
+  # Renovate's github-actions manager already proposes the routine bumps here, delayed like
+  # everything else; this entry exists so an action with a published advisory is not also
+  # held for 14 days.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0

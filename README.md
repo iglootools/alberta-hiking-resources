@@ -1,7 +1,7 @@
 # Alberta Hiking Resources
 
-![License](https://img.shields.io/github/license/samidalouche/alberta-hiking-resources)
-![CI Status](https://github.com/samidalouche/alberta-hiking-resources/actions/workflows/ci.yml/badge.svg?branch=main)
+![License](https://img.shields.io/github/license/iglootools/alberta-hiking-resources)
+![CI Status](https://github.com/iglootools/alberta-hiking-resources/actions/workflows/ci.yml/badge.svg?branch=main)
 
 Find your way in the jungle of FB and Meetup groups. Hiking Partners. Information. Ideas.
 
@@ -16,7 +16,7 @@ template, with content authored in Markdown and deployed to GitHub Pages.
 
 ## Development
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/samidalouche/alberta-hiking-resources)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/iglootools/alberta-hiking-resources)
 
 No install needed to try a change. **Codespaces** — or any other
 [dev container](.devcontainer/devcontainer.json) host, including local Docker —
@@ -37,6 +37,8 @@ Practical information:
 - [docs/building-and-testing.md](docs/building-and-testing.md) — build, lint, CI, and dependency management
 - [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md) — releases and GitHub Pages deployment
 - [docs/testing-notes.md](docs/testing-notes.md) — Open Graph image, sitemap, and robots.txt validation
+- [docs/guidelines.md](docs/guidelines.md) — project-specific guidelines and documented deviations
+- [common-guidelines](https://github.com/iglootools/common-guidelines) — shared coding guidelines, imported by [CLAUDE.md](CLAUDE.md)
 
 Conceptual information:
 

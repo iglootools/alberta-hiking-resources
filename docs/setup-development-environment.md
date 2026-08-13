@@ -12,7 +12,7 @@ nobody has to rediscover it.
 
 ## Dev container (Codespaces, local Docker)
 
-**[Open in GitHub Codespaces →](https://codespaces.new/samidalouche/alberta-hiking-resources)**
+**[Open in GitHub Codespaces →](https://codespaces.new/iglootools/alberta-hiking-resources)**
 
 A full Linux container defined by
 [.devcontainer/devcontainer.json](../.devcontainer/devcontainer.json), so every
@@ -61,6 +61,19 @@ is untested.
 
 1. Install [mise](https://mise.jdx.dev/getting-started.html) — it pins the Node and
    pnpm versions ([mise.toml](../mise.toml)) and acts as the task runner.
+
+2. Clone [common-guidelines](https://github.com/iglootools/common-guidelines) as a
+   sibling directory:
+
+    ```bash
+    # From the parent directory of alberta-hiking-resources (e.g. iglootools/)
+    git clone git@github.com:iglootools/common-guidelines.git
+    ```
+
+   This is what makes the `@../common-guidelines/...` imports in
+   [CLAUDE.md](../CLAUDE.md) resolve, so Claude Code loads the shared coding and
+   tooling guidelines. Only needed if you use Claude Code — nothing in `mise run
+   ci` reads it, and the dev container does not clone it either.
 
 ### Install and run
 
@@ -269,6 +282,17 @@ different things:
 An extension appearing in both is not redundant: the first suggests it to someone
 working locally, the second guarantees it inside the container.
 
+What belongs in that list follows the shared rule in
+[VSCode setup](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#vscode):
+**every extension a committed setting depends on belongs in `extensions.json`**,
+because a setting whose extension is absent is not an error — it is a silent no-op,
+and whoever cloned the repo cannot tell it apart from a working setup.
+
+This project commits no `.vscode/settings.json`, so today the four entries are there
+for capability rather than to back a setting. Apply the rule the moment one is added:
+a `mise.*` key needs `hverlin.mise-vscode` present to have a reader at all, and the
+same holds for any `vue.*` or `eslint.*` key.
+
 Both files list the same four extensions, and the container still needs its own
 copy, because a dev container splits the editor in half. The UI runs on your
 machine, but language servers and linters run *inside* the container, since that
@@ -321,6 +345,17 @@ No manual configuration is needed — just:
    asks before using MCP servers defined in a project file).
 
 Verify with `/mcp` inside Claude Code — all three should show as connected.
+
+[CLAUDE.md](../CLAUDE.md) points Claude at these servers rather than at its training
+data, and imports the shared [common-guidelines](https://github.com/iglootools/common-guidelines)
+via `@../common-guidelines/...`. Those imports resolve only with that repo cloned as
+a sibling directory — step 2 of [Prerequisites](#prerequisites) above.
+
+No Claude Code plugins are installed here. If one is ever added, install it with
+`--scope project` and commit `.claude/settings.json`, per
+[Claude Code setup](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#claude-code)
+in the shared guidelines — a user-scope install keeps working locally, which is what
+makes the shared half easy to leave untracked and never notice.
 
 ### VS Code (native / Copilot)
 
