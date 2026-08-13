@@ -93,17 +93,10 @@ So the two tools run at opposite latencies over the same ecosystems:
 *version* updates, and security PRs are exempt from that limit. Letting both tools
 propose versions would mean duplicate PRs, half of which ignore the 14-day delay.
 
-**The config file is only half the setup.** Dependabot security updates are a
-*repository setting*; `dependabot.yml` shapes the resulting PRs but cannot switch them
-on. A repo with the file and the setting off looks configured and watches nothing.
-Verify:
-
-```bash
-gh api repos/iglootools/alberta-hiking-resources/vulnerability-alerts -i | head -1
-gh api repos/iglootools/alberta-hiking-resources/automated-security-fixes
-```
-
-Expect `HTTP/2.0 204` and `"enabled": true`. Both are enabled on this repository.
+**The config file is only half the setup.** Dependabot security updates are *repository
+settings*, and `dependabot.yml` cannot switch them on — a repo with the file committed
+and those settings off looks configured while watching nothing. They are enabled here;
+see [Github Config](#github-config) below for the commands and how to verify.
 
 Two traps worth knowing, both silent. `target-branch` must stay out of
 `dependabot.yml` — pointing it at a non-default branch disables security updates for
@@ -117,6 +110,40 @@ See also the shared
 [GitHub Workflows guidelines](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#github-workflows)
 for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules the
 workflows here follow.
+
+## Github Config
+
+One-time repository settings, none of which live in the repo:
+
+- **Enable Dependabot security updates.** These are *repository settings*, and
+  [.github/dependabot.yml](../.github/dependabot.yml) cannot switch them on — that file only
+  shapes the resulting PRs and restricts Dependabot to the security half
+  (`open-pull-requests-limit: 0`, because Renovate owns routine version updates and delays them
+  14 days; see [Dependency management](#dependency-management) above). A repo with the file
+  committed and these settings off looks configured while watching nothing:
+
+    ```bash
+    gh api -X PUT repos/iglootools/alberta-hiking-resources/vulnerability-alerts
+    gh api -X PUT repos/iglootools/alberta-hiking-resources/automated-security-fixes
+    ```
+
+    Both are required, and they are separate switches: `vulnerability-alerts` is what notices a
+    vulnerable dependency, `automated-security-fixes` is what opens the fix PR. Alerts alone
+    give a Security tab entry and no PR — the easy state to land in by accident, since alerts
+    are the more discoverable of the two.
+
+    Each `PUT` returns `204 No Content` and prints nothing, so verify rather than assume:
+
+    ```bash
+    gh api repos/iglootools/alberta-hiking-resources/vulnerability-alerts -i | head -1   # expect HTTP/2.0 204
+    gh api repos/iglootools/alberta-hiking-resources/automated-security-fixes            # expect "enabled": true
+    ```
+
+    A `404` from the first is the disabled state, not a missing endpoint. Undo with the same two
+    URLs and `-X DELETE`. Needs admin on the repository; the dependency graph is a prerequisite
+    and is on by default for public repositories.
+- **Settings → Pages → Source** must be set to **GitHub Actions** — see
+  [releasing-and-publishing.md](releasing-and-publishing.md).
 
 ## Testing notes
 
