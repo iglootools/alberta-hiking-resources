@@ -35,6 +35,9 @@ cloned as a sibling directory; see @docs/setup-development-environment.md.
 Project-specific guidelines — this project's documented deviations from the shared set, which
 shared sections are out of scope, and the rules it adds of its own: @docs/guidelines.md
 
+That file is scoped to the shared guidelines. Decisions about Nuxt, the dependency tree, and how
+closely to follow the upstream template are in the architecture decision record above, not there.
+
 ## Documentation Lookup
 
 Answer Nuxt and Nuxt UI questions from the MCP servers in `.mcp.json`, not from training data — this

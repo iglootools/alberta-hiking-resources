@@ -37,7 +37,7 @@ Practical information:
 - [docs/building-and-testing.md](docs/building-and-testing.md) — build, lint, CI, and dependency management
 - [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md) — releases and GitHub Pages deployment
 - [docs/testing-notes.md](docs/testing-notes.md) — Open Graph image, sitemap, and robots.txt validation
-- [docs/guidelines.md](docs/guidelines.md) — project-specific guidelines and documented deviations
+- [docs/guidelines.md](docs/guidelines.md) — where this project deviates from the shared guidelines, and the rules it adds
 - [common-guidelines](https://github.com/iglootools/common-guidelines) — shared coding guidelines, imported by [CLAUDE.md](CLAUDE.md)
 
 Conceptual information:
