@@ -34,6 +34,9 @@ be added: install it into the repository's `.claude/settings.json` and commit th
 
 ## Project-wide deviations
 
+All three concern the shared 14-day `minimumReleaseAge` supply-chain measure and the dependency
+policy around it, defined in `tooling.md` → New Project Setup → All Projects.
+
 ### Renovate exempts some update types from `minimumReleaseAge`
 
 The shared rule is a 14-day hold on every release. `replacement` and `pin` updates, and
@@ -68,124 +71,7 @@ It is a genuine hole in the supply-chain measure, kept because it is currently u
 **Retires when** StackBlitz becomes able to run the project — at which point this must be solved
 *before* anyone relies on it, not after.
 
-### The dev container runs ahead of the CI runner
-
-[.devcontainer/devcontainer.json](../.devcontainer/devcontainer.json) pins
-`base:ubuntu26.04` while CI's `ubuntu-latest` still resolves to 24.04, so the two environments
-are deliberately not identical.
-
-The divergence is narrow by design: everything determining what the app runs on — Node, pnpm —
-comes from `mise.lock` and is identical in both. The base image contributes glibc, curl, and the
-C++ toolchain that compiles `better-sqlite3`, and that binary never leaves the container.
-
-**Retires when** GitHub moves `ubuntu-latest` to 26.04. If a native module ever builds in the
-container but fails in CI, this is the first place to look, and pinning back to `ubuntu-24.04`
-is the fix.
-
-### `@nuxtjs/mdc` is declared without being imported
-
-[package.json](../package.json) declares `@nuxtjs/mdc` at the template's `^0.23.0`
-even though nothing here imports it. This runs against
-[Declare every package you import](#declare-every-package-you-import) from the other
-end — the rule is about not *leaving out* what you import, and says nothing about
-carrying what you do not — and against the trimming of unused template deps recorded
-in [architecture.md](architecture.md#toolchain--dependency-management-net-new).
-
-It is deliberate, and it is what the
-[upstream template](https://github.com/nuxt-ui-templates/docs) does. The `@nuxtjs/mdc`
-module adds ten `@nuxtjs/mdc > <pkg>` entries to `vite.optimizeDeps.include` for its
-own transitive deps, and Vite resolves the left-hand side from the project root. The
-package reaches this app only through `@nuxt/content`, so without a declaration all
-ten fail and every dev run reports `NUXT_B7002`. `shamefullyHoist` masked that until
-it was dropped in `08d20924`.
-
-**The known wart.** `@nuxt/content` requires `^0.22.2`, which `^0.23.0` does not
-satisfy, so the tree holds two copies and the one Vite pre-bundles against is not the
-one that runs:
-
-```
-@nuxtjs/mdc@0.22.2   ← what @nuxt/content actually loads
-@nuxtjs/mdc@0.23.1   ← our declaration, linked at the root, what Vite resolves
-```
-
-This is harmless as long as the two agree on the ten packages being pre-bundled, and
-today they agree exactly — `remark-gfm ^4.0.1`, `remark-mdc ^3.11.1`, `parse5 ^8.0.1`
-and the rest are identical in both. Accepted on that basis, and because staying with
-the template matters more here than the theoretical gap. A one-package
-`publicHoistPattern` avoided it by linking the single instance already in the tree
-(`b35f109c`, reverted in favour of this).
-
-**Watch for** those ranges diverging, which is the thing that would turn the wart
-into a real bug — a Renovate bump on either side is the likely trigger. Compare with:
-
-```bash
-for v in 0.22.2 0.23.1; do npm view @nuxtjs/mdc@$v dependencies --json; done
-```
-
-**Retires when** `@nuxt/content`'s range admits the version declared here, collapsing
-the tree to one copy and making this an ordinary dependency. Check with
-`npm view @nuxt/content dependencies.@nuxtjs/mdc`, then confirm with
-`ls -d node_modules/.pnpm/@nuxtjs+mdc@* | wc -l` returning 1.
-
-### The license is CC BY-SA 4.0, not Apache 2.0
-
-nbkp and photree ship Apache 2.0. This repository is
-[CC BY-SA 4.0](../LICENSE) because its substance is *content* — hiking information written in
-Markdown — rather than code. The Nuxt UI Docs template it is built on is MIT.
-
 ## Rules of this project's own
-
-### Declare every package you import
-
-There is no `shamefullyHoist`, and adding one back is not the fix for an unresolved import —
-declaring the dependency is.
-
-This one is load-bearing rather than stylistic. `shamefullyHoist` was carried over from the
-pre-Nuxt-4 `.npmrc` purely so undeclared transitive imports would resolve, and it caused a
-full-site outage: an h3 v2 RC hoisted to the root, `@nuxt/content` picked it up, every content
-query threw, and every page 404'd (`790d3661`). A flat root also means the version you compile
-against is whatever hoist order happened to lift — a stale local `node_modules` was observed
-resolving a different major of `h3` than a clean `pnpm install --frozen-lockfile`, breaking
-`typecheck` locally while CI stayed green.
-
-With a strict tree, an undeclared import fails at build time instead. See
-[architecture.md](architecture.md#toolchain--dependency-management-net-new) for the four
-dependencies that had to be declared to make dropping it possible.
-
-### `compatibilityDate` is behaviour, not a version
-
-Raise it deliberately, alongside a build-and-prerender check. Never let it be bumped
-automatically, and never treat it as a routine version update: it changes Nuxt and Nitro
-defaults rather than a dependency version.
-
-### Do not pin what upstream decides per environment
-
-Where a module already makes an environment-dependent choice correctly, leave it unset rather
-than restating it. Pinning it overrides a decision upstream is making well *and* stops tracking
-that decision if their recommendation changes.
-
-The worked example is `content.experimental.sqliteConnector` in
-[nuxt.config.ts](../nuxt.config.ts): `@nuxt/content` defaults to `better-sqlite3` and switches
-to `sqlite3` by itself in a WebContainer. Setting either value explicitly would fix in place
-something that is currently self-correcting. The comment there also records why `native` is
-tempting and what would have to change to adopt it.
-
-Related: prefer `provider` from `std-env` over hand-rolled environment detection, and keep
-`nuxt.config.ts` free of `if (webcontainer)` branches.
-
-### Icons: extend the scan, never replace its globs
-
-`icon.clientBundle.scan` must stay on — without it, only the icons `@nuxt/ui` registers itself
-are bundled, and every other icon is fetched from `api.iconify.design` at render time, leaving a
-statically prerendered site dependent on a third-party host.
-
-Do not set `globInclude` to add an extension. It *replaces* the module's default globs rather
-than extending them, pinning a copy of upstream's internals that goes stale silently when they
-add one. The defaults already cover `.vue` and `.md`, which matters here because most icons are
-declared in content frontmatter. They skip `.ts`, so icons declared only in `app.config.ts` are
-listed explicitly in `clientBundle.icons` instead. That list is not guaranteed complete by
-anything, but the failure is loud: an icon that is neither scanned nor listed warns on every
-render.
 
 ### Write down the dead ends, with a retest
 
@@ -196,3 +82,6 @@ command that would prove it has changed, plus the signal to watch. The
 are the worked examples. This is the same principle as naming the condition that retires an
 exception: it makes the conclusion re-evaluatable instead of something the next person has to
 rediscover from scratch.
+
+This applies to the ADR too — ADR-004 and ADR-008 each name what retires them, and ADR-008 names
+what to watch in the meantime.

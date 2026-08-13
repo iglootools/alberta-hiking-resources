@@ -94,8 +94,8 @@ production + GitHub Pages pipeline on top. The major additions and changes:
   one-package `publicHoistPattern` also worked and was dropped in favour of this.
   The cost is a second copy in the tree (`@nuxt/content` wants `^0.22.2`) whose
   transitive versions Vite pre-bundles instead of the ones actually loaded; see
-  [the deviation](guidelines.md#nuxtjsmdc-is-declared-without-being-imported) for why
-  that is currently harmless, what to watch, and what retires it.
+  [ADR-008](architecture-decision-record.md#adr-008--declare-nuxtjsmdc-even-though-nothing-imports-it-matching-the-template)
+  for why that is currently harmless, what to watch, and what retires it.
 - `@vueuse/core`, `minimark`, `tailwindcss` and `ufo` were trimmed too, and have
   been restored as direct dependencies. They are imported directly by our own
   code — `@vueuse/core` in `app/components/PageHeaderLinks.vue`, `minimark` and
