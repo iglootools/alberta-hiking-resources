@@ -62,6 +62,65 @@ production + GitHub Pages pipeline on top. The major additions and changes:
     `modules` — the comment on that line is load-order-significant, not cosmetic.
 - `site` block + `runtimeConfig.public.siteUrl`; custom static landing OG image
   (`public/images/og.png`) alongside the ejected `Docs` community OG template.
+- Legacy URLs redirect to their current pages, from the `legacyRedirects` map at the
+  top of [nuxt.config.ts](../nuxt.config.ts). See
+  [Redirecting retired URLs](#redirecting-retired-urls) below.
+
+#### Redirecting retired URLs
+
+The site has been restructured twice — the pre-Nuxt-4 `/hiking-groups` and
+`/practical-information` sections (`db08e2c5`), plus assorted renames since — and
+Google still has the old URLs, which it reports under *Not found (404)*. Each one is
+mapped to its successor in `legacyRedirects`.
+
+GitHub Pages serves static files and nothing else, so it cannot answer with a real
+`301`. What it can serve is a file, and that is what Nitro generates: listing a
+`redirect` route rule in `nitro.prerender.routes` writes an HTML stub containing only
+`<meta http-equiv="refresh" content="0; url=…">`, which Google follows and treats as
+a redirect. `@nuxtjs/sitemap` recognises exactly that stub (`NuxtRedirectHtmlRegex`)
+and leaves it out of `sitemap.xml`, so the retired URLs are never re-advertised.
+
+Two details are easy to get wrong, and both fail silently:
+
+- **Every path needs a file in both forms.** `autoSubfolderIndex: false` means `/a/b`
+  is served from `a/b.html` while `/a/b/` needs `a/b/index.html`, and on GitHub Pages
+  neither falls back to the other. The old site emitted trailing slashes, so that is
+  the form Google actually holds. One *route rule* covers both, because matching is
+  trailing-slash-insensitive (see below), but the prerenderer names its output after
+  the URL it was asked for — so both forms are listed in `prerender.routes`.
+- **The routes must be listed for prerendering.** Nothing links to them, so
+  `crawlLinks` alone never reaches them and no file is written.
+
+#### Why five of them are not route rules
+
+`/faq`, `/getting-started`, `/getting-started/contributing`, `/hike-organizers` and
+`/hike-organizers/sami` survived the restructure, but the old site served them with a
+trailing slash too, and that form 404s. They cannot be fixed with a route rule:
+radix3 strips a trailing slash before matching (Nitro leaves `strictTrailingSlash`
+unset), so a rule keyed `/faq/` also matches `/faq` and replaces the live page with a
+stub pointing at itself. That is not a hypothetical — it happened, and it silently
+took five pages out of `sitemap.xml`, which is the check that catches it.
+
+They are written as files instead, in a `prerender:done` hook, after the real pages
+have rendered. `public/` would be simpler but risks Nitro's static handler resolving
+`/faq` to `faq/index.html` and shadowing the page in dev and during prerender.
+
+Placing `faq/index.html` beside a live `faq.html` is safe **on GitHub Pages**, which
+resolves an extensionless request to the matching file and only redirects to the
+directory when no such file exists. Verified against the deployed matrix at
+[slorber/trailing-slash-guide](https://github.com/slorber/trailing-slash-guide), where
+`/both` serves `both.html` with no redirect. Not every host agrees — Python's
+`http.server` does the opposite, so `mise run preview`-style local checks will show a
+301 here — and on a host that prefers the directory, `/faq` → `/faq/` → `/faq` loops.
+Re-run that check before moving off GitHub Pages.
+
+Entries are permanent: a URL only has to have been public once for something to still
+link to it. Verify a change by building and checking the stub and its target both
+exist — `grep -rl 'http-equiv="refresh"' .output/public`.
+
+**Retires when** the site moves to a host that can issue real HTTP redirects, at which
+point the same `routeRules` map serves them directly with no stub files and no
+prerender list.
 
 ### Toolchain & dependency management (net-new)
 
