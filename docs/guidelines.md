@@ -82,42 +82,50 @@ C++ toolchain that compiles `better-sqlite3`, and that binary never leaves the c
 container but fails in CI, this is the first place to look, and pinning back to `ubuntu-24.04`
 is the fix.
 
-### `@nuxtjs/mdc` is hoisted rather than declared
+### `@nuxtjs/mdc` is declared without being imported
 
-[pnpm-workspace.yaml](../pnpm-workspace.yaml) links exactly one package into the root
-`node_modules` via `publicHoistPattern`. This is a narrow exception to
-[Declare every package you import](#declare-every-package-you-import) — and not a
-reprise of `shamefullyHoist`, which flattened the whole root: naming one package
-leaves every other undeclared import failing at build time, as intended.
+[package.json](../package.json) declares `@nuxtjs/mdc` at the template's `^0.23.0`
+even though nothing here imports it. This runs against
+[Declare every package you import](#declare-every-package-you-import) from the other
+end — the rule is about not *leaving out* what you import, and says nothing about
+carrying what you do not — and against the trimming of unused template deps recorded
+in [architecture.md](architecture.md#toolchain--dependency-management-net-new).
 
-The `@nuxtjs/mdc` module adds ten `@nuxtjs/mdc > <pkg>` entries to
-`vite.optimizeDeps.include` for its own transitive deps, and Vite resolves the
-left-hand side from the project root. The package reaches this app only through
-`@nuxt/content`, so on a strict tree all ten fail and every dev run reports
-`NUXT_B7002`. `shamefullyHoist` masked this until it was dropped in `08d20924`.
+It is deliberate, and it is what the
+[upstream template](https://github.com/nuxt-ui-templates/docs) does. The `@nuxtjs/mdc`
+module adds ten `@nuxtjs/mdc > <pkg>` entries to `vite.optimizeDeps.include` for its
+own transitive deps, and Vite resolves the left-hand side from the project root. The
+package reaches this app only through `@nuxt/content`, so without a declaration all
+ten fail and every dev run reports `NUXT_B7002`. `shamefullyHoist` masked that until
+it was dropped in `08d20924`.
 
-**How the template avoids it.** [nuxt-ui-templates/docs](https://github.com/nuxt-ui-templates/docs)
-declares `@nuxtjs/mdc` as a direct dependency, which puts it in the root
-`node_modules` and resolves the entries with no pnpm configuration at all. That is
-the simpler fix and the one to adopt when it becomes safe. It is not safe yet,
-because the declared version is a *second* version: the template pins `^0.23.0`
-while `@nuxt/content@3.15.2` requires `^0.22.2`, so its lockfile carries two copies
-of `@nuxtjs/mdc` and Vite pre-bundles against the copy that does not run. It
-currently gets away with it — the ten transitive ranges are byte-identical between
-0.22.2 and 0.23.0, so both copies pre-bundle the same packages — but nothing keeps
-that true, and a Renovate bump on our side would be the thing to break it. A hoist
-carries no version of its own and links the single instance already in the tree.
+**The known wart.** `@nuxt/content` requires `^0.22.2`, which `^0.23.0` does not
+satisfy, so the tree holds two copies and the one Vite pre-bundles against is not the
+one that runs:
 
-**Retires when** either of these holds:
+```
+@nuxtjs/mdc@0.22.2   ← what @nuxt/content actually loads
+@nuxtjs/mdc@0.23.1   ← our declaration, linked at the root, what Vite resolves
+```
 
-- The entries resolve unaided — upstream stops using the `pkg > subpkg` form, or Nuxt
-  resolves it from the module's own location. Retest by deleting the block, running
-  `CI=true pnpm install`, then `mise run dev`, and watching for `NUXT_B7002`.
-- `@nuxt/content`'s range widens to admit the version we would declare, making one
-  copy the only outcome. Check with
-  `npm view @nuxt/content dependencies.@nuxtjs/mdc`, then switch to the template's
-  approach: drop `publicHoistPattern` and add `@nuxtjs/mdc` to `dependencies`.
-  Confirm with `ls -d node_modules/.pnpm/@nuxtjs+mdc@* | wc -l` returning 1.
+This is harmless as long as the two agree on the ten packages being pre-bundled, and
+today they agree exactly — `remark-gfm ^4.0.1`, `remark-mdc ^3.11.1`, `parse5 ^8.0.1`
+and the rest are identical in both. Accepted on that basis, and because staying with
+the template matters more here than the theoretical gap. A one-package
+`publicHoistPattern` avoided it by linking the single instance already in the tree
+(`b35f109c`, reverted in favour of this).
+
+**Watch for** those ranges diverging, which is the thing that would turn the wart
+into a real bug — a Renovate bump on either side is the likely trigger. Compare with:
+
+```bash
+for v in 0.22.2 0.23.1; do npm view @nuxtjs/mdc@$v dependencies --json; done
+```
+
+**Retires when** `@nuxt/content`'s range admits the version declared here, collapsing
+the tree to one copy and making this an ordinary dependency. Check with
+`npm view @nuxt/content dependencies.@nuxtjs/mdc`, then confirm with
+`ls -d node_modules/.pnpm/@nuxtjs+mdc@* | wc -l` returning 1.
 
 ### The license is CC BY-SA 4.0, not Apache 2.0
 
