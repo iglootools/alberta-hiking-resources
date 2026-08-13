@@ -94,9 +94,18 @@ export default defineNuxtConfig({
       chunkSizeWarningLimit: 700
     },
     optimizeDeps: {
+      // Only packages this app declares belong here. Vite resolves these from
+      // the project root, so with no `shamefullyHoist` an entry for anything
+      // undeclared silently pre-bundles nothing and warns (NUXT_B7002).
+      //
+      // `@vue/devtools-core` and `@vue/devtools-kit` were listed here (4d9f7ef8)
+      // while the flat root still made them resolvable, and became inert when it
+      // was dropped in 08d20924. They are not ours to pre-bundle either — both
+      // are internals of @nuxt/devtools, which nuxt itself depends on, so
+      // declaring them would pin a version against nothing and risk a second
+      // copy. Removed rather than declared; if Vite starts discovering them at
+      // runtime again, that is Nuxt's to pre-bundle, not ours.
       include: [
-        '@vue/devtools-core',
-        '@vue/devtools-kit',
         '@vueuse/core'
       ]
     }
