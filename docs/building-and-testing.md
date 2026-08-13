@@ -74,6 +74,18 @@ behavior is configured in [renovate.json](../renovate.json) (grouped "all"
 updates, 14-day minimum age). The [`renovate-mise-lock.yml`](../.github/workflows/renovate-mise-lock.yml)
 workflow keeps the mise lock in sync with Renovate's updates.
 
+Grouping and the 14-day `minimumReleaseAge` come from the shared
+[project setup guidelines](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#all-projects),
+where the reasoning is written up: the delay is a supply-chain measure and works by
+waiting, which is why the guidelines pair it with a Dependabot config limited to
+security updates (`open-pull-requests-limit: 0`) so advisory fixes are not also
+delayed by two weeks. **This repository has no `.github/dependabot.yml` yet**, so
+that immediate half is currently missing — the grouped, delayed half is all that
+runs. See also the shared
+[GitHub Workflows guidelines](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#github-workflows)
+for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules the
+workflows here are expected to follow.
+
 ## Testing notes
 
 See [testing-notes.md](testing-notes.md) for manually validating Open Graph
