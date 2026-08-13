@@ -182,7 +182,7 @@ What you will find
       to: '/getting-started/contributing'
       trailingIcon: i-lucide-arrow-right
     - label: View on GitHub
-      to: 'https://github.com/samidalouche/alberta-hiking-resources'
+      to: 'https://github.com/iglootools/alberta-hiking-resources'
       target: _blank
       variant: subtle
       icon: i-lucide-github

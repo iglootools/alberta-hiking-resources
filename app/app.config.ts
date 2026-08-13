@@ -1,5 +1,5 @@
 export default defineAppConfig({
-  repository: 'samidalouche/alberta-hiking-resources',
+  repository: 'iglootools/alberta-hiking-resources',
   ui: {
     colors: {
       primary: 'green',
@@ -31,7 +31,7 @@ export default defineAppConfig({
       'aria-label': 'Changelog'
     }, {
       'icon': 'i-lucide-github',
-      'to': 'https://github.com/samidalouche/alberta-hiking-resources',
+      'to': 'https://github.com/iglootools/alberta-hiking-resources',
       'target': '_blank',
       'aria-label': 'GitHub'
     }]
@@ -41,7 +41,7 @@ export default defineAppConfig({
     colorMode: false,
     links: [{
       'icon': 'i-lucide-github',
-      'to': 'https://github.com/samidalouche/alberta-hiking-resources/',
+      'to': 'https://github.com/iglootools/alberta-hiking-resources/',
       'target': '_blank',
       'aria-label': 'Alberta Hikers Together on Github'
     }]
@@ -50,11 +50,11 @@ export default defineAppConfig({
     title: 'Table of Contents',
     bottom: {
       title: 'Community',
-      edit: 'https://github.com/samidalouche/alberta-hiking-resources/edit/main/content',
+      edit: 'https://github.com/iglootools/alberta-hiking-resources/edit/main/content',
       links: [{
         icon: 'i-lucide-star',
         label: 'Star on GitHub',
-        to: 'https://github.com/samidalouche/alberta-hiking-resources',
+        to: 'https://github.com/iglootools/alberta-hiking-resources',
         target: '_blank'
       }, {
         icon: 'i-lucide-circle-dot',

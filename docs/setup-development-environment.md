@@ -12,7 +12,7 @@ nobody has to rediscover it.
 
 ## Dev container (Codespaces, local Docker)
 
-**[Open in GitHub Codespaces →](https://codespaces.new/samidalouche/alberta-hiking-resources)**
+**[Open in GitHub Codespaces →](https://codespaces.new/iglootools/alberta-hiking-resources)**
 
 A full Linux container defined by
 [.devcontainer/devcontainer.json](../.devcontainer/devcontainer.json), so every
