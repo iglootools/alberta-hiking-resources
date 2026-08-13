@@ -81,16 +81,21 @@ production + GitHub Pages pipeline on top. The major additions and changes:
   undeclared import fails at build time rather than silently resolving to
   whatever hoist order picked.
 - Trimmed the template's explicit deps that this site genuinely does not use:
-  `@nuxtjs/mdc` and `unist-util-visit` (unimported in the template too), and
+  `unist-util-visit` (unimported in the template too), and
   `simple-icons`/`vscode-icons` (every `i-simple-icons-*` was swapped for
   `i-lucide-*`, so only `@iconify-json/lucide` is needed).
-  - `@nuxtjs/mdc` is unimported but not idle: the module registers ten
-    `@nuxtjs/mdc > <pkg>` entries in `vite.optimizeDeps.include`, and Vite resolves
-    the left-hand side from the project root. Declaring it is how the template keeps
-    those resolvable. Here it arrives only through `@nuxt/content`, so a one-package
-    `publicHoistPattern` in [pnpm-workspace.yaml](../pnpm-workspace.yaml) does that
-    job instead — see [the deviation](guidelines.md#nuxtjsmdc-is-hoisted-rather-than-declared)
-    for why, and for what would retire it in favour of the template's approach.
+- `@nuxtjs/mdc` was trimmed on the same grounds and has been **restored to the
+  template's `^0.23.0`**, because it is unimported but not idle: the module registers
+  ten `@nuxtjs/mdc > <pkg>` entries in `vite.optimizeDeps.include`, and Vite resolves
+  the left-hand side from the project root. Here the package arrives only through
+  `@nuxt/content`, so without the declaration all ten fail and every dev run reports
+  `NUXT_B7002` — which `shamefullyHoist` had been masking. Declaring it is how the
+  template keeps them resolvable, and matching the template is the point: a
+  one-package `publicHoistPattern` also worked and was dropped in favour of this.
+  The cost is a second copy in the tree (`@nuxt/content` wants `^0.22.2`) whose
+  transitive versions Vite pre-bundles instead of the ones actually loaded; see
+  [the deviation](guidelines.md#nuxtjsmdc-is-declared-without-being-imported) for why
+  that is currently harmless, what to watch, and what retires it.
 - `@vueuse/core`, `minimark`, `tailwindcss` and `ufo` were trimmed too, and have
   been restored as direct dependencies. They are imported directly by our own
   code — `@vueuse/core` in `app/components/PageHeaderLinks.vue`, `minimark` and

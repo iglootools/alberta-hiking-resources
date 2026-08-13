@@ -6,25 +6,3 @@ allowBuilds:
   sharp: true
   unrs-resolver: false
   vue-demi: false
-
-# @nuxtjs/mdc, and nothing else, is linked into the root node_modules.
-#
-# The module adds ten `@nuxtjs/mdc > <pkg>` entries to vite.optimizeDeps.include
-# for its own transitive deps. Vite resolves the left-hand side from the project
-# root, and @nuxtjs/mdc reaches us only through @nuxt/content, so on a strict tree
-# all ten fail and Nuxt reports NUXT_B7002 on every dev run.
-#
-# The upstream template fixes this by declaring @nuxtjs/mdc as a dependency, which
-# is simpler and is what this should eventually become. It is not adopted yet
-# because the version declared is a second one — the template pins ^0.23.0 while
-# @nuxt/content wants ^0.22.2, so its lockfile holds two copies and Vite
-# pre-bundles the one that does not run. A hoist carries no version of its own and
-# links the single instance already in the tree.
-#
-# This is not `shamefullyHoist` by another name: naming one package leaves every
-# other undeclared import failing at build time.
-#
-# Both retirement conditions, and how to retest each, are in docs/guidelines.md
-# ("@nuxtjs/mdc is hoisted rather than declared").
-publicHoistPattern:
-  - '@nuxtjs/mdc'
