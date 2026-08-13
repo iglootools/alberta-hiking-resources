@@ -21,6 +21,9 @@ Common guidelines (shared across iglootools projects):
 require [common-guidelines](https://github.com/iglootools/common-guidelines) cloned as a sibling
 directory; see @docs/setup-development-environment.md.
 
+Project-specific guidelines — this project's documented deviations from the shared set, which
+shared sections are out of scope, and the rules it adds of its own: @docs/guidelines.md
+
 ## Documentation Lookup
 
 Answer Nuxt and Nuxt UI questions from the MCP servers in `.mcp.json`, not from training data — this
