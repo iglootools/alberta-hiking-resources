@@ -1,6 +1,88 @@
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+
 const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://www.alberta-hiking-resources.org'
 const siteTitle = 'Alberta Hiking Resources'
 const siteDescription = 'Find your way in the jungle of FB and Meetup groups. Hiking Partners. Information. Ideas.'
+
+// URLs this site used to serve, mapped to the page that replaced them. Every one
+// of these was live and indexed; without a redirect they are plain 404s, which is
+// what Google Search Console reports under "Not found (404)", and any ranking or
+// inbound link they had is discarded rather than passed on.
+//
+// The first block is the pre-Nuxt-4 structure (everything under
+// /hiking-groups and /practical-information, retired by `db08e2c5`); the rest are
+// individual pages renamed or merged since. Entries are permanent — a URL only
+// needs to have been public once for someone to still be linking to it — so they
+// accumulate rather than get cleaned up. See docs/architecture.md.
+const legacyRedirects: Record<string, string> = {
+  // Pre-Nuxt-4 structure
+  '/getting-started/introduction': '/getting-started',
+  '/hiking-groups': '/meetup-groups',
+  '/hiking-groups/by-category': '/meetup-groups',
+  '/hiking-groups/by-category/meetups': '/meetup-groups',
+  '/hiking-groups/by-category/inspirational': '/meetup-groups/facebook',
+  // Earlier name for the page above, live only briefly but deployed and indexed
+  '/hiking-groups/by-category/pictures-and-ideas': '/meetup-groups/facebook',
+  '/hiking-groups/by-category/practical-information': '/meetup-groups/facebook',
+  '/hiking-groups/by-category/trail-information': '/meetup-groups/facebook',
+  '/hiking-groups/group-info': '/meetup-groups',
+  '/hiking-groups/group-info/alberta-hikers-and-climbers': '/meetup-groups/alberta-mountain-aholics',
+  '/hiking-groups/group-info/alberta-hikers-together': '/meetup-groups/alberta-hikers-together',
+  '/hiking-groups/group-info/find-hiking-groups-partners-alberta': '/meetup-groups/find-hiking-groups-partners-alberta',
+  // The old /practical-information hub spanned what is now three sections; it
+  // sends to the one that inherited most of it (guidebooks, trip reports, apps).
+  '/practical-information': '/hiking-scrambling-beta',
+  '/practical-information/guidebooks': '/hiking-scrambling-beta/guidebooks',
+  '/practical-information/trip-reports': '/hiking-scrambling-beta/trip-reports',
+  '/practical-information/apps': '/hiking-scrambling-beta/apps',
+  '/practical-information/weather': '/weather-trail-conditions',
+  '/practical-information/fires-smoke': '/weather-trail-conditions/fires-smoke',
+  '/practical-information/trail-conditions': '/weather-trail-conditions/trail-conditions',
+  '/practical-information/bookings': '/accommodation',
+  '/practical-information/gear': '/outdoor-gear',
+
+  // Renamed or merged since
+  '/meetup-groups/meetup.com': '/meetup-groups/meetup-com',
+  '/meetup-groups/alberta-hikers-and-climbers': '/meetup-groups/alberta-mountain-aholics',
+  '/hiking-scrambling-beta/camping-huts': '/accommodation',
+  '/weather-trail-conditions/popular-locations/other-bc-national-parks': '/weather-trail-conditions/popular-locations/rogers-pass-revelstoke-golden',
+  '/accommodation/other-bc-national-parks': '/accommodation/rogers-pass-revelstoke-golden'
+}
+
+// Pages that survived the restructure, but which the old site *also* served with
+// a trailing slash — the form Google indexed and still requests. Here only the
+// trailing-slash form redirects, back to the live page at the bare path.
+//
+// These cannot be route rules. radix3 strips a trailing slash before matching
+// (Nitro leaves `strictTrailingSlash` unset), so `/faq/` and `/faq` are the same
+// rule, and adding one replaces the live page with a stub pointing at itself.
+// The stub file is written directly instead — see the `nitro:init` hook below.
+//
+// The list is exactly the surviving URLs found in the build output this repo
+// used to commit. Nothing today emits a trailing slash, so it does not grow with
+// new pages.
+const trailingSlashOnlyRedirects = [
+  '/faq',
+  '/getting-started',
+  '/getting-started/contributing',
+  '/hike-organizers',
+  '/hike-organizers/sami'
+]
+
+// h3's own redirect markup, reproduced so a hand-written stub is byte-identical
+// to the ones Nitro generates from the route rules.
+const redirectStub = (to: string) =>
+  `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=${to}"></head></html>`
+
+// One rule per retired path — with matching being trailing-slash-insensitive,
+// `/a/b` covers `/a/b/` too. What is *not* insensitive is the file the
+// prerenderer writes, which follows the URL it was asked for, so both forms are
+// requested in `prerender.routes` below to get both `a/b.html` and
+// `a/b/index.html`. On GitHub Pages neither of those serves the other's URL.
+const legacyRedirectRouteRules = Object.fromEntries(
+  Object.entries(legacyRedirects).map(([from, to]) => [from, { redirect: { to, statusCode: 301 as const } }])
+)
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -68,6 +150,14 @@ export default defineNuxtConfig({
     }
   },
 
+  // There is no runtime server on GitHub Pages, so a redirect has to exist as a
+  // file. Nitro prerenders each of these into an HTML stub whose only content is
+  // a `<meta http-equiv="refresh">` to the target — which Google treats as a
+  // redirect and follows. They have to be listed in `prerender.routes` below:
+  // nothing links to them, so the crawler would never reach them on its own.
+  // @nuxtjs/sitemap recognises those stubs and keeps them out of sitemap.xml.
+  routeRules: legacyRedirectRouteRules,
+
   experimental: {
     asyncContext: true
   },
@@ -81,7 +171,8 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       routes: [
-        '/'
+        '/',
+        ...Object.keys(legacyRedirectRouteRules).flatMap(path => [path, `${path}/`])
       ],
       crawlLinks: true,
       autoSubfolderIndex: false
@@ -99,6 +190,26 @@ export default defineNuxtConfig({
         '@vue/devtools-kit',
         '@vueuse/core'
       ]
+    }
+  },
+
+  hooks: {
+    // The five trailing-slash-only redirects, written straight into the bundle
+    // once prerendering is finished. This runs after the pages themselves are
+    // rendered, so a `faq/index.html` stub cannot influence how `/faq` renders,
+    // and the files are never registered as prerendered routes, so @nuxtjs/sitemap
+    // never sees them either. Putting them in `public/` instead would be simpler
+    // but risks Nitro's static handler resolving `/faq` to `faq/index.html` and
+    // shadowing the real page in dev and during prerender.
+    'nitro:init': (nitro) => {
+      nitro.hooks.hook('prerender:done', async () => {
+        for (const to of trailingSlashOnlyRedirects) {
+          const file = join(nitro.options.output.publicDir, to, 'index.html')
+          await mkdir(dirname(file), { recursive: true })
+          await writeFile(file, redirectStub(to))
+        }
+        nitro.logger.success(`Wrote ${trailingSlashOnlyRedirects.length} trailing-slash redirect stubs`)
+      })
     }
   },
 
