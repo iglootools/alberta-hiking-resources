@@ -76,15 +76,47 @@ workflow keeps the mise lock in sync with Renovate's updates.
 
 Grouping and the 14-day `minimumReleaseAge` come from the shared
 [project setup guidelines](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#all-projects),
-where the reasoning is written up: the delay is a supply-chain measure and works by
-waiting, which is why the guidelines pair it with a Dependabot config limited to
-security updates (`open-pull-requests-limit: 0`) so advisory fixes are not also
-delayed by two weeks. **This repository has no `.github/dependabot.yml` yet**, so
-that immediate half is currently missing — the grouped, delayed half is all that
-runs. See also the shared
+where the reasoning is written up.
+
+### Renovate and Dependabot are split by job, not by ecosystem
+
+The 14-day delay is a supply-chain measure and it works by *waiting*. Waiting is
+exactly the wrong response to a published advisory, where the fix is already known.
+So the two tools run at opposite latencies over the same ecosystems:
+
+| Tool | Handles | Latency |
+|---|---|---|
+| Renovate ([renovate.json](../renovate.json)) | routine version updates, grouped into one PR | delayed 14 days |
+| Dependabot ([dependabot.yml](../.github/dependabot.yml)) | security updates only | immediate |
+
+`open-pull-requests-limit: 0` is what implements the split: it switches off Dependabot's
+*version* updates, and security PRs are exempt from that limit. Letting both tools
+propose versions would mean duplicate PRs, half of which ignore the 14-day delay.
+
+**The config file is only half the setup.** Dependabot security updates are a
+*repository setting*; `dependabot.yml` shapes the resulting PRs but cannot switch them
+on. A repo with the file and the setting off looks configured and watches nothing.
+Verify:
+
+```bash
+gh api repos/iglootools/alberta-hiking-resources/vulnerability-alerts -i | head -1
+gh api repos/iglootools/alberta-hiking-resources/automated-security-fixes
+```
+
+Expect `HTTP/2.0 204` and `"enabled": true`. Both are enabled on this repository.
+
+Two traps worth knowing, both silent. `target-branch` must stay out of
+`dependabot.yml` — pointing it at a non-default branch disables security updates for
+that ecosystem. And `package-ecosystem` must match what the lockfile actually is:
+`npm` is the correct value for pnpm (there is no `pnpm` value), and a mismatch does not
+error, it just finds nothing and reports green.
+
+### Further reading
+
+See also the shared
 [GitHub Workflows guidelines](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#github-workflows)
 for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules the
-workflows here are expected to follow.
+workflows here follow.
 
 ## Testing notes
 
