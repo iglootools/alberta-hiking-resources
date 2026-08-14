@@ -15,11 +15,22 @@ Before writing any code, apply the guidelines at write time, not as a post-hoc r
 Common guidelines (shared across iglootools projects):
 
 @../common-guidelines/coding.md
-@../common-guidelines/tooling.md
 
-`python.md` is deliberately not imported — this is a TypeScript/Nuxt project. The imports above
-require [common-guidelines](https://github.com/iglootools/common-guidelines) cloned as a sibling
-directory; see @docs/setup-development-environment.md.
+`coding.md` governs every edit, so it is imported. The rest of the shared set is triggered by a
+specific file — read the whole file before touching one of these, not just the section that looks
+relevant:
+
+| Read | Before touching |
+|---|---|
+| `../common-guidelines/project-setup.md` | `.github/workflows/`, `renovate.json`, `dependabot.yml`, `.gitignore` |
+| `../common-guidelines/ide.md` | `.vscode/`, `.claude/settings.json`, `*.code-workspace` |
+
+`python.md` and `python-tooling.md` are deliberately absent — this is a TypeScript/Nuxt project.
+`ide.md` is listed despite being mostly Python: its mise-vscode and multi-root workspace rules are
+what govern this project's `.vscode/settings.json`, and its pyright half simply does not apply here.
+
+The import and the paths above require [common-guidelines](https://github.com/iglootools/common-guidelines)
+cloned as a sibling directory; see @docs/setup-development-environment.md.
 
 Project-specific guidelines — this project's documented deviations from the shared set, which
 shared sections are out of scope, and the rules it adds of its own: @docs/guidelines.md

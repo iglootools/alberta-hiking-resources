@@ -1,0 +1,25 @@
+{
+    "mise.enable": true,
+    // Let mise-vscode derive tool paths from mise.toml rather than hand-maintaining a key
+    // per extension. UseSymLinks writes ${workspaceFolder}/.vscode/mise-tools/<tool>, the
+    // only shareable form — an absolute ~/.local/share/mise path is version- and
+    // home-specific.
+    //
+    // IncludeGlobalTools is off (the extension's own recommendation) and is load-bearing
+    // here: with the default `true`, this Nuxt project — whose mise.toml declares only
+    // node and pnpm — was given metals.javaHome, three java.* keys and a
+    // python.defaultInterpreterPath pointing at a global mise interpreter, none of which
+    // correspond to anything this repo builds. Those keys were removed when this comment
+    // was written; if they reappear, this setting has been lost.
+    //
+    // All mise.* keys are window-scoped, so these apply when this repo is opened as the
+    // single root and are ignored when it is one folder of a multi-root .code-workspace.
+    // That is deliberate: mise-vscode configures only one folder there and writes the
+    // result to the workspace file for all of them, so it must not be allowed to generate.
+    "mise.configureExtensionsAutomatically": true,
+    "mise.configureExtensionsUseSymLinks": true,
+    "mise.configureExtensionsIncludeGlobalTools": false,
+    "debug.javascript.defaultRuntimeExecutable": {
+        "pwa-node": "${workspaceFolder}/.vscode/mise-tools/node"
+    }
+}
