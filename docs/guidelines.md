@@ -54,6 +54,30 @@ rather than `^`, which is a deliberate deviation from keeping dependencies curre
 together. The full reasoning, including why the bound tracks the peer range rather than just
 excluding the next major, is in the rule's `description`.
 
+### esbuild is overridden past the range `fontless` asks for
+
+[pnpm-workspace.yaml](../pnpm-workspace.yaml) forces `esbuild` to `^0.28.2` for the whole tree,
+overriding a range a dependency declared. That is normally the wrong tool — it silently
+contradicts what upstream said it supports — and it is used here because the alternative is a
+security update that cannot happen at all.
+
+[GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr) is fixed in 0.28.1.
+`fontless@0.2.1` — reached through `@nuxt/fonts`, and the newest release of it there is —
+declares `esbuild: ^0.27.0`, so the highest version resolvable was 0.27.7. Dependabot does not
+open a PR
+it cannot satisfy — it fails the run with `security_update_not_possible`, which is how this was
+noticed. Waiting was not an option either: there is no newer `fontless` to upgrade to.
+
+The override is narrow in effect. Every other consumer — Vite 8, `unplugin`, `@unhead/bundler` —
+already accepts 0.28, and 0.28.2 was already in the tree for Vite, so this removes a second copy
+rather than introducing a version. The reasoning, and why 0.28.0's "breaking" label does not
+apply to the API `fontless` uses, are in the comment on the block itself.
+
+**Retires when** `fontless` widens its range: check with `npm view fontless dependencies.esbuild`,
+then delete the block, run `pnpm install`, and confirm `grep -c 'esbuild@0.27' pnpm-lock.yaml`
+reports none. Leaving it in place after that would pin a floor upstream is managing itself, per
+[Do not pin what upstream decides per environment](#do-not-pin-what-upstream-decides-per-environment).
+
 ### StackBlitz bypasses the 14-day delay
 
 [.stackblitzrc](../.stackblitzrc) boots via npm, and npm cannot read `pnpm-lock.yaml`, so it
