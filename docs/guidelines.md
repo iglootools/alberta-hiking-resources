@@ -12,16 +12,17 @@ project-wide rules that have no single point of deviation.
 
 ## Which shared guidelines apply
 
-`coding.md` and `tooling.md` apply and are imported by [CLAUDE.md](../CLAUDE.md).
+`coding.md` applies and is imported by [CLAUDE.md](../CLAUDE.md). `project-setup.md` and `ide.md`
+apply too, and are listed there rather than imported, since each is triggered by a specific file.
 
-**`python.md` does not.** Nothing here is Python, which also puts three parts of `tooling.md`
-out of scope rather than merely unmet:
+**`python.md` and `python-tooling.md` do not.** Nothing here is Python, which also puts two
+parts of `ide.md` out of scope rather than merely unmet:
 
 | Shared section | Why it does not apply |
 |---|---|
-| `tooling.md` → New Project Setup → Python Projects | uv/hatchling/ruff have no counterpart here; the stack is pnpm + mise |
-| `tooling.md` → IDE → Pyright environment resolution | no `.venv` and no `[tool.pyright]` to pin |
-| `tooling.md` → IDE → Claude Code → Pyright LSP plugin | Python-specific. No LSP plugin is installed for this project |
+| `python-tooling.md`, in full | uv/hatchling/ruff have no counterpart here; the stack is pnpm + mise |
+| `ide.md` → Pyright environment resolution | no `.venv` and no `[tool.pyright]` to pin |
+| `ide.md` → Claude Code → Pyright LSP plugin | Python-specific. No LSP plugin is installed for this project |
 
 The last one leaves a real gap — an assistant here has no import graph to resolve symbols
 against. The `.mcp.json` servers cover the adjacent problem instead: they ground answers about
@@ -34,8 +35,8 @@ be added: install it into the repository's `.claude/settings.json` and commit th
 
 ## Project-wide deviations
 
-All three concern the shared 14-day `minimumReleaseAge` supply-chain measure and the dependency
-policy around it, defined in `tooling.md` → New Project Setup → All Projects.
+All four concern the shared 14-day `minimumReleaseAge` supply-chain measure and the dependency
+policy around it, defined in `project-setup.md` → All Projects.
 
 ### Renovate exempts some update types from `minimumReleaseAge`
 
@@ -78,8 +79,9 @@ apply to the API `fontless` uses, are in the comment on the block itself.
 
 **Retires when** `fontless` widens its range: check with `npm view fontless dependencies.esbuild`,
 then delete the block, run `pnpm install`, and confirm `grep -c 'esbuild@0.27' pnpm-lock.yaml`
-reports none. Leaving it in place after that would pin a floor upstream is managing itself, per
-[Do not pin what upstream decides per environment](#do-not-pin-what-upstream-decides-per-environment).
+reports none. Leaving it in place after that would pin a floor upstream is managing itself — the
+same reason `content.experimental.sqliteConnector` is left unset, which the comment at that
+setting in [nuxt.config.ts](../nuxt.config.ts) explains.
 
 ### StackBlitz bypasses the 14-day delay
 
@@ -107,5 +109,8 @@ are the worked examples. This is the same principle as naming the condition that
 exception: it makes the conclusion re-evaluatable instead of something the next person has to
 rediscover from scratch.
 
-This applies to the ADR too — ADR-004 and ADR-008 each name what retires them, and ADR-008 names
-what to watch in the meantime.
+This applies beyond this file — [ADR-003](architecture-decision-record.md#adr-003--let-the-dev-container-run-ahead-of-the-ci-runner)
+names what retires it, and the `@nuxtjs/mdc` declaration in
+[divergence-from-the-template.md](divergence-from-the-template.md#toolchain--dependency-management-net-new)
+names both what to
+watch in the meantime and what retires it.

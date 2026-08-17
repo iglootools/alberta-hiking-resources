@@ -42,7 +42,8 @@ Practical information:
 
 Conceptual information:
 
-- [docs/architecture.md](docs/architecture.md) — tech stack, project structure, and divergence from the Nuxt UI Docs template
+- [docs/architecture.md](docs/architecture.md) — tech stack and project structure
+- [docs/divergence-from-the-template.md](docs/divergence-from-the-template.md) — what this project changed from the Nuxt UI Docs template, and why
 - [docs/architecture-decision-record.md](docs/architecture-decision-record.md) — log of architectural decisions
 
 To contribute content to the site itself, see the in-site

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Tech stack, project structure, and where this app diverges from the Nuxt UI Docs template: @docs/architecture.md
+Tech stack and project structure: @docs/architecture.md
+
+Where this app diverges from the Nuxt UI Docs template, and why: @docs/divergence-from-the-template.md
 
 Log of architectural decisions and the reasoning behind them: @docs/architecture-decision-record.md
 
@@ -35,8 +37,9 @@ cloned as a sibling directory; see @docs/setup-development-environment.md.
 Project-specific guidelines — this project's documented deviations from the shared set, which
 shared sections are out of scope, and the rules it adds of its own: @docs/guidelines.md
 
-That file is scoped to the shared guidelines. Decisions about Nuxt, the dependency tree, and how
-closely to follow the upstream template are in the architecture decision record above, not there.
+That file is scoped to the shared guidelines. Decisions about Nuxt and the dependency tree are in
+the architecture decision record above, not there — and how closely to follow the upstream
+template is recorded in @docs/divergence-from-the-template.md.
 
 ## Documentation Lookup
 

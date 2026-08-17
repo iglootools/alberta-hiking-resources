@@ -283,7 +283,7 @@ An extension appearing in both is not redundant: the first suggests it to someon
 working locally, the second guarantees it inside the container.
 
 What belongs in that list follows the shared rule in
-[VSCode setup](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#vscode):
+[VSCode setup](https://github.com/iglootools/common-guidelines/blob/main/ide.md#vscode):
 **every extension a committed setting depends on belongs in `extensions.json`**,
 because a setting whose extension is absent is not an error — it is a silent no-op,
 and whoever cloned the repo cannot tell it apart from a working setup.
@@ -353,7 +353,7 @@ a sibling directory — step 2 of [Prerequisites](#prerequisites) above.
 
 No Claude Code plugins are installed here. If one is ever added, install it with
 `--scope project` and commit `.claude/settings.json`, per
-[Claude Code setup](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#claude-code)
+[Claude Code setup](https://github.com/iglootools/common-guidelines/blob/main/ide.md#claude-code)
 in the shared guidelines — a user-scope install keeps working locally, which is what
 makes the shared half easy to leave untracked and never notice.
 

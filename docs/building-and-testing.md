@@ -11,6 +11,7 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run lint`       | Lint with ESLint                         |
 | `mise run typecheck`  | Run the Nuxt type check                  |
 | `mise run build`      | Build the Nuxt application               |
+| `mise run build-pages`| Build for GitHub Pages deployment        |
 | `mise run preview`    | Preview the production build             |
 | `mise run ci`         | Run the full CI pipeline locally         |
 | `mise run update`     | Update all dependencies to latest        |
@@ -39,6 +40,12 @@ Locally preview the production build:
 ```bash
 mise run preview
 ```
+
+`mise run build` is the ordinary Nuxt build. The deployed site is built by
+`mise run build-pages` (`nuxt build --preset github_pages`), which is what
+[`publish.yml`](../.github/workflows/publish.yml) runs — see
+[releasing-and-publishing.md](releasing-and-publishing.md). The preset changes the
+Nitro output, so a plain `mise run build` is not what ships.
 
 ## CI pipeline
 
@@ -75,7 +82,7 @@ updates, 14-day minimum age). The [`renovate-mise-lock.yml`](../.github/workflow
 workflow keeps the mise lock in sync with Renovate's updates.
 
 Grouping and the 14-day `minimumReleaseAge` come from the shared
-[project setup guidelines](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#all-projects),
+[project setup guidelines](https://github.com/iglootools/common-guidelines/blob/main/project-setup.md#all-projects),
 where the reasoning is written up.
 
 ### Renovate and Dependabot are split by job, not by ecosystem
@@ -107,7 +114,7 @@ error, it just finds nothing and reports green.
 ### Further reading
 
 See also the shared
-[GitHub Workflows guidelines](https://github.com/iglootools/common-guidelines/blob/main/tooling.md#github-workflows)
+[GitHub Workflows guidelines](https://github.com/iglootools/common-guidelines/blob/main/project-setup.md#github-workflows)
 for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules the
 workflows here follow.
 
