@@ -37,12 +37,13 @@ Practical information:
 - [docs/building-and-testing.md](docs/building-and-testing.md) — build, lint, CI, and dependency management
 - [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md) — releases and GitHub Pages deployment
 - [docs/testing-notes.md](docs/testing-notes.md) — Open Graph image, sitemap, and robots.txt validation
-- [docs/guidelines.md](docs/guidelines.md) — project-specific guidelines and documented deviations
+- [docs/guidelines.md](docs/guidelines.md) — where this project deviates from the shared guidelines, and the rules it adds
 - [common-guidelines](https://github.com/iglootools/common-guidelines) — shared coding guidelines, imported by [CLAUDE.md](CLAUDE.md)
 
 Conceptual information:
 
-- [docs/architecture.md](docs/architecture.md) — tech stack, project structure, and divergence from the Nuxt UI Docs template
+- [docs/architecture.md](docs/architecture.md) — tech stack and project structure
+- [docs/divergence-from-the-template.md](docs/divergence-from-the-template.md) — what this project changed from the Nuxt UI Docs template, and why
 - [docs/architecture-decision-record.md](docs/architecture-decision-record.md) — log of architectural decisions
 
 To contribute content to the site itself, see the in-site
