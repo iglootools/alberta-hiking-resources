@@ -1,4 +1,7 @@
 {
+  "enabledPlugins": {
+    "iglootools@iglootools-plugins": true
+  },
   "extraKnownMarketplaces": {
     "iglootools-plugins": {
       "source": {
@@ -6,8 +9,5 @@
         "repo": "iglootools/common-guidelines"
       }
     }
-  },
-  "enabledPlugins": {
-    "iglootools@iglootools-plugins": true
   }
 }

@@ -338,9 +338,10 @@ data.
 
 The shared [common-guidelines](https://github.com/iglootools/common-guidelines) arrive as a
 plugin, enabled for this repository in [.claude/settings.json](../.claude/settings.json). The
-project enabling it is not enough — install it once per machine:
+project enabling it is not enough — register the marketplace and install it once per machine:
 
 ```bash
+claude plugin marketplace add iglootools/common-guidelines
 claude plugin install iglootools@iglootools-plugins --scope project
 ```
 
