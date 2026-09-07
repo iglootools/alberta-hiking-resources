@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "iglootools-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "iglootools/common-guidelines"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "iglootools@iglootools-plugins": true
+  }
+}

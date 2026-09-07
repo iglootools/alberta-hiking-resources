@@ -14,25 +14,16 @@ Log of architectural decisions and the reasoning behind them: @docs/architecture
 
 Before writing any code, apply the guidelines at write time, not as a post-hoc review.
 
-Common guidelines (shared across iglootools projects):
+Common guidelines shared across iglootools projects come from the `iglootools` plugin, enabled for
+this repository in `.claude/settings.json`. It loads the always-on guidelines into every session,
+and reads the file-triggered ones when a change reaches them. See
+@docs/setup-development-environment.md to install it.
 
-@../common-guidelines/coding.md
-
-`coding.md` governs every edit, so it is imported. The rest of the shared set is triggered by a
-specific file — read the whole file before touching one of these, not just the section that looks
-relevant:
-
-| Read | Before touching |
-|---|---|
-| `../common-guidelines/project-setup.md` | `.github/workflows/`, `renovate.json`, `dependabot.yml`, `.gitignore` |
-| `../common-guidelines/ide.md` | `.vscode/`, `.claude/settings.json`, `*.code-workspace` |
-
-`python.md` and `python-tooling.md` are deliberately absent — this is a TypeScript/Nuxt project.
-`ide.md` is listed despite being mostly Python: its mise-vscode and multi-root workspace rules are
-what govern this project's `.vscode/settings.json`, and its pyright half simply does not apply here.
-
-The import and the paths above require [common-guidelines](https://github.com/iglootools/common-guidelines)
-cloned as a sibling directory; see @docs/setup-development-environment.md.
+This is a TypeScript/Nuxt project, so `python.md` never loads — the plugin emits it only where a
+`pyproject.toml` exists. `ide.md` still applies despite being mostly Python: its mise-vscode and
+multi-root workspace rules are what govern this project's `.vscode/settings.json`, and its pyright
+half simply does not apply here. `python-tooling.md` is reachable only through `mise.toml`, where
+its rules for the mise task set are the relevant part.
 
 Project-specific guidelines — this project's documented deviations from the shared set, which
 shared sections are out of scope, and the rules it adds of its own: @docs/guidelines.md

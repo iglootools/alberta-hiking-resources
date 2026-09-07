@@ -59,21 +59,8 @@ is untested.
 
 ### Prerequisites
 
-1. Install [mise](https://mise.jdx.dev/getting-started.html) — it pins the Node and
-   pnpm versions ([mise.toml](../mise.toml)) and acts as the task runner.
-
-2. Clone [common-guidelines](https://github.com/iglootools/common-guidelines) as a
-   sibling directory:
-
-    ```bash
-    # From the parent directory of alberta-hiking-resources (e.g. iglootools/)
-    git clone git@github.com:iglootools/common-guidelines.git
-    ```
-
-   This is what makes the `@../common-guidelines/...` imports in
-   [CLAUDE.md](../CLAUDE.md) resolve, so Claude Code loads the shared coding and
-   tooling guidelines. Only needed if you use Claude Code — nothing in `mise run
-   ci` reads it, and the dev container does not clone it either.
+Install [mise](https://mise.jdx.dev/getting-started.html) — it pins the Node and
+pnpm versions ([mise.toml](../mise.toml)) and acts as the task runner.
 
 ### Install and run
 
@@ -347,15 +334,20 @@ No manual configuration is needed — just:
 Verify with `/mcp` inside Claude Code — all three should show as connected.
 
 [CLAUDE.md](../CLAUDE.md) points Claude at these servers rather than at its training
-data, and imports the shared [common-guidelines](https://github.com/iglootools/common-guidelines)
-via `@../common-guidelines/...`. Those imports resolve only with that repo cloned as
-a sibling directory — step 2 of [Prerequisites](#prerequisites) above.
+data.
 
-No Claude Code plugins are installed here. If one is ever added, install it with
-`--scope project` and commit `.claude/settings.json`, per
+The shared [common-guidelines](https://github.com/iglootools/common-guidelines) arrive as a
+plugin, enabled for this repository in [.claude/settings.json](../.claude/settings.json). The
+project enabling it is not enough — install it once per machine:
+
+```bash
+claude plugin install iglootools@iglootools-plugins --scope project
+```
+
+Keep `--scope project`: a user-scope install keeps working locally, which is what makes the
+shared half easy to leave untracked and never notice. See
 [Claude Code setup](https://github.com/iglootools/common-guidelines/blob/main/ide.md#claude-code)
-in the shared guidelines — a user-scope install keeps working locally, which is what
-makes the shared half easy to leave untracked and never notice.
+in the shared guidelines.
 
 ### VS Code (native / Copilot)
 
