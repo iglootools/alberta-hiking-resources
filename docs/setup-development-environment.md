@@ -338,17 +338,13 @@ data.
 
 The shared [common-guidelines](https://github.com/iglootools/common-guidelines) arrive as a
 plugin, enabled for this repository in [.claude/settings.json](../.claude/settings.json). The
-project enabling it is not enough — register the marketplace and install it once per machine:
-
-```bash
-claude plugin marketplace add iglootools/common-guidelines
-claude plugin install iglootools@iglootools-plugins --scope project
-```
-
-Keep `--scope project`: a user-scope install keeps working locally, which is what makes the
-shared half easy to leave untracked and never notice. See
-[Claude Code setup](https://github.com/iglootools/common-guidelines/blob/main/ide.md#claude-code)
-in the shared guidelines.
+project enabling it is not enough — follow
+[Install it per project](https://github.com/iglootools/common-guidelines#install-it-per-project-not-per-user)
+to install it once per machine, then
+[Updating one project](https://github.com/iglootools/common-guidelines#updating-one-project) —
+or [every project at once](https://github.com/iglootools/common-guidelines#updating-every-project)
+— whenever a new version is released. The commands live there so they are corrected in one place,
+including why the install has to stay at project scope.
 
 ### VS Code (native / Copilot)
 
