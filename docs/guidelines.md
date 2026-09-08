@@ -100,7 +100,7 @@ It is a genuine hole in the supply-chain measure, kept because it is currently u
 ### No link checker is set up
 
 The shared rule is
-[Call the shared link checker instead of copying it](https://github.com/iglootools/common-guidelines/blob/main/project-setup.md#call-the-shared-link-checker-instead-of-copying-it)
+[Call the shared link checker instead of copying it](https://github.com/iglootools/common-guidelines/blob/main/guidelines/project-setup.md#call-the-shared-link-checker-instead-of-copying-it)
 in `project-setup.md`. photree, nbkp and network-infra all call it on a weekly schedule. This
 project does not call it at all.
 
