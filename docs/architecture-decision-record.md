@@ -122,3 +122,75 @@ Accept the divergence rather than pinning the container back to `ubuntu-24.04`.
 - **Retires when** GitHub moves `ubuntu-latest` to 26.04.
 - If a native module ever builds in the container but fails in CI, this is the first place to
   look, and pinning back to `ubuntu-24.04` is the fix.
+
+---
+
+## ADR-004 — Let retired URLs 404 rather than ship meta-refresh stubs
+
+**Date:** 2026-09-07
+**Status:** Accepted — supersedes the approach proposed in
+[#174](https://github.com/iglootools/alberta-hiking-resources/pull/174), which is closed unmerged
+
+### Context
+
+Google Search Console reports 16 URLs under **Not found (404)**. They are the pre-Nuxt-4
+structure — everything under `/hiking-groups` and `/practical-information`, retired by
+`db08e2c5` — plus pages renamed since. The complete historical set was recovered from the
+build output this repo used to commit: 26 retired paths, each mappable to the page that
+replaced it, plus 5 pages that survived the restructure but were also served with a
+trailing slash.
+
+**GitHub Pages has no runtime server, so a redirect has to *be* a file.** What Nitro emits
+for a `redirect` route rule is an HTML stub whose entire content is:
+
+```html
+<meta http-equiv="refresh" content="0; url=/weather-trail-conditions/trail-conditions">
+```
+
+Google follows these and treats them as redirects, and `@nuxtjs/sitemap` recognises the exact
+markup (`NuxtRedirectHtmlRegex`) and keeps the stubs out of `sitemap.xml`. #174 implemented
+this and it worked: all 16 reported URLs resolved to a live page, `sitemap.xml` stayed at 59
+entries, CI green.
+
+### Decision
+
+Do not ship the redirects. A 404 is the answer for a page that no longer exists.
+
+### Rationale
+
+- The stubs are not redirects. The status code is 200, and a client that does not run the
+  refresh gets a blank page. The mechanism only works for the one consumer it is aimed at.
+- Both URL forms need their own file — `/a/b` is served from `a/b.html`, `/a/b/` from
+  `a/b/index.html`, and on GitHub Pages neither falls back to the other. That is 57 files in
+  the bundle (26 × 2, plus the 5 trailing-slash-only) whose only reader is a crawler.
+- The failure mode is silent and points the wrong way. Route rules are trailing-slash
+  *insensitive* — radix3 strips the slash before matching, with `strictTrailingSlash` unset —
+  so a rule keyed `/faq/` also matches `/faq` and replaces the live page with a stub pointing
+  at itself. An earlier revision of that branch did this to five live pages; the build stayed
+  green and the only signal was `sitemap.xml` dropping from 59 entries to 54. Sidestepping it
+  needed a `prerender:done` hook writing files outside the route-rule mechanism entirely.
+- None of it is verifiable before deploying. Meta-refresh handling on the real host, and
+  whether GitHub Pages resolves `/a/b` to `a/b.html` rather than the adjacent `a/b/index.html`,
+  are both only confirmed in production.
+- What is given up is real but small: whatever ranking and inbound links those URLs still hold
+  is discarded rather than passed on. This is a hobby content site, not a business whose
+  traffic depends on it.
+
+### Consequences
+
+- The 404s stay in Search Console. Google drops them from the report over time; nothing needs
+  doing when it does.
+- **The recovered URL map is not lost, and is the input to any future fix.** It lives on the
+  unmerged branch, which is deliberately not deleted:
+
+  ```bash
+  git show origin/fix/legacy-url-redirects:nuxt.config.ts   # legacyRedirects + trailingSlashOnlyRedirects
+  ```
+
+- **Retires when** the site moves to a host that issues real 301s (Cloudflare Pages, Netlify).
+  The same map becomes `routeRules` there and every objection above disappears at once: real
+  status codes, no stub files, no `prerender.routes` list, no trailing-slash trap. Revisit this
+  as part of any hosting change rather than on its own.
+- **Signal to watch** in the meantime: a retired URL showing inbound traffic or links worth
+  keeping. Absent that, the cost of the 404s is theoretical and the stubs are not worth their
+  complexity.
