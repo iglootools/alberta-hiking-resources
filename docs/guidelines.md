@@ -10,10 +10,16 @@ Most of this project's deviations are local, and so live as comments where they 
 does not restate them; it indexes them, so there is one place to find them all, and holds the
 project-wide rules that have no single point of deviation.
 
+Its scope is the shared guidelines. Decisions about Nuxt and the dependency tree belong in the
+[architecture decision record](architecture-decision-record.md), and how closely to follow the
+upstream template belongs in [divergence-from-the-template.md](divergence-from-the-template.md) —
+not here.
+
 ## Which shared guidelines apply
 
-`coding.md` applies and is imported by [CLAUDE.md](../CLAUDE.md). `project-setup.md` and `ide.md`
-apply too, and are listed there rather than imported, since each is triggered by a specific file.
+`coding.md` applies and reaches every session on its own — the plugin's `SessionStart` hook
+emits it. `project-setup.md` and `ide.md` apply too, and are read by the `guidelines` skill when
+a change reaches the files each governs, so neither needs listing anywhere.
 
 **`python.md` and `python-tooling.md` do not.** Nothing here is Python, which also puts two
 parts of `ide.md` out of scope rather than merely unmet:
