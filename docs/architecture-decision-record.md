@@ -4,7 +4,7 @@ This file logs the explicit architectural decisions taken on this project. Decis
 
 ADR-002 and ADR-003 were written up on 2026-08-13, having previously lived in
 [guidelines.md](guidelines.md) as "deviations". They were not deviations from the shared
-[common guidelines](https://github.com/iglootools/common-guidelines) at all — they are decisions
+[common guidelines](https://github.com/iglootools/common) at all — they are decisions
 about Nuxt and this app's environment, which is what this file is for. Their `Date` is when
 the decision was taken, and `Recorded` when it was logged here, so they are ordered by decision
 date among themselves rather than after ADR-001. Only genuine deviations from the shared

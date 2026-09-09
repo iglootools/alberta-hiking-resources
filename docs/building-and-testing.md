@@ -82,7 +82,7 @@ updates, 14-day minimum age). The [`renovate-mise-lock.yml`](../.github/workflow
 workflow keeps the mise lock in sync with Renovate's updates.
 
 Grouping and the 14-day `minimumReleaseAge` come from the shared
-[dependency automation guidelines](https://github.com/iglootools/common-guidelines/blob/main/guidelines/project-setup/dependency-automation.md),
+[dependency automation guidelines](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md),
 where the reasoning is written up.
 
 ### Renovate and Dependabot are split by job, not by ecosystem
@@ -114,7 +114,7 @@ error, it just finds nothing and reports green.
 ### Further reading
 
 See also the shared
-[GitHub Workflows guidelines](https://github.com/iglootools/common-guidelines/blob/main/guidelines/project-setup/workflows.md)
+[GitHub Workflows guidelines](https://github.com/iglootools/common/blob/main/guidelines/project-setup/workflows.md)
 for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules the
 workflows here follow.
 

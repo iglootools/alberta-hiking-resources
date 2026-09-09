@@ -1,7 +1,7 @@
 # Project-Specific Guidelines
 
 For general coding and tooling guidelines, see the
-[common guidelines](https://github.com/iglootools/common-guidelines). Those are defaults, not
+[common guidelines](https://github.com/iglootools/common). Those are defaults, not
 dogma: this project may deviate or add rules of its own, **provided the deviation and its
 reasoning are documented** — project-wide ones here, local ones in a comment at the point of
 deviation.
@@ -106,7 +106,7 @@ It is a genuine hole in the supply-chain measure, kept because it is currently u
 ### No link checker is set up
 
 The shared rule is
-[Call the shared link checker instead of copying it](https://github.com/iglootools/common-guidelines/blob/main/guidelines/project-setup/shared-workflows.md#call-the-shared-link-checker-instead-of-copying-it)
+[Call the shared link checker instead of copying it](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md#call-the-shared-link-checker-instead-of-copying-it)
 in `project-setup.md`. photree, nbkp and network-infra all call it on a weekly schedule. This
 project does not call it at all.
 

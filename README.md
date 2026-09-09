@@ -38,7 +38,7 @@ Practical information:
 - [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md) — releases and GitHub Pages deployment
 - [docs/testing-notes.md](docs/testing-notes.md) — Open Graph image, sitemap, and robots.txt validation
 - [docs/guidelines.md](docs/guidelines.md) — where this project deviates from the shared guidelines, and the rules it adds
-- [common-guidelines](https://github.com/iglootools/common-guidelines) — shared coding guidelines, imported by [CLAUDE.md](CLAUDE.md)
+- [common](https://github.com/iglootools/common) — shared coding guidelines, imported by [CLAUDE.md](CLAUDE.md)
 
 Conceptual information:
 

@@ -270,7 +270,7 @@ An extension appearing in both is not redundant: the first suggests it to someon
 working locally, the second guarantees it inside the container.
 
 What belongs in that list follows the shared rule in
-[VSCode setup](https://github.com/iglootools/common-guidelines/blob/main/guidelines/project-setup/ide.md#vscode):
+[VSCode setup](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#vscode):
 **every extension a committed setting depends on belongs in `extensions.json`**,
 because a setting whose extension is absent is not an error — it is a silent no-op,
 and whoever cloned the repo cannot tell it apart from a working setup.
@@ -336,13 +336,13 @@ Verify with `/mcp` inside Claude Code — all three should show as connected.
 [CLAUDE.md](../CLAUDE.md) points Claude at these servers rather than at its training
 data.
 
-The shared [common-guidelines](https://github.com/iglootools/common-guidelines) arrive as a
+The shared [guidelines](https://github.com/iglootools/common) arrive as a
 plugin, enabled for this repository in [.claude/settings.json](../.claude/settings.json). The
 project enabling it is not enough — follow
-[Install it per project](https://github.com/iglootools/common-guidelines#install-it-per-project-not-per-user)
+[Install it per project](https://github.com/iglootools/common#install-it-per-project-not-per-user)
 to install it once per machine, then
-[Updating one project](https://github.com/iglootools/common-guidelines#updating-one-project) —
-or [every project at once](https://github.com/iglootools/common-guidelines#updating-every-project)
+[Updating one project](https://github.com/iglootools/common#updating-one-project) —
+or [every project at once](https://github.com/iglootools/common#updating-every-project)
 — whenever a new version is released. The commands live there so they are corrected in one place,
 including why the install has to stay at project scope.
 
