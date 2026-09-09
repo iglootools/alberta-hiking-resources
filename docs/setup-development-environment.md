@@ -270,7 +270,7 @@ An extension appearing in both is not redundant: the first suggests it to someon
 working locally, the second guarantees it inside the container.
 
 What belongs in that list follows the shared rule in
-[VSCode setup](https://github.com/iglootools/common-guidelines/blob/main/guidelines/ide.md#vscode):
+[VSCode setup](https://github.com/iglootools/common-guidelines/blob/main/guidelines/project-setup/ide.md#vscode):
 **every extension a committed setting depends on belongs in `extensions.json`**,
 because a setting whose extension is absent is not an error — it is a silent no-op,
 and whoever cloned the repo cannot tell it apart from a working setup.
