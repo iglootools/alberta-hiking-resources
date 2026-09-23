@@ -397,6 +397,22 @@ Assiniboine, which has no forecast of its own.
   Song files the entire Selkirk range under one heading, which puts Rogers Pass and the
   Kokanee Glacier 200 km apart in the same bucket; separating them is not something any
   source's own metadata can do.
+- **The file order of all three sections is the index order, and the prefixes are
+  zero-padded.** The regions were originally numbered in whatever order `regions.ts` listed
+  them, which stopped matching the index once the cards were grouped into the six headings;
+  they are now renumbered so the sidebar, the index cards and `REGIONS` read the same way
+  round, with the group headings repeated as comments in `regions.ts`.
+
+  The padding is the part worth knowing, because it is a silent bug rather than a
+  preference. **Nuxt Content orders the sidebar by filename and compares the numeric prefix
+  as a string**, so `10.` sorts before `2.` and any folder past nine pages lists itself in an
+  order nobody chose — these three had been doing so for months, unnoticed, because nothing
+  fails and the index cards looked right. `01.`–`22.` makes lexicographic order numeric
+  order. The prefix is stripped from the URL either way, so padding moved no page: the route
+  set and `sitemap.xml` were identical at 94 before and after.
+
+  Other content folders are left unpadded because none holds more than nine pages. **Watch
+  for** one growing past nine, which reintroduces exactly this, quietly.
 - **Every region page links its two siblings**, which is what turns the shared path segment
   from a fact about URLs into something a reader can use — the alignment existed for months
   before the pages actually pointed at each other, and until they did the only way across was

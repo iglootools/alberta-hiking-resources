@@ -37,7 +37,7 @@ const CACHE_DIR = join(REPO, 'node_modules', '.cache', 'trip-report-index')
 const REVIEW_PATH = join(REPO, 'trip-report-review.md')
 
 /** `1.index.md` is written by hand; the script owns every other page here. */
-const INDEX_PAGE = '1.index.md'
+const INDEX_PAGE = '01.index.md'
 
 async function scrapeAll(refresh: boolean) {
   if (refresh) await clearCache(CACHE_DIR)
@@ -57,6 +57,17 @@ async function scrapeAll(refresh: boolean) {
     reports.push(...scraped)
   }
   return reports
+}
+
+/**
+ * Nuxt Content orders the sidebar by the filename, and it compares the numeric
+ * prefix as a *string* — so `10.` sorts before `2.` and a folder past nine pages
+ * lists itself in an order nobody chose. Zero-padding to two digits makes the
+ * lexicographic order the numeric one. The prefix is stripped from the URL either
+ * way, so padding changes the sidebar and nothing else.
+ */
+function pageName(position: number, slug: string): string {
+  return `${String(position).padStart(2, '0')}.${slug}.md`
 }
 
 /** Removes region pages for regions that no longer exist. */
@@ -124,7 +135,7 @@ async function main(): Promise<void> {
   for (const [index, region] of REGIONS.entries()) {
     const objectives = result.byRegion.get(region.id) ?? []
     const slug = region.id
-    const name = `${index + 2}.${slug}.md`
+    const name = pageName(index + 2, slug)
     slugs.push(slug)
     if (!reviewOnly) await writeFile(join(PAGES_DIR, name), renderRegionPage(region, objectives), 'utf8')
     written.push(name)
@@ -134,7 +145,7 @@ async function main(): Promise<void> {
   // The catch-all page goes last. It is not a region: the weather and
   // accommodation sections mirror REGIONS, and asking them to carry a forecast
   // for "unsorted" would make no sense.
-  const unsortedName = `${REGIONS.length + 2}.${UNSORTED.id}.md`
+  const unsortedName = pageName(REGIONS.length + 2, UNSORTED.id)
   if (!reviewOnly) {
     await writeFile(join(PAGES_DIR, unsortedName), renderRegionPage(UNSORTED, result.unplaced), 'utf8')
   }
