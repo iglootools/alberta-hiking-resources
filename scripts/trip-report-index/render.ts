@@ -47,10 +47,10 @@ function renderLink(report: RawReport, objectiveName: string): string {
 }
 
 /**
- * The guidebooks an objective appears in, each linking to Adam Laycock's page
- * for it. The books are not online, so there is nothing else to point at; his
- * list is the closest published record of what each one contains, and a reader
- * who wants the route description goes to the book itself.
+ * The tick-lists an objective is on, each linking to Adam Laycock's page for it.
+ * The three guidebooks are not online and the 11,000ers is not a book, so there
+ * is nothing else to point at; his page is the closest published record in
+ * either case, and a reader who wants a route description goes to the book.
  */
 function renderGuidebooks(objective: Objective): string {
   if (!objective.guidebooks?.length) return ''
@@ -172,11 +172,13 @@ export function renderRegionPage(region: Region, objectives: readonly Objective[
     'for that objective. Hover a link to see the report’s own title, which is how',
     'combined trips and traverses show what else they cover.',
     '',
-    'Where an objective appears in a guidebook, that is marked after the links with the',
-    'book\u2019s own grade — Kane and Nugara for scrambles, *Don\u2019t Waste Your Time* for hikes.',
-    'None of the three is published online, so the mark links to',
-    '[Adam Laycock\u2019s page](https://adamlaycock.ca/Lists/) for that objective, which records',
-    'the grade and little else. The route description is in the book.',
+    'Where an objective is on one of the four tick-lists, that is marked after the links:',
+    'Kane and Nugara for scrambles and *Don\u2019t Waste Your Time* for hikes, each carrying',
+    'the book\u2019s own grade, and the 11,000ers carrying the peak\u2019s elevation. None of the',
+    'three books is published online, and the 11,000ers is not a book at all, so every mark',
+    'links to [Adam Laycock\u2019s page](https://adamlaycock.ca/Lists/) for that objective,',
+    'which is the best canonical reference there is for one. Where there is a book, the',
+    'route description is in it.',
     '',
     ...(region.id === 'unsorted' ? [...UNSORTED_NOTE, ''] : []),
     ...sections.flatMap(section => [section, '']),
