@@ -241,6 +241,15 @@ refresh, not a smaller one. Her
 380 logged trips, 321 unique objectives, zero URLs — so it adds nothing to an index of
 links.
 
+Adam Laycock also publishes four tick-lists, which are read as a fourth kind of signal:
+membership, a grade, and a region for each objective on them. Three are guidebooks that are
+not online; the fourth, the 11,000ers, is not a book at all — the peaks over 11,000 feet,
+with an elevation where the others have a grade. It is carried on the same footing because
+it is the same shape of fact about an objective, and because his page for a peak is the best
+canonical reference available for one. Each list guards its own row count, the way the
+source adapters guard their report counts, so a redesign that empties one fails the run
+instead of silently dropping several hundred marks.
+
 climbglacier.com was assessed and excluded: its 44 pages are the guidebook series and a
 blog, with no per-peak route reports. Voyageur Tripper is behind a subscription, and Annie
 Ouellet's spreadsheet returns 401/403 to any anonymous fetch, so both remain plain links.
