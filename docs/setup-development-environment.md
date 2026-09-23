@@ -79,6 +79,41 @@ pnpm versions ([mise.toml](../mise.toml)) and acts as the task runner.
 
    The site is served at `http://localhost:3000`.
 
+### Environment variables
+
+One task needs a credential; nothing else here does, and neither the dev server nor the
+build ever asks for one.
+
+| Variable | Needed by | Without it |
+|---|---|---|
+| `YOUTUBE_API_KEY` | `mise run build-trip-index` | the task **fails in preflight**, before fetching or writing anything |
+
+`mise run build-trip-index` regenerates the by-objective
+[trip report pages](../content/3.hiking-scrambling-beta/3.trip-reports/) from seven
+sources. Six are plain websites; the seventh, Annie Ouellet's YouTube channel, is read
+through the YouTube Data API, which is keyed:
+
+```bash
+export YOUTUBE_API_KEY=...        # in your shell profile
+```
+
+Create a free key at
+[console.cloud.google.com](https://console.cloud.google.com/apis/credentials) — a project,
+the *YouTube Data API v3* enabled, an API key, no billing. A run costs about 7 of the
+10,000 free daily quota units.
+
+**Export it in your shell profile rather than passing it inline**, so an editor or agent
+running the task inherits it — a terminal-only `export` is not visible to a process
+started elsewhere.
+
+The failure is deliberate rather than a convenience check: skipping the source would let
+the other six scrape, rewrite all fourteen pages, and silently drop Annie's videos from
+every one of them. A missing key is a broken refresh, not a smaller one. The reasoning,
+and why the channel is not simply scraped, are in
+[building-and-testing.md](building-and-testing.md#annie-ouellets-youtube-channel-needs-an-api-key).
+
+The key is a credential: keep it out of the repo, and out of `mise.toml`.
+
 ## StackBlitz (does not currently work)
 
 [.stackblitzrc](../.stackblitzrc) is kept in the repo and configured to get as far
