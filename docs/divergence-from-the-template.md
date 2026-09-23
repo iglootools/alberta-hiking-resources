@@ -102,6 +102,16 @@ stack itself is described in [architecture.md](architecture.md).
   while CI stayed green. Import it, declare it. Declaring these four is what made
   dropping `shamefullyHoist` possible.
 
+- `@types/node` is declared, though nothing imports it by name. The trip report
+  index scripts (see
+  [ADR-005](architecture-decision-record.md#adr-005--generate-the-by-objective-trip-report-index-into-markdown-and-match-objective-names-exactly))
+  are Node programs type-checked by `tsc -p scripts/tsconfig.json`, which needs
+  Node's globals. It arrives transitively through `nuxt`, and relying on that is
+  the pattern this project stopped relying on when `shamefullyHoist` went; the
+  declaration pins it instead. This is the second package declared without an
+  import, alongside `@nuxtjs/mdc` above, and for the same class of reason —
+  something other than our own `import` statements resolves it from the root.
+
 ## Other `nuxt.config.ts` tweaks
 
 - `vite.build.chunkSizeWarningLimit: 700` + `optimizeDeps.include` for the

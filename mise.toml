@@ -47,3 +47,7 @@ run = "pnpm update --latest"
 description = "Build the Nuxt application for GitHub Pages deployment"
 depends = ["install"]
 run = "pnpm build:pages"
+
+[tasks.build-trip-index]
+description = "Rebuild the by-objective trip report index from the source blogs"
+run = "pnpm build:trip-index"

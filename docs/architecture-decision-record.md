@@ -194,3 +194,128 @@ Do not ship the redirects. A 404 is the answer for a page that no longer exists.
 - **Signal to watch** in the meantime: a retired URL showing inbound traffic or links worth
   keeping. Absent that, the cost of the 404s is theoretical and the stubs are not worth their
   complexity.
+
+---
+
+## ADR-005 — Generate the by-objective trip report index into Markdown, and match objective names exactly
+
+**Date:** 2026-09-22
+**Status:** Accepted
+
+### Context
+
+The [trip reports page](../content/3.hiking-scrambling-beta/3.trip-reports/1.index.md) listed
+half a dozen blogs and left the reader to search each one. The blogs between them publish
+roughly 2,700 trip reports covering about 1,650 distinct objectives, and the question a
+reader actually has — *who has written up this mountain?* — could only be answered by
+visiting every site in turn.
+
+All six sources turned out to be machine-readable, each with a usable region of its own:
+
+| Source | Index | Region from |
+|---|---|---|
+| Bob Spirko | 5 category pages | URL path, else the locality line in the report |
+| Explor8ion | 32 region pages + sitemap | region page, plus a sub-range per trip |
+| Steven Song | `sitemap.xml` + alphabetical list | URL path |
+| Golden Scrambles | image-map region pages + alphabetical log | region page, else an `area:` field |
+| Virtual Hiker | WordPress.com REST API | post categories |
+| Steep Sheep | WordPress.com REST API (`type=page`) | a country in the title, else inherited |
+| Annie Ouellet | YouTube Data API v3 (needs a key) | the video title's area field |
+
+A seventh source, Annie Ouellet's YouTube channel, is read through the **YouTube Data API
+v3** rather than scraped. Her video titles are the best-structured metadata of any source
+— "Takakkaw Peak, Yoho National Park, BC - July 18th 2026" gives objective, area and date —
+— though only on her later videos: the earlier half reads "Mount Temple scramble" or
+"Door Jamb/ Loder peak/ Jura creek loop/", so the adapter also strips trailing activity
+words, reads an area stated in prose ("Crypt lake hike in Waterton"), and splits her
+slash-separated multi-summit days. Without that roughly 40% of her videos became
+objectives of their own rather than joining the peak every other source reported.
+YouTube's `robots.txt` disallows `/youtubei/` (the channel page's own pagination) and
+`/feeds/videos.xml` (the RSS feed), leaving only the newest 30 of ~270 videos reachable
+otherwise. The API needs a key, and the run **fails** in preflight unless
+`YOUTUBE_API_KEY` is set. Skipping the source instead would rewrite all fourteen pages
+from the other six sources and silently drop her videos from every one of them, which is
+the silent degradation the shared guidelines warn against; a missing key is a broken
+refresh, not a smaller one. Her
+[spreadsheet](https://onedrive.live.com/) was assessed too and holds no links at all —
+380 logged trips, 321 unique objectives, zero URLs — so it adds nothing to an index of
+links.
+
+climbglacier.com was assessed and excluded: its 44 pages are the guidebook series and a
+blog, with no per-peak route reports. Voyageur Tripper is behind a subscription, and Annie
+Ouellet's spreadsheet returns 401/403 to any anonymous fetch, so both remain plain links.
+
+### Decision
+
+A committed script, [scripts/trip-report-index/](../scripts/trip-report-index/), scrapes the
+six sources and **writes Markdown into `content/`**, run by hand via
+`mise run build-trip-index`. Objectives are grouped by an **exact** normalised name, never a
+fuzzy one. What the script cannot decide is recorded in
+[curation.ts](../scripts/trip-report-index/curation.ts) by hand.
+
+### Rationale
+
+- **Markdown, not a component reading JSON.** This site exposes its content four ways that
+  all read the Markdown body — `nuxt-llms`, the MCP `get-page` tool, the `/raw/*.md` route,
+  and the built-in search. An objective living in a JSON file behind a Vue component would be
+  absent from all four, and being findable by search is most of the point. The cost is a
+  large diff on each refresh, which is also what makes a bad scrape visible in review.
+- **Exact matching, because fuzzy matching is wrong here.** Mountain names are short and
+  share a small alphabet, so edit distance conflates distinct neighbouring peaks. Measured
+  on the real data at a 0.86 cutoff, **45 near-miss pairs both occur within Explor8ion
+  alone** — Mount Kitchener/Mount Michener, Bow Peak/Owl Peak, Mount Shark/Mount Shanks,
+  Mount Astley/Mount Cautley — so they are provably different mountains, not spellings. Two
+  thirds of all fuzzy candidates were false positives. Merging them would point a reader at
+  beta for the wrong peak, which on a hiking site is worse than a missing entry. Genuine
+  variants are curated by hand; the run reports near-miss candidates rather than acting on
+  them.
+- **The same self-consistency test splits shared names apart.** Storm Mountain exists in
+  both Banff and the Highwood; Saddle Mountain, Table Mountain, Pilot Mountain and Mount
+  Baldy likewise name two peaks each. Where a *single* blog files one name under two
+  regions, those are two mountains — no blog lists the same summit twice in different
+  regions — so the objective is split in two, each keeping only the reports filed in its
+  region. Sources merely disagreeing *with each other* is a boundary question (Bow Peak is
+  in Banff and on the Icefields Parkway) and stays merged. 13 names split this way, out of
+  108 regions in dispute.
+- **Normalisation does the work instead.** Inversion (`Albert, Mount`), `Mt.`, accents and
+  HTML entities, curly apostrophes, elevation suffixes (`Mount Temple 3544m`), and
+  parentheticals all fold away. Combined trips are indexed under every summit they name, so
+  a traverse is findable from any of its peaks.
+- **Where an index gives no region, the report itself is asked.** Bob Spirko heads every
+  report with a locality line between the title and the date — "Kananaskis, Alberta",
+  "Castle Provincial Park Alberta", "Kootenay Park, B.C." — which settles the pages filed
+  with no region folder and the "NugaraScrambles" ones, taking him from 738 of 893 reports
+  placed to 886. Golden Scrambles carries the same thing as an `area:` field, and Steep
+  Sheep brackets a country into titles like "Avalanche Peak (NZ) 1833m". Each is read only
+  when the cheap source fails, so the extra requests are in the low hundreds rather than
+  one per report. Free-text localities from all three, and from Annie Ouellet's video
+  titles, resolve through one shared keyword table in
+  [areas.ts](../scripts/trip-report-index/areas.ts) rather than four copies.
+- **Regions follow the blogs, not the weather pages or a guidebook.** Every source already
+  publishes a region; adopting a scheme none of them uses would mean inventing placements.
+  Where sources disagree, the one with the finest taxonomy wins and the disagreement is
+  reported.
+- **By hand, never in CI or at build time.** The output is committed, so a blog being down
+  delays a refresh but can never break a deploy.
+- **No new runtime dependency.** Node 26 runs TypeScript directly, and the parsers are
+  regex-based against the per-source minimum counts in
+  [sources/index.ts](../scripts/trip-report-index/sources/index.ts): a site redesign fails
+  the run loudly rather than silently emptying a page.
+
+### Consequences
+
+- Pages are generated. A correction belongs upstream at the blog, or in `curation.ts` —
+  never in the `.md`, which carries a header saying so.
+- **Curation is the maintenance cost.** `curation.ts` holds name aliases and an
+  objective→region override map; the latter exists because two sources publish no usable
+  region of their own. Cross-source inheritance does most of the work, leaving a residue
+  that is currently 22 objectives. Each run rewrites `trip-report-review.md` (gitignored)
+  listing that residue, region conflicts, and near-miss names, in paste-ready form.
+- A name shared by two peaks appears on both their region pages, with different links under
+  each. That is intended, and the reason the pages are split by region at all.
+- `scripts/` is now type-checked in its own right — it sits outside every Nuxt-generated
+  tsconfig, so `pnpm typecheck` runs `tsc -p scripts/tsconfig.json` as well.
+- **Watch for** a source's `minimumReports` failing after a redesign. Fix the adapter; do
+  not lower the minimum, which is what makes the guard meaningful.
+- **Retires, or is revisited, if** a source starts blocking automated reads, or if the
+  volume makes the Kananaskis page (530 objectives) unwieldy enough to want splitting again.

@@ -1,0 +1,23 @@
+{
+  // The scripts here are dev tooling, run by `node` directly with its built-in
+  // type stripping. Nuxt's generated tsconfigs cover the app, server and module
+  // code but not this directory, so it gets its own — without it the scripts are
+  // linted but never type-checked, and `node` strips types without checking them.
+  //
+  // `@types/node` is declared in package.json rather than picked up transitively
+  // through nuxt, per the rule in docs/divergence-from-the-template.md.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}

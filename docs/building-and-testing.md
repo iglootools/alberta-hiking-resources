@@ -15,6 +15,7 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run preview`    | Preview the production build             |
 | `mise run ci`         | Run the full CI pipeline locally         |
 | `mise run update`     | Update all dependencies to latest        |
+| `mise run build-trip-index` | Rebuild the by-objective trip report index |
 
 The sections below cover the build, lint, and CI tasks in more detail; see
 [setup-development-environment.md](setup-development-environment.md) for
@@ -72,6 +73,72 @@ pnpm i -D \
   @iconify-json/streamline-emojis \
   @iconify-json/streamline-stickies-color
 ```
+
+## Rebuilding the trip report index
+
+The region pages under
+[content/3.hiking-scrambling-beta/3.trip-reports/](../content/3.hiking-scrambling-beta/3.trip-reports/)
+are generated from six trip report blogs, not written by hand:
+
+```bash
+mise run build-trip-index              # re-read the sources and rewrite the pages
+mise run build-trip-index -- --refresh # discard the HTTP cache first
+```
+
+Responses are cached under `node_modules/.cache/trip-report-index`, so iterating on a
+parser costs nothing; `--refresh` is what an actual content refresh uses. A full read is
+around 450 requests, throttled, and takes a few minutes — most of them the individual
+Bob Spirko and Golden Scrambles pages that are read only because their index gives no
+region. `--review-only` reports what
+would change without touching any page.
+
+### Annie Ouellet's YouTube channel needs an API key
+
+Six of the seven sources need nothing. The seventh, Annie Ouellet's channel, is read
+through the **YouTube Data API v3**, and the task **fails** unless `YOUTUBE_API_KEY` is
+set:
+
+```bash
+export YOUTUBE_API_KEY=...      # in your shell profile, not in the repo
+mise run build-trip-index -- --refresh
+```
+
+Create the key at [console.cloud.google.com](https://console.cloud.google.com/apis/credentials)
+— a project, *YouTube Data API v3* enabled, an API key, no billing. One run costs about 7
+of the 10,000 free daily quota units, so it is effectively free.
+
+It is not scraped, and should not be: YouTube's `robots.txt` disallows `/youtubei/`, which
+is what the channel page's own pagination calls, and `/feeds/videos.xml`, which rules out
+the RSS feed. Scraping the channel page is allowed but reaches only the newest 30 of some
+270 videos. The API is the sanctioned route and the only complete one.
+
+The failure is deliberate, and it is a precondition rather than an error partway through:
+every source's preflight runs before the first request, so a missing key stops the run in
+the first second, having written nothing and fetched nothing. Carrying on without it would
+be worse than stopping — the other six sources would scrape, all fourteen pages would be
+rewritten, and Annie's videos would quietly disappear from every one of them. A missing key
+is a broken refresh, not a smaller one.
+
+`DEBUG=1` adds a stack trace, for a fault in the script rather than in the configuration.
+
+It is deliberately **not** part of `mise run ci` or the build. The output is committed, so
+a blog being unreachable delays a refresh rather than breaking a deploy.
+
+Each run also writes `trip-report-review.md` at the repo root (gitignored): the objectives
+no source could place, the ones whose sources disagreed on region, and near-miss names that
+may be duplicates. Work through it and record the decisions in
+[scripts/trip-report-index/curation.ts](../scripts/trip-report-index/curation.ts) — that
+file, and the blogs themselves, are the only correct places to fix a wrong entry. Editing a
+generated `.md` is pointless; the next run overwrites it.
+
+If a source is redesigned, its adapter will usually return far fewer reports than before and
+the run fails with the count it expected. Fix the adapter rather than lowering the minimum
+in [sources/index.ts](../scripts/trip-report-index/sources/index.ts); that guard is what
+keeps a broken parser from silently emptying a region page.
+
+The reasoning behind generating Markdown, and behind matching objective names exactly rather
+than fuzzily, is in
+[ADR-005](architecture-decision-record.md#adr-005--generate-the-by-objective-trip-report-index-into-markdown-and-match-objective-names-exactly).
 
 ## Dependency management
 
