@@ -14,6 +14,7 @@
  */
 import type { Objective, RawReport } from './types.ts'
 import type { Region } from './regions.ts'
+import { UNSORTED } from './regions.ts'
 import { SOURCES } from './sources/index.ts'
 
 const LABELS = new Map(SOURCES.map(source => [source.id, source.label]))
@@ -81,12 +82,50 @@ function groupByLetter(objectives: readonly Objective[]): Map<string, Objective[
   return new Map([...buckets].sort((left, right) => left[0].localeCompare(right[0])))
 }
 
+/**
+ * The two sibling pages for the same region, rendered as buttons in the page
+ * header. This is the payoff of the shared taxonomy in ADR-006 — the three
+ * sections differ only in the section part of the path, so the links are
+ * derivable rather than curated, and `checkMirroredSections` in main.ts has
+ * already failed the run if either target is missing.
+ *
+ * The catch-all page is the exception: it is not a region and has no sibling.
+ */
+function crossLinks(region: Region): string[] {
+  if (region.id === UNSORTED.id) return []
+  return [
+    'links:',
+    '  - label: Weather',
+    '    icon: i-lucide-cloud-sun',
+    `    to: /weather-trail-conditions/popular-locations/${region.id}`,
+    '  - label: Accommodation',
+    '    icon: i-lucide-tent-tree',
+    `    to: /accommodation/${region.id}`
+  ]
+}
+
+/**
+ * Repeated in the body as well as the header, because the header buttons are a
+ * Vue concern and the Markdown body is what `nuxt-llms`, the MCP `get-page`
+ * tool, the `/raw/*.md` route and the built-in search actually read — the same
+ * reason these pages are Markdown at all.
+ */
+function crossLinkLine(region: Region): string[] {
+  if (region.id === UNSORTED.id) return []
+  return [
+    `Planning a trip here? Check the [forecast](/weather-trail-conditions/popular-locations/${region.id})`,
+    `and find [somewhere to sleep](/accommodation/${region.id}) for the same area.`,
+    ''
+  ]
+}
+
 function frontmatter(region: Region): string {
   return ['---',
     `title: ${region.title}`,
     `description: ${region.description}`,
     'navigation:',
     `  icon: ${region.icon}`,
+    ...crossLinks(region),
     '---'].join('\n')
 }
 
@@ -128,6 +167,7 @@ export function renderRegionPage(region: Region, objectives: readonly Objective[
     '',
     summary(objectives),
     '',
+    ...crossLinkLine(region),
     'Each entry links every trip report, video, or GPS trace the indexed blogs published',
     'for that objective. Hover a link to see the report’s own title, which is how',
     'combined trips and traverses show what else they cover.',

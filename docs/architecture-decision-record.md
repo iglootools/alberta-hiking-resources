@@ -397,3 +397,13 @@ Assiniboine, which has no forecast of its own.
   Song files the entire Selkirk range under one heading, which puts Rogers Pass and the
   Kokanee Glacier 200 km apart in the same bucket; separating them is not something any
   source's own metadata can do.
+- **Every region page links its two siblings**, which is what turns the shared path segment
+  from a fact about URLs into something a reader can use — the alignment existed for months
+  before the pages actually pointed at each other, and until they did the only way across was
+  to edit the address bar. The links appear twice on purpose: as buttons in the page header,
+  from the `links` frontmatter that [content.config.ts](../content.config.ts) already defined
+  and nothing used, and again as a line in the body, because the header is a Vue concern while
+  the Markdown body is what `nuxt-llms`, the MCP `get-page` tool, `/raw/*.md` and the built-in
+  search read. The trip report side is emitted by
+  [render.ts](../scripts/trip-report-index/render.ts) rather than written by hand, and the
+  catch-all page is excluded because it is not a region and has no sibling.
