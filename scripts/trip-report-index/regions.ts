@@ -22,27 +22,42 @@ export interface Region {
   readonly icon: string
 }
 
-/** Emitted in this order, which is also the page order in the sidebar. */
+/**
+ * Emitted in this order, which is also the page order in the sidebar and the file
+ * numbering of every generated page. The grouping and its order are the same ones
+ * the three index pages use for their region cards, so the sidebar and the index
+ * read the same way round; the group comments here are the index headings verbatim.
+ */
 export const REGIONS: readonly Region[] = [
+  // Kananaskis and Canmore
   { id: 'kananaskis-canmore', icon: 'i-lucide-mountain-snow', title: 'Kananaskis Country and Canmore', description: 'Trip reports and GPS traces by objective for Kananaskis, the Elbow and Highwood, Smith-Dorrien, and the Canmore front ranges.' },
+
+  // The Front Ranges and the Forestry Trunk Road
+  { id: 'ghost-front-ranges', icon: 'i-lucide-tent-tree', title: 'The Ghost and the Front Ranges', description: 'Trip reports and GPS traces by objective for the Ghost Wilderness, Ya Ha Tinda, the Red Deer River, and the foothills.' },
+  { id: 'david-thompson', icon: 'i-lucide-waves', title: 'David Thompson Country and the Bighorn', description: 'Trip reports and GPS traces by objective for Abraham Lake, Nordegg, the Siffleur, White Goat, and the Bighorn Backcountry.' },
+
+  // The Mountain Parks
   { id: 'banff', icon: 'i-lucide-landmark', title: 'Banff National Park', description: 'Trip reports and GPS traces by objective for Banff, Lake Louise, Skoki, and Sunshine.' },
   { id: 'assiniboine', icon: 'i-lucide-pyramid', title: 'Mount Assiniboine', description: 'Trip reports and GPS traces by objective for Mount Assiniboine Provincial Park and its approaches.' },
   { id: 'yoho', icon: 'i-lucide-trees', title: 'Yoho National Park', description: 'Trip reports and GPS traces by objective for Yoho National Park, including Field and Lake O’Hara.' },
   { id: 'kootenay', icon: 'i-lucide-leaf', title: 'Kootenay National Park', description: 'Trip reports and GPS traces by objective for Kootenay National Park, along Highway 93 South.' },
   { id: 'icefields-parkway', icon: 'i-lucide-snowflake', title: 'Icefields Parkway and the Columbia Icefield', description: 'Trip reports and GPS traces by objective along the Icefields Parkway, the Wapta, and the Columbia Icefield.' },
-  { id: 'david-thompson', icon: 'i-lucide-waves', title: 'David Thompson Country and the Bighorn', description: 'Trip reports and GPS traces by objective for Abraham Lake, Nordegg, the Siffleur, White Goat, and the Bighorn Backcountry.' },
   { id: 'jasper-robson', icon: 'i-lucide-triangle', title: 'Jasper and Mount Robson', description: 'Trip reports and GPS traces by objective for Jasper National Park and Mount Robson Provincial Park.' },
+
+  // The South
   { id: 'crowsnest-castle', icon: 'i-lucide-milestone', title: 'Crowsnest Pass and the Castle', description: 'Trip reports and GPS traces by objective for the Crowsnest Pass, the Castle, and the Livingstone and Whaleback ranges.' },
   { id: 'waterton', icon: 'i-lucide-sailboat', title: 'Waterton Lakes', description: 'Trip reports and GPS traces by objective for Waterton Lakes National Park and the Akamina Parkway.' },
-  { id: 'ghost-front-ranges', icon: 'i-lucide-tent-tree', title: 'The Ghost and the Front Ranges', description: 'Trip reports and GPS traces by objective for the Ghost Wilderness, Ya Ha Tinda, the Red Deer River, and the foothills.' },
-  { id: 'bc-rockies-purcells', icon: 'i-lucide-mountain', title: 'BC Rockies and the Purcells', description: 'Trip reports and GPS traces by objective for the East Kootenay, Elk Lakes, the Height of the Rockies, and the Purcells.' },
-  { id: 'rogers-pass-selkirks', icon: 'i-lucide-cable-car', title: 'Rogers Pass, the Selkirks, and Golden', description: 'Trip reports and GPS traces by objective for Glacier National Park in BC, the Selkirks, and the peaks around Golden.' },
   { id: 'glacier-montana', icon: 'i-lucide-flag', title: 'Glacier National Park, Montana', description: 'Trip reports and GPS traces by objective for Glacier National Park in Montana, just south of Waterton.' },
 
-  // Beyond the Rockies: weekend-trip range from Calgary rather than day-trip
-  // range. Added because the Alpine Club and Hostelling International both hold
-  // properties out here that otherwise had nowhere to be listed, and because
-  // one source covers them properly.
+  // West of the Divide
+  { id: 'bc-rockies-purcells', icon: 'i-lucide-mountain', title: 'BC Rockies and the Purcells', description: 'Trip reports and GPS traces by objective for the East Kootenay, Elk Lakes, the Height of the Rockies, and the Purcells.' },
+  { id: 'rogers-pass-selkirks', icon: 'i-lucide-cable-car', title: 'Rogers Pass, the Selkirks, and Golden', description: 'Trip reports and GPS traces by objective for Glacier National Park in BC, the Selkirks, and the peaks around Golden.' },
+
+  // Beyond the Rockies
+  // Weekend-trip range from Calgary rather than day-trip range. Added because
+  // the Alpine Club and Hostelling International both hold properties out here
+  // that otherwise had nowhere to be listed, and because one source covers them
+  // properly.
   { id: 'sea-to-sky', icon: 'i-lucide-tram-front', title: 'Sea to Sky and the Coast Mountains', description: 'Trip reports and GPS traces by objective for Vancouver, the North Shore, Squamish, Whistler, and Pemberton.' },
   { id: 'fraser-valley', icon: 'i-lucide-cloud-drizzle', title: 'Fraser Valley and the Cascades', description: 'Trip reports and GPS traces by objective for Chilliwack, the Cheam Range, Manning Park, and the Coquihalla.' },
   { id: 'okanagan', icon: 'i-lucide-sun', title: 'Okanagan and Thompson', description: 'Trip reports and GPS traces by objective for Kamloops, Kelowna, Penticton, and the Okanagan ranges.' },
