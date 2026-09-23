@@ -25,6 +25,14 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO = join(HERE, '..', '..')
 const PAGES_DIR = join(REPO, 'content', '3.hiking-scrambling-beta', '3.trip-reports')
 
+/**
+ * The weather and accommodation sections are written by hand but use this same
+ * region taxonomy, so a region added here needs a page in each of them too.
+ */
+const MIRRORED_SECTIONS = [
+  join(REPO, 'content', '4.weather-trail-conditions', '2.popular-locations'),
+  join(REPO, 'content', '5.accommodation')
+]
 const CACHE_DIR = join(REPO, 'node_modules', '.cache', 'trip-report-index')
 const REVIEW_PATH = join(REPO, 'trip-report-review.md')
 
@@ -73,6 +81,27 @@ async function checkIndexLinks(slugs: readonly string[]): Promise<void> {
   }
 }
 
+/**
+ * Fails when a region has no weather or accommodation page. Those are hand-written
+ * and cannot import this taxonomy, so this is what keeps the three sections from
+ * drifting apart silently — the whole point of their sharing region ids.
+ */
+async function checkMirroredSections(slugs: readonly string[]): Promise<void> {
+  for (const dir of MIRRORED_SECTIONS) {
+    const present = new Set((await readdir(dir).catch(() => []))
+      .filter(name => name.endsWith('.md'))
+      .map(name => name.replace(/^\d+\./, '').replace(/\.md$/, '')))
+    const missing = slugs.filter(slug => !present.has(slug))
+    if (missing.length > 0) {
+      throw new Error(
+        `${dir.replace(REPO, '.')} has no page for: ${missing.join(', ')}.\n`
+        + '  Weather and accommodation use the same regions as the trip reports; add a page '
+        + 'for each, or remove the region from regions.ts.'
+      )
+    }
+  }
+}
+
 async function main(): Promise<void> {
   const refresh = process.argv.includes('--refresh')
   const reviewOnly = process.argv.includes('--review-only')
@@ -116,6 +145,7 @@ async function main(): Promise<void> {
     const stale = await pruneStalePages(new Set(written))
     for (const name of stale) console.log(`  removed stale page ${name}`)
     await checkIndexLinks([...slugs, UNSORTED.id])
+    await checkMirroredSections(slugs)
   }
 
   await writeFile(REVIEW_PATH, writeReview(result), 'utf8')

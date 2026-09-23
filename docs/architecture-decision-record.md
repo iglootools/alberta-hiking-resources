@@ -339,7 +339,7 @@ sections and not the third, and nothing in any of them was named the same as its
 
 ### Decision
 
-All three sections use the **same fourteen region ids, titles, icons and ordering**, so the
+All three sections use the **same nineteen region ids, titles, icons and ordering**, so the
 three pages for one area differ only in the section part of the path:
 
 ```
@@ -383,7 +383,17 @@ Assiniboine, which has no forecast of its own.
   accommodation pages are hand-written Markdown that cannot import `regions.ts`. So
   `mise run build-trip-index` **fails** when a region has no weather or accommodation page,
   which is what stops the alignment rotting the first time a region is added.
-- The three weather pages outside the Rockies — Okanagan and Thompson, Chilliwack, and the
-  Sea to Sky — keep their own slugs under a *Beyond the Rockies* heading. They are outside
-  the shared taxonomy on purpose: no trip report source covers them, and stretching the
-  regions to reach the coast would make them mean less everywhere else.
+- **Five regions beyond the Rockies were added afterwards**, when the Alpine Club and
+  Hostelling International turned out to hold properties with nowhere to be listed. Sea to
+  Sky, the Fraser Valley and the Okanagan already existed as weather pages and were promoted;
+  West Kootenay and Vancouver Island are new. Steven Song covers four of the five properly —
+  127 objectives on the Sea to Sky alone — which is what made them viable rather than
+  decorative. West Kootenay has four, and says so on the page; it exists because the three
+  Kokanee Glacier cabins and HI Nelson had no other home.
+- Only two Alpine Club huts remain outside the taxonomy, both belonging to eastern sections
+  of the club. A region for a cabin in Ontario would not earn its place on a site about the
+  Alberta Rockies, so they are named on the huts page instead.
+- **A curated region now outranks the sources rather than only filling their gaps.** Steven
+  Song files the entire Selkirk range under one heading, which puts Rogers Pass and the
+  Kokanee Glacier 200 km apart in the same bucket; separating them is not something any
+  source's own metadata can do.
