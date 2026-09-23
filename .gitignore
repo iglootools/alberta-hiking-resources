@@ -37,3 +37,9 @@ logs
 # so they are valid only on the machine that created them. Ignoring them is a condition
 # of sharing .vscode/settings.json, which references them by path.
 .vscode/mise-tools/
+
+# Worksheet written by `mise run build-trip-index`: the objectives it could not
+# place, the regions its sources disagreed on, and near-miss names that may be
+# duplicates. Regenerated every run and meant to be worked through, not kept --
+# the decisions it leads to live in scripts/trip-report-index/curation.ts.
+/trip-report-review.md
