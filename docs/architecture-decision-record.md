@@ -319,3 +319,71 @@ fuzzy one. What the script cannot decide is recorded in
   not lower the minimum, which is what makes the guard meaningful.
 - **Retires, or is revisited, if** a source starts blocking automated reads, or if the
   volume makes the Kananaskis page (530 objectives) unwieldy enough to want splitting again.
+
+---
+
+## ADR-006 — One region taxonomy across trip reports, weather, and accommodation
+
+**Date:** 2026-09-22
+**Status:** Accepted
+
+### Context
+
+[ADR-005](#adr-005--generate-the-by-objective-trip-report-index-into-markdown-and-match-objective-names-exactly)
+introduced fourteen regions for the trip report index, chosen to match how the source blogs
+file trips. The weather and accommodation sections already had their own region lists, made
+earlier and for a different purpose — the towns you would check a forecast for, and the
+towns you would sleep in. The three overlapped without agreeing: *Banff, Lake Louise, and
+Yoho* was one weather page but three trip report regions, *South Kananaskis* existed in two
+sections and not the third, and nothing in any of them was named the same as its neighbour.
+
+### Decision
+
+All three sections use the **same fourteen region ids, titles, icons and ordering**, so the
+three pages for one area differ only in the section part of the path:
+
+```
+/hiking-scrambling-beta/trip-reports/crowsnest-castle
+/weather-trail-conditions/popular-locations/crowsnest-castle
+/accommodation/crowsnest-castle
+```
+
+A location that serves two regions is listed in **both**, rather than in whichever came
+first. Saskatchewan River Crossing appears under the Icefields Parkway and David Thompson
+Country; Golden under Yoho, Rogers Pass and the BC Rockies; Canmore and Banff under
+Assiniboine, which has no forecast of its own.
+
+### Rationale
+
+- The three sections answer one planning question between them — *where should I go, what
+  will it be like, and where do I sleep* — and were forcing the reader to re-find their area
+  in a different vocabulary at each step.
+- Duplication is the right answer for a forecast, which is a reading about a place rather
+  than a thing that belongs to one region. Filing Saskatchewan River Crossing under only one
+  of the two regions it serves makes it wrong for the other.
+- The taxonomy came from the blogs rather than from this site, so it is the one of the three
+  that was not invented here, and the one most likely to survive contact with new content.
+- Four regions had no weather or accommodation content at all. Rather than leave holes,
+  locations were added for Radium, Invermere, Fernie, Waiparous, Cochrane, Sundre and
+  Pincher Creek, each verified before use: meteoblue's own search API supplied its slugs, and
+  the Weather Network pages were checked by content with a known-bad slug as a control, since
+  that site returns a rendered page rather than a 404 for some bad input. AccuWeather and
+  IQAir fields were **left off** the new cards because neither could be verified — the
+  component treats every field as optional, and an unverified link is worse than a missing
+  one.
+
+### Consequences
+
+- **Roughly two dozen URLs change and are left to 404**, per
+  [ADR-004](#adr-004--let-retired-urls-404-rather-than-ship-meta-refresh-stubs). This is a
+  larger set than that decision contemplated, and it is accepted for the same reasons: no
+  host-side redirect exists, and the traffic is not load-bearing. Should the site move to a
+  host with real 301s, these belong in the same map as the ones ADR-004 records.
+- The three sections cannot be kept in step by the type system, because the weather and
+  accommodation pages are hand-written Markdown that cannot import `regions.ts`. So
+  `mise run build-trip-index` **fails** when a region has no weather or accommodation page,
+  which is what stops the alignment rotting the first time a region is added.
+- The three weather pages outside the Rockies — Okanagan and Thompson, Chilliwack, and the
+  Sea to Sky — keep their own slugs under a *Beyond the Rockies* heading. They are outside
+  the shared taxonomy on purpose: no trip report source covers them, and stretching the
+  regions to reach the coast would make them mean less everywhere else.
