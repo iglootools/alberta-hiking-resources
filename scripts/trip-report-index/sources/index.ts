@@ -12,6 +12,7 @@ import { scrapeAdamLaycock } from './adamlaycock.ts'
 import { requireApiKey, scrapeAnnie } from './annie.ts'
 import { scrapeAnugara } from './anugara.ts'
 import { scrapeBillKerr } from './billkerr.ts'
+import { scrapeCoastBackcountry } from './coastbackcountry.ts'
 import { scrapeOnTop } from './ontop.ts'
 import { scrapePeaksAndStreams } from './peaksandstreams.ts'
 import { scrapeSonnyBou } from './sonnybou.ts'
@@ -138,6 +139,14 @@ export const SOURCES: readonly SourceAdapter[] = [
     home: 'https://www.billkerr.ca/',
     scrape: scrapeBillKerr,
     minimumReports: 100
+  },
+  {
+    id: 'coastbackcountry',
+    label: 'Coast Backcountry',
+    home: 'https://coastbackcountry.com/scrambling-in-southwest-british-columbia/',
+    scrape: scrapeCoastBackcountry,
+    // Its scramble category only; the ski touring reports are not read.
+    minimumReports: 40
   },
   {
     id: 'steepsheep',
