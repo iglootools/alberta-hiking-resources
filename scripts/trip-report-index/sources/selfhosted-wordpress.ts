@@ -1,5 +1,5 @@
 /**
- * Shared reader for the two self-hosted WordPress blogs.
+ * Shared reader for the self-hosted WordPress blogs.
  *
  * Unlike the WordPress.com pair in wordpress.ts, these expose the standard
  * `/wp-json/wp/v2/` API on their own domain, which returns titles and links
@@ -25,16 +25,20 @@ export interface WordPressPost {
  * `type` is 'posts' for a blog that writes trips as posts and 'pages' for one
  * that writes them as pages — Spectacular Mountains does the latter, which is
  * why its posts endpoint returns an empty list.
+ *
+ * `filter` is extra query parameters, for a blog whose trips are one category
+ * among several — Coast Backcountry's `categories=…`.
  */
 export async function readSelfHostedPosts(
   fetchText: Fetcher,
   base: string,
-  type: 'posts' | 'pages' = 'posts'
+  type: 'posts' | 'pages' = 'posts',
+  filter = ''
 ): Promise<WordPressPost[]> {
   const posts: WordPressPost[] = []
 
   for (let page = 1; page <= 50; page += 1) {
-    const url = `${base}/wp-json/wp/v2/${type}?per_page=${PAGE_SIZE}&page=${page}&_fields=title,link`
+    const url = `${base}/wp-json/wp/v2/${type}?per_page=${PAGE_SIZE}&page=${page}&_fields=title,link${filter ? `&${filter}` : ''}`
     const body = await fetchText(url).catch(() => undefined)
     // The API answers a page past the end with a 400, which is how the loop ends.
     if (body === undefined) break

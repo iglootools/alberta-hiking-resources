@@ -6,9 +6,26 @@
  * and no dependency, gets type-checked, and can carry a comment explaining why
  * each entry exists — which is the part that stops it rotting.
  *
- * Both maps are keyed by `canonKey` output: lower case, accents and punctuation
- * stripped, "Mt." expanded to "mount", a leading "the" dropped.
+ * ALIASES and REGION_OVERRIDES are keyed by `canonKey` output: lower case,
+ * accents and punctuation stripped, "Mt." expanded to "mount", a leading "the"
+ * dropped. REPORT_OBJECTIVES is keyed by report URL.
  */
+
+/**
+ * The objectives one report covers, replacing what its title parses to.
+ *
+ * For the case the other two maps cannot express: a report whose name is
+ * shared with a different mountain, published by a source with no region of
+ * its own. The exact-match key merges it into the other peak, and because no
+ * single source files the name under two regions, the homonym split in
+ * regions.ts never fires. Giving the report a name of its own is what keeps it
+ * off the wrong page. Only add a report you have read.
+ */
+export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
+  // Climbed from Echo Lake in the Coast Mountains, not the Rockies peak above
+  // the Icefields Parkway that every other source means.
+  'https://coastbackcountry.com/2007/07/31/mount-murchison/': ['Mount Murchison, Echo Lake']
+}
 
 /**
  * Genuine spelling variants of one objective, mapping the variant onto the
@@ -46,7 +63,14 @@ export const ALIASES: Readonly<Record<string, string>> = {
   // Report titles that name the objective in passing rather than plainly, and
   // would otherwise stand as an objective of their own.
   'prairie mountain for dummies': 'prairie mountain',
-  'castle mountain traverse': 'castle mountain'
+  'castle mountain traverse': 'castle mountain',
+
+  // Coast Backcountry's names for peaks other sources already place. Its
+  // Coquihalla report says "Coquihalla Mountain" in the body, and its
+  // Callaghan report "Callaghan Peak".
+  'coquihalla peak': 'coquihalla mountain',
+  'jim kelly': 'jim kelly peak',
+  'callaghan mountain': 'mount callaghan'
 }
 
 /**
@@ -229,6 +253,58 @@ export const REGION_OVERRIDES: Readonly<Record<string, string>> = {
   'kokanee peak': 'west-kootenay',
   'wood peak': 'west-kootenay',
   'mount grohman': 'west-kootenay',
+
+  // --- Sea to Sky and the Coast Mountains ---
+  // Coast Backcountry publishes no region, and most of its scrambles are
+  // objectives no other source has. Placed where the post names its area
+  // (quoted), or where the peak is unambiguous. Those that are neither stay
+  // unsorted rather than guessed at: Devil's Tongue, Elusive Peak, Mount
+  // Hatfield, Outrigger Peak, Sun Peak, Stonerabbit, and Mount Murchison.
+  'armchair traverse': 'sea-to-sky', // "traversing from Cook to Weart"
+  'athelney pass': 'sea-to-sky',
+  'blackcomb buttress': 'sea-to-sky',
+  'brew hut': 'sea-to-sky',
+  'chilcotins backpacking': 'sea-to-sky', // north of Pemberton and Gold Bridge
+  'cloudburst mountain': 'sea-to-sky',
+  'co pilot': 'sea-to-sky',
+  'crown mountain': 'sea-to-sky', // "just outside of Vancouver"
+  'cypress peak': 'sea-to-sky', // "along the Squamish Cheakamus Divide"
+  'downton creek': 'sea-to-sky',
+  'elaho valley': 'sea-to-sky',
+  'gideon peak': 'sea-to-sky', // "above Van Horlick Creek"
+  'gott creek': 'sea-to-sky',
+  'gott creek west fork': 'sea-to-sky', // "into the Duffey"
+  'lake lovelywater': 'sea-to-sky', // "to the Tantalus Range"
+  'lydia mountain': 'sea-to-sky', // "above Lake Lovelywater"
+  'mount chief pascal': 'sea-to-sky', // "on the Duffey"
+  'mount gillespi': 'sea-to-sky', // "in the Mamquam area"
+  'mount hanover': 'sea-to-sky',
+  'mount niobe': 'sea-to-sky',
+  'mount ronayne': 'sea-to-sky',
+  'mountain lakes hut': 'sea-to-sky', // "We climbed Ledge, Sky Pilot, Sheer and Ben Lomond"
+  'omega mountain': 'sea-to-sky',
+  'saxifrage mountain': 'sea-to-sky', // "in the Duffey"
+  'seagram lake': 'sea-to-sky', // "from Squamish Main Branch 220"
+  'shovelnose creek': 'sea-to-sky', // "on the Squamish-Cheakamus Divide"
+  'sigurd creek': 'sea-to-sky', // "the north end of the Tantalus Range"
+  'sigurd lake': 'sea-to-sky',
+  'sigurd peak': 'sea-to-sky',
+  'sky pilot': 'sea-to-sky',
+  'slalok': 'sea-to-sky',
+  'st jacobs mountain': 'sea-to-sky',
+  'tantalus traverse': 'sea-to-sky',
+  'tricouni meadows east': 'sea-to-sky',
+  'tricouni peak': 'sea-to-sky',
+
+  // --- Fraser Valley and the Cascades ---
+  'conway peak': 'fraser-valley', // "in Cheam Range"
+  'edge peak': 'fraser-valley', // Golden Ears
+  'isollilock peak': 'fraser-valley',
+  'mount mcguire': 'fraser-valley', // "the access from Tamihi"
+  'mount robie reid': 'fraser-valley',
+  'silvertip mountain': 'fraser-valley', // "from the Silver-Skagit"
+  'tulameen mountain': 'fraser-valley', // climbed with Coquihalla Mountain
+  'vicuna peak': 'fraser-valley', // climbed with Guanaco Peak
 
   // --- Not ours to list: Annie Ouellet’s channel ranges wider than this site ---
   // Prairie and badlands, not the mountains.

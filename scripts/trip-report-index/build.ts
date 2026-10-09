@@ -5,7 +5,7 @@
  */
 import type { Objective, RawReport } from './types.ts'
 import type { GuidebookIndex } from './guidebooks.ts'
-import { ALIASES, REGION_OVERRIDES } from './curation.ts'
+import { ALIASES, REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { canonKey, displayName } from './canon.ts'
 import { OUT_OF_SCOPE, REGION_IDS, isHomonym, mappedRegionOf, resolveRegion } from './regions.ts'
 import { SOURCE_ORDER } from './sources/index.ts'
@@ -52,6 +52,12 @@ export interface BuildResult {
 function keyOf(name: string): string {
   const key = canonKey(name)
   return ALIASES[key] ?? key
+}
+
+/** Applies a curated REPORT_OBJECTIVES entry in place of the title's own parse. */
+function withCuratedObjectives(report: RawReport): RawReport {
+  const objectives = REPORT_OBJECTIVES[report.url]
+  return objectives ? { ...report, objectives } : report
 }
 
 function groupByObjective(reports: readonly RawReport[]): Map<string, RawReport[]> {
@@ -135,7 +141,7 @@ export function buildObjectives(
   const conflicts: { objective: Objective, conflicts: readonly string[] }[] = []
   let outOfScopeCount = 0
 
-  for (const [key, group] of groupByObjective(reports)) {
+  for (const [key, group] of groupByObjective(reports.map(withCuratedObjectives))) {
     const resolution = resolveRegion(group)
     const overridden = REGION_OVERRIDES[key]
 
