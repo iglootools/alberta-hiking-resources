@@ -13,37 +13,37 @@
     "build:trip-index": "node scripts/trip-report-index/main.ts"
   },
   "dependencies": {
-    "@nuxt/content": "^3.15.2",
+    "@nuxt/content": "^3.16.1",
     "@nuxt/fonts": "0.14.0",
     "@nuxt/image": "^2.1.0",
-    "@nuxt/ui": "^4.10.0",
-    "@nuxtjs/mcp-toolkit": "0.18.0",
-    "@nuxtjs/mdc": "^0.23.0",
-    "@nuxtjs/robots": "^6.1.3",
-    "@nuxtjs/sitemap": "^8.3.2",
-    "@takumi-rs/core": "2.5.2",
-    "@vueuse/core": "^14.4.0",
-    "better-sqlite3": "^13.0.1",
+    "@nuxt/ui": "^4.11.2",
+    "@nuxtjs/mcp-toolkit": "0.21.0",
+    "@nuxtjs/mdc": "^0.23.1",
+    "@nuxtjs/robots": "^6.2.3",
+    "@nuxtjs/sitemap": "^8.5.1",
+    "@takumi-rs/core": "2.14.0",
+    "@vueuse/core": "^15.0.0",
+    "better-sqlite3": "^13.0.3",
     "minimark": "^1.0.0",
     "nuxt": "^4.5.2",
     "nuxt-llms": "0.2.0",
-    "nuxt-og-image": "^6.7.5",
+    "nuxt-og-image": "^6.9.0",
     "tailwindcss": "^4.3.3",
     "ufo": "^1.6.4",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.121",
+    "@iconify-json/lucide": "^1.2.136",
     "@nuxt/eslint": "^1.17.0",
     "@semantic-release/commit-analyzer": "^13.0.1",
-    "@semantic-release/github": "^12.0.9",
+    "@semantic-release/github": "^12.0.10",
     "@semantic-release/release-notes-generator": "^14.1.1",
-    "@types/node": "^26.6.2",
-    "eslint": "^10.8.0",
+    "@types/node": "^26.6.3",
+    "eslint": "^10.11.0",
     "nuxt-mcp-dev": "^0.3.2",
-    "semantic-release": "^25.0.8",
+    "semantic-release": "^25.0.9",
     "typescript": "~6.0.3",
-    "vue-tsc": "^3.3.9"
+    "vue-tsc": "^3.3.11"
   },
-  "packageManager": "pnpm@11.18.0"
+  "packageManager": "pnpm@12.7.0"
 }
