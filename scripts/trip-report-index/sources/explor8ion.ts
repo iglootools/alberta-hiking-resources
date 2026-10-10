@@ -7,6 +7,7 @@
  * those are kept, without a region, and inherit one from another source.
  */
 import type { Fetcher } from '../fetch.ts'
+import { fetchUnlessStatus } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { anchors, decodeEntities, sitemapLocations, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
@@ -100,7 +101,8 @@ export async function scrapeExplor8ion(fetchText: Fetcher): Promise<RawReport[]>
  * no range, which happens on the handful of articles among the trips.
  */
 async function rangeOf(fetchText: Fetcher, url: string): Promise<string | undefined> {
-  const html = await fetchText(url).catch(() => undefined)
+  // A dead link just means no sub-range; any other failure stops the run.
+  const html = await fetchUnlessStatus(fetchText, url, 404)
   if (html === undefined) return undefined
   const range = STANDFIRST.exec(textOf(html))?.[1]?.trim()
   return range ? `, ${range}` : undefined

@@ -9,6 +9,7 @@
  * is fetched for it — one request per route, once, against the cache.
  */
 import type { Fetcher } from '../fetch.ts'
+import { fetchUnlessStatus } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
@@ -36,7 +37,8 @@ interface Entry {
 
 /** The route's own Region property, or undefined when the page omits it. */
 async function regionOf(fetchText: Fetcher, url: string): Promise<string | undefined> {
-  const html = await fetchText(url).catch(() => undefined)
+  // A dead link just means no region; any other failure stops the run.
+  const html = await fetchUnlessStatus(fetchText, url, 404)
   if (html === undefined) return undefined
   const region = REGION_PROPERTY.exec(html)?.[1]
   return region ? matchArea(textOf(region)) : undefined

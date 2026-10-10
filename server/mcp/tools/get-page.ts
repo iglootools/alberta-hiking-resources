@@ -50,7 +50,10 @@ WORKFLOW: This tool returns the complete page content including title, descripti
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
       }
-    } catch {
+    } catch (error) {
+      // The caller sees only a generic failure, so the cause has to reach the
+      // server log or it is lost entirely.
+      console.error(`[mcp] get-page failed`, error)
       return {
         content: [{ type: 'text', text: 'Failed to get page' }],
         isError: true

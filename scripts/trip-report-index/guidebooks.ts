@@ -20,6 +20,7 @@
 import type { Fetcher } from './fetch.ts'
 import { canonKey, splitObjectives } from './canon.ts'
 import { ALIASES } from './curation.ts'
+import { MinimumNotMetError } from './errors.ts'
 import { matchArea } from './areas.ts'
 import { decodeEntities, textOf } from './html.ts'
 
@@ -88,47 +89,67 @@ function keyOf(name: string): string {
   return ALIASES[key] ?? key
 }
 
+/** One objective's mark from one list row, before the lists are merged. */
+interface Mark {
+  readonly key: string
+  readonly entry: GuidebookEntry
+  readonly area?: string
+}
+
+/**
+ * The marks in one table row, or undefined when it is not a data row — the
+ * header, or a malformed one — so it does not count towards `minimumRows`.
+ */
+function marksOfRow(rowHtml: string, { slug, book, mark }: ListSpec): Mark[] | undefined {
+  const cells = [...rowHtml.matchAll(CELL)].map(cell => cell[1] ?? '')
+  const [trip, grade, region] = cells
+  if (!trip || !grade) return undefined
+
+  const name = textOf(trip)
+  const href = LINK.exec(trip)?.[1]
+  // The header row has no link, which is also how it is skipped.
+  if (!name || !href) return undefined
+
+  const entry: GuidebookEntry = {
+    book,
+    grade: mark(textOf(grade)),
+    url: new URL(decodeEntities(href), `${BASE}${slug}`).href
+  }
+  const area = region ? matchArea(textOf(region)) : undefined
+
+  // A list row can name several destinations ("Bourgeau Lake & Harvey
+  // Pass"), split the same way a report title is so each one is marked.
+  return splitObjectives(name)
+    .map(objective => keyOf(objective))
+    .filter(key => key)
+    .map(key => ({ key, entry, area }))
+}
+
+/** Every mark on one list, failing if the list yielded too few rows to be real. */
+async function readList(fetchText: Fetcher, spec: ListSpec): Promise<Mark[]> {
+  const html = await fetchText(`${BASE}${spec.slug}`)
+  const rows = [...html.matchAll(ROW)]
+    .map(row => marksOfRow(row[1] ?? '', spec))
+    .flatMap(marks => marks ? [marks] : [])
+  if (rows.length < spec.minimumRows) {
+    throw new MinimumNotMetError(spec.slug, rows.length, spec.minimumRows, 'rows')
+  }
+  return rows.flat()
+}
+
+/**
+ * Merges the lists in LISTS order: an objective collects an entry from every
+ * list it is on, and takes its region from the first list that states one.
+ */
 export async function readGuidebooks(fetchText: Fetcher): Promise<GuidebookIndex> {
+  const marks: Mark[] = []
+  for (const spec of LISTS) marks.push(...await readList(fetchText, spec))
+
   const entries = new Map<string, GuidebookEntry[]>()
   const regions = new Map<string, string>()
-
-  for (const { slug, book, mark, minimumRows } of LISTS) {
-    const html = await fetchText(`${BASE}${slug}`)
-    let rows = 0
-    for (const row of html.matchAll(ROW)) {
-      const cells = [...(row[1] ?? '').matchAll(CELL)].map(cell => cell[1] ?? '')
-      const [trip, grade, region] = cells
-      if (!trip || !grade) continue
-
-      const name = textOf(trip)
-      const href = LINK.exec(trip)?.[1]
-      // The header row has no link, which is also how it is skipped.
-      if (!name || !href) continue
-
-      rows += 1
-      const entry: GuidebookEntry = {
-        book,
-        grade: mark(textOf(grade)),
-        url: new URL(decodeEntities(href), `${BASE}${slug}`).href
-      }
-      const area = region ? matchArea(textOf(region)) : undefined
-
-      // A list row can name several destinations ("Bourgeau Lake & Harvey
-      // Pass"), split the same way a report title is so each one is marked.
-      for (const objective of splitObjectives(name)) {
-        const key = keyOf(objective)
-        if (!key) continue
-        if (!entries.has(key)) entries.set(key, [])
-        entries.get(key)!.push(entry)
-        if (area && !regions.has(key)) regions.set(key, area)
-      }
-    }
-    if (rows < minimumRows) {
-      throw new Error(
-        `${slug} yielded ${rows} rows, expected at least ${minimumRows}. `
-        + 'Fix the parser rather than lowering the minimum.'
-      )
-    }
+  for (const { key, entry, area } of marks) {
+    entries.set(key, [...(entries.get(key) ?? []), entry])
+    if (area && !regions.has(key)) regions.set(key, area)
   }
   return { entries, regions }
 }

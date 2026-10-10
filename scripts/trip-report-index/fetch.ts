@@ -8,6 +8,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { HttpError } from './errors.ts'
 
 /** Courtesy delay between live requests to the same host, in milliseconds. */
 const THROTTLE_MS = 300
@@ -35,26 +36,38 @@ export async function clearCache(cacheDir: string): Promise<void> {
   await rm(cacheDir, { recursive: true, force: true })
 }
 
+/** The cached body, or undefined on a miss. An unreadable cache is an error, not a miss. */
+async function readCached(path: string): Promise<string | undefined> {
+  try {
+    return await readFile(path, 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    throw error
+  }
+}
+
 /**
  * Builds a fetcher over `cacheDir`. Decoding is explicit rather than left to
  * `Response.text()`: goldenscrambles.ca is windows-1252 and declares it only in
  * a meta tag, which `fetch` does not consult, so its accented names would
  * otherwise arrive mojibaked.
+ *
+ * `now` is the throttle's clock, a parameter so a test can drive it.
  */
-export function createFetcher(cacheDir: string): Fetcher {
+export function createFetcher(cacheDir: string, now: () => number = Date.now): Fetcher {
   let lastRequest = 0
 
   return async function fetchText(url: string): Promise<string> {
     const path = cachePath(cacheDir, url)
-    const cached = await readFile(path, 'utf8').catch(() => undefined)
+    const cached = await readCached(path)
     if (cached !== undefined) return cached
 
-    const wait = THROTTLE_MS - (Date.now() - lastRequest)
+    const wait = THROTTLE_MS - (now() - lastRequest)
     if (wait > 0) await sleep(wait)
-    lastRequest = Date.now()
+    lastRequest = now()
 
     const response = await fetch(url, { headers: { 'user-agent': USER_AGENT } })
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText} for ${url}`)
+    if (!response.ok) throw new HttpError(response.status, response.statusText, url)
 
     const buffer = Buffer.from(await response.arrayBuffer())
     const text = decode(buffer, response.headers.get('content-type') ?? '')
@@ -62,6 +75,25 @@ export function createFetcher(cacheDir: string): Fetcher {
     await mkdir(cacheDir, { recursive: true })
     await writeFile(path, text, 'utf8')
     return text
+  }
+}
+
+/**
+ * Fetches `url`, answering undefined for one expected HTTP status and throwing
+ * for anything else. Narrower than a blanket catch on purpose: a dead link is a
+ * fact about the source, but a 500 or a dropped connection is a broken run, and
+ * swallowing it would quietly index less than the source publishes.
+ */
+export async function fetchUnlessStatus(
+  fetchText: Fetcher,
+  url: string,
+  status: number
+): Promise<string | undefined> {
+  try {
+    return await fetchText(url)
+  } catch (error) {
+    if (error instanceof HttpError && error.status === status) return undefined
+    throw error
   }
 }
 

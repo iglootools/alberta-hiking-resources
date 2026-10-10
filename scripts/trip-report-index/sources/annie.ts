@@ -16,6 +16,7 @@
  * give a region as well as a name.
  */
 import type { Fetcher } from '../fetch.ts'
+import { indent } from '../output.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
@@ -182,19 +183,20 @@ async function readUploads(fetchText: Fetcher, key: string): Promise<{ title: st
 /**
  * The API key, or a failure explaining how to get one. Exported as the source's
  * preflight so the run stops before scraping anything rather than after five
- * minutes of reading the other six sites.
+ * minutes of reading the other six sites. `env` is a parameter so a test can
+ * supply one without touching the process.
  */
-export function requireApiKey(): string {
-  const key = process.env.YOUTUBE_API_KEY
+export function requireApiKey(env: NodeJS.ProcessEnv = process.env): string {
+  const key = env.YOUTUBE_API_KEY
   if (!key) {
-    throw new Error(
+    throw new Error([
       'YOUTUBE_API_KEY is not set, so Annie Ouellet\'s channel cannot be read and the '
-      + 'pages would be rewritten without her videos.\n'
-      + '  Create a key at https://console.cloud.google.com/apis/credentials — a project, '
-      + 'the YouTube Data API v3 enabled, an API key, no billing.\n'
-      + '  Then: export YOUTUBE_API_KEY=... (one run costs about 7 of the 10,000 free '
-      + 'daily quota units).'
-    )
+      + 'pages would be rewritten without her videos.',
+      indent('Create a key at https://console.cloud.google.com/apis/credentials — a project, '
+        + 'the YouTube Data API v3 enabled, an API key, no billing.'),
+      indent('Then: export YOUTUBE_API_KEY=... (one run costs about 7 of the 10,000 free '
+        + 'daily quota units).')
+    ].join('\n'))
   }
   return key
 }
