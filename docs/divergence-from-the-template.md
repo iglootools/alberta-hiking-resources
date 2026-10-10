@@ -171,6 +171,19 @@ stack itself is described in [architecture.md](architecture.md).
   dynamic `[...slug].vue` routing are kept.
 - Added [architecture-decision-record.md](architecture-decision-record.md).
 
+## Visual identity
+
+The template's look is Nuxt's own brand, and a site left on it reads as a Nuxt demo rather than
+a hiking site. These replace it:
+
+- **Palette.** The template overrides Tailwind's `green` with Nuxt's brand scale (`#00DC82`).
+  This site drops that override and defines two scales of its own in
+  [main.css](../app/assets/css/main.css): `forest` as `primary` and `glacier` as `secondary`.
+  Tailwind's stock `green` is back in place for `success`. The 500 and 400 shades are the ones
+  Nuxt UI uses for light and dark mode, and are chosen to clear 4.5:1 text contrast in both. The
+  OG image takes the colour as a literal in `[...slug].vue`, which has to be kept in step by
+  hand.
+
 ## Licence: CC BY-SA 4.0, not the template's MIT or the org's Apache 2.0
 
 The substance of this repository is *content* — hiking information written in Markdown —

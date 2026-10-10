@@ -2,7 +2,8 @@ export default defineAppConfig({
   repository: 'iglootools/alberta-hiking-resources',
   ui: {
     colors: {
-      primary: 'green',
+      primary: 'forest',
+      secondary: 'glacier',
       neutral: 'slate'
     },
     footer: {

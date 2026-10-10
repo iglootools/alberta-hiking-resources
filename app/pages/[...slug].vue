@@ -39,10 +39,10 @@ defineOgImage('Docs', {
   title,
   description,
   site: seo.siteName,
-  // Brand green (mirrors --color-green-400 in app/assets/css/main.css); passed
-  // as a literal because the OG renderer can't resolve CSS variables.
-  primaryColor: 'rgba(0, 220, 130, 0.35)',
-  primaryTextColor: '#00DC82'
+  // Brand forest green (mirrors --color-forest-400 in app/assets/css/main.css);
+  // passed as a literal because the OG renderer can't resolve CSS variables.
+  primaryColor: 'rgba(94, 166, 124, 0.35)',
+  primaryTextColor: '#5EA67C'
 })
 
 const links = computed(() => {
