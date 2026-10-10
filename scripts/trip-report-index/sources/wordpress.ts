@@ -7,6 +7,7 @@
  * slugs and saves one request per post.
  */
 import type { Fetcher } from '../fetch.ts'
+import { ApiError } from '../errors.ts'
 import { decodeEntities } from '../html.ts'
 
 const API = 'https://public-api.wordpress.com/rest/v1.1/sites'
@@ -48,7 +49,7 @@ export async function readWordPress(
     const url = `${API}/${site}/posts/?type=${type}&number=${PAGE_SIZE}&page=${page}`
       + '&fields=title,URL,categories'
     const body = JSON.parse(await fetchText(url)) as WordPressPage
-    if (body.error) throw new Error(`${site}: ${body.error} ${body.message ?? ''}`.trim())
+    if (body.error) throw new ApiError(`WordPress.com ${site}`, `${body.error} ${body.message ?? ''}`.trim())
 
     const batch = body.posts ?? []
     items.push(...batch.map(entry => ({

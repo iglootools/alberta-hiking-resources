@@ -15,6 +15,7 @@
  * a REGION_OVERRIDES entry.
  */
 import type { Fetcher } from '../fetch.ts'
+import { SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { readSelfHostedPosts } from './selfhosted-wordpress.ts'
@@ -48,7 +49,7 @@ async function categoryIds(fetchText: Fetcher): Promise<Map<string, number>> {
   const categories = JSON.parse(await fetchText(url)) as Category[]
   const ids = new Map(categories.map(category => [category.slug, category.id]))
   for (const slug of [TRIPS, NOT_A_TRIP]) {
-    if (!ids.has(slug)) throw new Error(`coastbackcountry.com has no "${slug}" category any more (${url})`)
+    if (!ids.has(slug)) throw new SourceChangedError('coastbackcountry', `no "${slug}" category any more (${url})`)
   }
   return ids
 }

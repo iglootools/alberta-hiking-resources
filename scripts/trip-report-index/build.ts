@@ -7,6 +7,7 @@ import type { Objective, RawReport } from './types.ts'
 import type { GuidebookIndex } from './guidebooks.ts'
 import { ALIASES, REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { canonKey, displayName } from './canon.ts'
+import { UnknownRegionError } from './errors.ts'
 import { OUT_OF_SCOPE, REGION_IDS, isHomonym, mappedRegionOf, resolveRegion } from './regions.ts'
 import { SOURCE_ORDER } from './sources/index.ts'
 
@@ -186,7 +187,7 @@ function place(key: string, group: readonly RawReport[], guidebooks?: GuidebookI
 
   if (!regionId) return { kind: 'unplaced', objective }
   if (!REGION_IDS.has(regionId)) {
-    throw new Error(`Objective "${objective.name}" resolved to unknown region "${regionId}"`)
+    throw new UnknownRegionError(objective.name, regionId)
   }
   return {
     kind: 'placed',

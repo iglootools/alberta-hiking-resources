@@ -10,6 +10,7 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run dev`        | Start the Nuxt dev server                |
 | `mise run lint`       | Lint with ESLint                         |
 | `mise run typecheck`  | Run the Nuxt type check                  |
+| `mise run test`       | Run the trip report index tests          |
 | `mise run build`      | Build the Nuxt application               |
 | `mise run build-pages`| Build for GitHub Pages deployment        |
 | `mise run preview`    | Preview the production build             |
@@ -27,6 +28,23 @@ The sections below cover the build, lint, and CI tasks in more detail; see
 mise run lint        # eslint .
 mise run typecheck   # nuxt typecheck
 ```
+
+## Tests
+
+```bash
+mise run test        # node --test 'scripts/**/*.test.ts'
+```
+
+The tests cover the trip report index under
+[scripts/trip-report-index/test/](../scripts/trip-report-index/test/), and mostly its failure
+paths: a scrape that degrades quietly is the failure that matters there, and it is the one a
+normal run cannot show. They use Node's built-in runner, so they add no dependency, and they
+never touch the network. Every collaborator a test needs to replace — the HTTP client, the
+clock, the environment, the directories — is a parameter, so tests pass a stub in rather than
+patching a module, and assert on the fields of the typed errors in
+[errors.ts](../scripts/trip-report-index/errors.ts) rather than on message text.
+
+The Nuxt app itself has no tests.
 
 ## Building
 
@@ -51,7 +69,7 @@ Nitro output, so a plain `mise run build` is not what ships.
 ## CI pipeline
 
 `mise run ci` runs the same sequence as the [`ci.yml`](../.github/workflows/ci.yml)
-workflow: `install` → `lint` → `typecheck` → `build`.
+workflow: `install` → `lint` → `typecheck` → `test` → `build`.
 
 ## Bundling icon sets
 

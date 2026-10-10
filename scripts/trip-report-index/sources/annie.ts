@@ -17,6 +17,7 @@
  */
 import type { Fetcher } from '../fetch.ts'
 import { indent } from '../output.ts'
+import { ApiError, MissingCredentialError, SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
@@ -154,13 +155,13 @@ interface ChannelPage {
 }
 
 /** Every upload on the channel, oldest page first. */
-async function readUploads(fetchText: Fetcher, key: string): Promise<{ title: string, videoId: string }[]> {
+export async function readUploads(fetchText: Fetcher, key: string): Promise<{ title: string, videoId: string }[]> {
   const channel = JSON.parse(await fetchText(
     `${API}/channels?part=contentDetails&forHandle=${HANDLE}&key=${key}`)) as ChannelPage
-  if (channel.error) throw new Error(`YouTube channels: ${channel.error.message ?? 'unknown error'}`)
+  if (channel.error) throw new ApiError('YouTube channels', channel.error.message ?? 'unknown error')
 
   const uploads = channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
-  if (!uploads) throw new Error(`YouTube: no uploads playlist for @${HANDLE}`)
+  if (!uploads) throw new SourceChangedError('annie', `no uploads playlist for @${HANDLE}`)
 
   const videos: { title: string, videoId: string }[] = []
   let pageToken = ''
@@ -168,7 +169,7 @@ async function readUploads(fetchText: Fetcher, key: string): Promise<{ title: st
     const page = JSON.parse(await fetchText(
       `${API}/playlistItems?part=snippet&playlistId=${uploads}`
       + `&maxResults=${PAGE_SIZE}&key=${key}${pageToken ? `&pageToken=${pageToken}` : ''}`)) as PlaylistPage
-    if (page.error) throw new Error(`YouTube playlistItems: ${page.error.message ?? 'unknown error'}`)
+    if (page.error) throw new ApiError('YouTube playlistItems', page.error.message ?? 'unknown error')
 
     for (const item of page.items ?? []) {
       const title = item.snippet?.title?.trim()
@@ -189,7 +190,7 @@ async function readUploads(fetchText: Fetcher, key: string): Promise<{ title: st
 export function requireApiKey(env: NodeJS.ProcessEnv = process.env): string {
   const key = env.YOUTUBE_API_KEY
   if (!key) {
-    throw new Error([
+    throw new MissingCredentialError('YOUTUBE_API_KEY', [
       'YOUTUBE_API_KEY is not set, so Annie Ouellet\'s channel cannot be read and the '
       + 'pages would be rewritten without her videos.',
       indent('Create a key at https://console.cloud.google.com/apis/credentials — a project, '

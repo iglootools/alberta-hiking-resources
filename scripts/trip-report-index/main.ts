@@ -10,15 +10,16 @@
  *   --refresh      discard the HTTP cache and re-read every source
  *   --review-only  report what would change without writing any page
  */
-import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
-import { dirname, join, relative } from 'node:path'
+import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { BuildResult } from './build.ts'
 import { buildObjectives } from './build.ts'
+import { checkIndexLinks, checkMirroredSections } from './checks.ts'
 import { MinimumNotMetError } from './errors.ts'
 import { clearCache, createFetcher } from './fetch.ts'
 import { readGuidebooks } from './guidebooks.ts'
-import { indent } from './output.ts'
+import { indent, shown } from './output.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { SOURCES } from './sources/index.ts'
 import { renderRegionPage } from './render.ts'
@@ -69,11 +70,6 @@ function pageName(position: number, slug: string): string {
   return `${String(position).padStart(2, '0')}.${slug}.md`
 }
 
-/** For display: paths relative to where the command was run, so they can be pasted. */
-function shown(path: string): string {
-  return relative(process.cwd(), path) || '.'
-}
-
 /** Removes region pages for regions that no longer exist. */
 async function pruneStalePages(keep: ReadonlySet<string>): Promise<string[]> {
   const existing = await readdir(PAGES_DIR)
@@ -81,40 +77,6 @@ async function pruneStalePages(keep: ReadonlySet<string>): Promise<string[]> {
     name.endsWith('.md') && name !== INDEX_PAGE && !keep.has(name))
   for (const name of stale) await unlink(join(PAGES_DIR, name))
   return stale
-}
-
-/**
- * Fails when the hand-written index does not link a region, which is the one
- * way a generated page can go live with nothing pointing at it. A missing index
- * fails too, rather than skipping the check it exists for.
- */
-async function checkIndexLinks(slugs: readonly string[]): Promise<void> {
-  const index = await readFile(join(PAGES_DIR, INDEX_PAGE), 'utf8')
-  const missing = slugs.filter(slug => !index.includes(`/hiking-scrambling-beta/trip-reports/${slug}`))
-  if (missing.length > 0) {
-    throw new Error(`${INDEX_PAGE} does not link: ${missing.join(', ')}. Add a card for each.`)
-  }
-}
-
-/**
- * Fails when a region has no weather or accommodation page. Those are hand-written
- * and cannot import this taxonomy, so this is what keeps the three sections from
- * drifting apart silently — the whole point of their sharing region ids.
- */
-async function checkMirroredSections(slugs: readonly string[]): Promise<void> {
-  for (const dir of MIRRORED_SECTIONS) {
-    const present = new Set((await readdir(dir))
-      .filter(name => name.endsWith('.md'))
-      .map(name => name.replace(/^\d+\./, '').replace(/\.md$/, '')))
-    const missing = slugs.filter(slug => !present.has(slug))
-    if (missing.length > 0) {
-      throw new Error(
-        `${shown(dir)} has no page for: ${missing.join(', ')}.\n`
-        + indent('Weather and accommodation use the same regions as the trip reports; add a page '
-          + 'for each, or remove the region from regions.ts.')
-      )
-    }
-  }
 }
 
 /**
@@ -147,8 +109,8 @@ async function finishPages(written: readonly string[]): Promise<void> {
   const stale = await pruneStalePages(new Set(written))
   for (const name of stale) console.log(indent(`removed stale page ${name}`))
   const slugs = REGIONS.map(region => region.id)
-  await checkIndexLinks([...slugs, UNSORTED.id])
-  await checkMirroredSections(slugs)
+  await checkIndexLinks(join(PAGES_DIR, INDEX_PAGE), [...slugs, UNSORTED.id])
+  await checkMirroredSections(MIRRORED_SECTIONS, slugs)
 }
 
 function printSummary(result: BuildResult, reportCount: number): void {

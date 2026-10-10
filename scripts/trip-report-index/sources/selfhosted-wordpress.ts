@@ -6,7 +6,7 @@
  * directly and needs no key.
  */
 import type { Fetcher } from '../fetch.ts'
-import { PageLimitError } from '../errors.ts'
+import { PageLimitError, SourceChangedError } from '../errors.ts'
 import { fetchUnlessStatus } from '../fetch.ts'
 import { decodeEntities } from '../html.ts'
 
@@ -49,7 +49,7 @@ export async function readAllPages<T>(
     if (body === undefined) return items
 
     const batch: unknown = JSON.parse(body)
-    if (!Array.isArray(batch)) throw new Error(`Expected a JSON array from ${urlOf(page)}`)
+    if (!Array.isArray(batch)) throw new SourceChangedError(urlOf(page), 'expected a JSON array')
     items.push(...(batch as T[]))
     if (batch.length < PAGE_SIZE) return items
   }

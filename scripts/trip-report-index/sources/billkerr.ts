@@ -10,6 +10,7 @@
  * which often carries one ("Sulphur Mountain, Banff June 1, 2019").
  */
 import type { Fetcher } from '../fetch.ts'
+import { SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
@@ -74,7 +75,7 @@ async function outingCategoryIds(fetchText: Fetcher): Promise<number[]> {
 
 export async function scrapeBillKerr(fetchText: Fetcher): Promise<RawReport[]> {
   const ids = await outingCategoryIds(fetchText)
-  if (ids.length === 0) throw new Error('billkerr: no outing categories matched; the site has been recategorised')
+  if (ids.length === 0) throw new SourceChangedError('billkerr', 'no outing categories matched; the site has been recategorised')
 
   const posts = await readAllPages<Post>(fetchText, page =>
     `${BASE}/wp-json/wp/v2/posts?categories=${ids.join(',')}`
