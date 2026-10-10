@@ -12,6 +12,7 @@ import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { decodeEntities } from '../html.ts'
+import { PAGE_SIZE, readAllPages } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://peaksandstreams.com'
 
@@ -29,38 +30,30 @@ interface Post {
   readonly tags?: readonly number[]
 }
 
+function toReport(post: Post, tagNames: ReadonlyMap<number, string>): RawReport | undefined {
+  const title = decodeEntities(post.title?.rendered ?? '')
+    .replace(/\s+/g, ' ').trim().replace(TRAILING_DATE, '').trim()
+  if (!title || !post.link) return undefined
+
+  const region = (post.tags ?? [])
+    .map(id => tagNames.get(id))
+    .find(name => name && !NOT_A_REGION.test(name))
+
+  return {
+    sourceId: 'peaksandstreams',
+    title,
+    url: post.link,
+    objectives: splitObjectives(title),
+    sourceRegion: region
+  }
+}
+
 export async function scrapePeaksAndStreams(fetchText: Fetcher): Promise<RawReport[]> {
   const tags = JSON.parse(await fetchText(
     `${BASE}/wp-json/wp/v2/tags?per_page=100&_fields=id,name`)) as Tag[]
-  const names = new Map(tags.map(tag => [tag.id, decodeEntities(tag.name)]))
+  const tagNames = new Map(tags.map(tag => [tag.id, decodeEntities(tag.name)]))
 
-  const reports: RawReport[] = []
-  for (let page = 1; page <= 20; page += 1) {
-    const url = `${BASE}/wp-json/wp/v2/posts?per_page=100&page=${page}&_fields=title,link,tags`
-    const body = await fetchText(url).catch(() => undefined)
-    if (body === undefined) break
-
-    const batch = JSON.parse(body) as Post[]
-    if (!Array.isArray(batch) || batch.length === 0) break
-
-    for (const post of batch) {
-      const title = decodeEntities(post.title?.rendered ?? '')
-        .replace(/\s+/g, ' ').trim().replace(TRAILING_DATE, '').trim()
-      if (!title || !post.link) continue
-
-      const region = (post.tags ?? [])
-        .map(id => names.get(id))
-        .find(name => name && !NOT_A_REGION.test(name))
-
-      reports.push({
-        sourceId: 'peaksandstreams',
-        title,
-        url: post.link,
-        objectives: splitObjectives(title),
-        sourceRegion: region
-      })
-    }
-    if (batch.length < 100) break
-  }
-  return reports
+  const posts = await readAllPages<Post>(fetchText, page =>
+    `${BASE}/wp-json/wp/v2/posts?per_page=${PAGE_SIZE}&page=${page}&_fields=title,link,tags`)
+  return posts.flatMap(post => toReport(post, tagNames) ?? [])
 }

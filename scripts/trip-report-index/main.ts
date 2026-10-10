@@ -11,11 +11,14 @@
  *   --review-only  report what would change without writing any page
  */
 import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { BuildResult } from './build.ts'
 import { buildObjectives } from './build.ts'
+import { MinimumNotMetError } from './errors.ts'
 import { clearCache, createFetcher } from './fetch.ts'
 import { readGuidebooks } from './guidebooks.ts'
+import { indent } from './output.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { SOURCES } from './sources/index.ts'
 import { renderRegionPage } from './render.ts'
@@ -47,13 +50,9 @@ async function scrapeAll(refresh: boolean) {
   for (const source of SOURCES) {
     const scraped = await source.scrape(fetchText)
     if (scraped.length < source.minimumReports) {
-      throw new Error(
-        `${source.id}: found ${scraped.length} reports, expected at least `
-        + `${source.minimumReports}. The site has probably changed shape — fix the `
-        + `adapter rather than lowering the minimum.`
-      )
+      throw new MinimumNotMetError(source.id, scraped.length, source.minimumReports, 'reports')
     }
-    console.log(`  ${source.label.padEnd(18)} ${String(scraped.length).padStart(5)} reports`)
+    console.log(indent(`${source.label.padEnd(18)} ${String(scraped.length).padStart(5)} reports`))
     reports.push(...scraped)
   }
   return reports
@@ -70,9 +69,14 @@ function pageName(position: number, slug: string): string {
   return `${String(position).padStart(2, '0')}.${slug}.md`
 }
 
+/** For display: paths relative to where the command was run, so they can be pasted. */
+function shown(path: string): string {
+  return relative(process.cwd(), path) || '.'
+}
+
 /** Removes region pages for regions that no longer exist. */
 async function pruneStalePages(keep: ReadonlySet<string>): Promise<string[]> {
-  const existing = await readdir(PAGES_DIR).catch(() => [])
+  const existing = await readdir(PAGES_DIR)
   const stale = existing.filter(name =>
     name.endsWith('.md') && name !== INDEX_PAGE && !keep.has(name))
   for (const name of stale) await unlink(join(PAGES_DIR, name))
@@ -81,11 +85,11 @@ async function pruneStalePages(keep: ReadonlySet<string>): Promise<string[]> {
 
 /**
  * Fails when the hand-written index does not link a region, which is the one
- * way a generated page can go live with nothing pointing at it.
+ * way a generated page can go live with nothing pointing at it. A missing index
+ * fails too, rather than skipping the check it exists for.
  */
 async function checkIndexLinks(slugs: readonly string[]): Promise<void> {
-  const index = await readFile(join(PAGES_DIR, INDEX_PAGE), 'utf8').catch(() => '')
-  if (!index) return
+  const index = await readFile(join(PAGES_DIR, INDEX_PAGE), 'utf8')
   const missing = slugs.filter(slug => !index.includes(`/hiking-scrambling-beta/trip-reports/${slug}`))
   if (missing.length > 0) {
     throw new Error(`${INDEX_PAGE} does not link: ${missing.join(', ')}. Add a card for each.`)
@@ -99,18 +103,60 @@ async function checkIndexLinks(slugs: readonly string[]): Promise<void> {
  */
 async function checkMirroredSections(slugs: readonly string[]): Promise<void> {
   for (const dir of MIRRORED_SECTIONS) {
-    const present = new Set((await readdir(dir).catch(() => []))
+    const present = new Set((await readdir(dir))
       .filter(name => name.endsWith('.md'))
       .map(name => name.replace(/^\d+\./, '').replace(/\.md$/, '')))
     const missing = slugs.filter(slug => !present.has(slug))
     if (missing.length > 0) {
       throw new Error(
-        `${dir.replace(REPO, '.')} has no page for: ${missing.join(', ')}.\n`
-        + '  Weather and accommodation use the same regions as the trip reports; add a page '
-        + 'for each, or remove the region from regions.ts.'
+        `${shown(dir)} has no page for: ${missing.join(', ')}.\n`
+        + indent('Weather and accommodation use the same regions as the trip reports; add a page '
+          + 'for each, or remove the region from regions.ts.')
       )
     }
   }
+}
+
+/**
+ * Writes one page per region, then the catch-all page last. The catch-all is
+ * not a region: the weather and accommodation sections mirror REGIONS, and
+ * asking them to carry a forecast for "unsorted" would make no sense.
+ *
+ * Returns the page names, written or (with `reviewOnly`) merely planned.
+ */
+async function writeRegionPages(result: BuildResult, reviewOnly: boolean): Promise<string[]> {
+  const pages = [
+    ...REGIONS.map((region, index) => ({
+      region,
+      objectives: result.byRegion.get(region.id) ?? [],
+      name: pageName(index + 2, region.id)
+    })),
+    { region: UNSORTED, objectives: result.unplaced, name: pageName(REGIONS.length + 2, UNSORTED.id) }
+  ]
+
+  await mkdir(PAGES_DIR, { recursive: true })
+  for (const { region, objectives, name } of pages) {
+    if (!reviewOnly) await writeFile(join(PAGES_DIR, name), renderRegionPage(region, objectives), 'utf8')
+    console.log(indent(`${String(objectives.length).padStart(5)}  ${name}`))
+  }
+  return pages.map(page => page.name)
+}
+
+/** Prunes what no region produced, then runs the cross-section consistency checks. */
+async function finishPages(written: readonly string[]): Promise<void> {
+  const stale = await pruneStalePages(new Set(written))
+  for (const name of stale) console.log(indent(`removed stale page ${name}`))
+  const slugs = REGIONS.map(region => region.id)
+  await checkIndexLinks([...slugs, UNSORTED.id])
+  await checkMirroredSections(slugs)
+}
+
+function printSummary(result: BuildResult, reportCount: number): void {
+  const total = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
+  console.log(`\n${total} objectives across ${REGIONS.length} pages, `
+    + `${reportCount} reports, ${result.outOfScopeCount} out of scope.`)
+  console.log(`${result.unplaced.length} unplaced and ${result.conflicts.length} conflicted — `
+    + `see ${shown(REVIEW_PATH)}`)
 }
 
 async function main(): Promise<void> {
@@ -124,46 +170,14 @@ async function main(): Promise<void> {
   const reports = await scrapeAll(refresh)
 
   const guidebooks = await readGuidebooks(createFetcher(CACHE_DIR))
-  console.log(`  ${'Guidebook lists'.padEnd(18)} ${String(guidebooks.entries.size).padStart(5)} objectives`)
+  console.log(indent(`${'Guidebook lists'.padEnd(18)} ${String(guidebooks.entries.size).padStart(5)} objectives`))
 
   const result = buildObjectives(reports, guidebooks)
+  const written = await writeRegionPages(result, reviewOnly)
+  if (!reviewOnly) await finishPages(written)
 
-  const written: string[] = []
-  const slugs: string[] = []
-  await mkdir(PAGES_DIR, { recursive: true })
-
-  for (const [index, region] of REGIONS.entries()) {
-    const objectives = result.byRegion.get(region.id) ?? []
-    const slug = region.id
-    const name = pageName(index + 2, slug)
-    slugs.push(slug)
-    if (!reviewOnly) await writeFile(join(PAGES_DIR, name), renderRegionPage(region, objectives), 'utf8')
-    written.push(name)
-    console.log(`  ${String(objectives.length).padStart(5)}  ${name}`)
-  }
-
-  // The catch-all page goes last. It is not a region: the weather and
-  // accommodation sections mirror REGIONS, and asking them to carry a forecast
-  // for "unsorted" would make no sense.
-  const unsortedName = pageName(REGIONS.length + 2, UNSORTED.id)
-  if (!reviewOnly) {
-    await writeFile(join(PAGES_DIR, unsortedName), renderRegionPage(UNSORTED, result.unplaced), 'utf8')
-  }
-  written.push(unsortedName)
-  console.log(`  ${String(result.unplaced.length).padStart(5)}  ${unsortedName}`)
-
-  if (!reviewOnly) {
-    const stale = await pruneStalePages(new Set(written))
-    for (const name of stale) console.log(`  removed stale page ${name}`)
-    await checkIndexLinks([...slugs, UNSORTED.id])
-    await checkMirroredSections(slugs)
-  }
-
-  await writeFile(REVIEW_PATH, writeReview(result), 'utf8')
-  const total = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
-  console.log(`\n${total} objectives across ${REGIONS.length} pages, `
-    + `${reports.length} reports, ${result.outOfScopeCount} out of scope.`)
-  console.log(`${result.unplaced.length} unplaced and ${result.conflicts.length} conflicted — see ${REVIEW_PATH}`)
+  await writeFile(REVIEW_PATH, writeReview(result, new Date()), 'utf8')
+  printSummary(result, reports.length)
 }
 
 /**

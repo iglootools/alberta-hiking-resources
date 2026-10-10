@@ -40,7 +40,10 @@ OUTPUT: Returns a structured list with:
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
       }
-    } catch {
+    } catch (error) {
+      // The caller sees only a generic failure, so the cause has to reach the
+      // server log or it is lost entirely.
+      console.error(`[mcp] list-pages failed`, error)
       return {
         content: [{ type: 'text', text: 'Failed to list pages' }],
         isError: true

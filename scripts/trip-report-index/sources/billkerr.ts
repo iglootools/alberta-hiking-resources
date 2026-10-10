@@ -14,6 +14,7 @@ import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
 import { decodeEntities } from '../html.ts'
+import { PAGE_SIZE, readAllPages } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://www.billkerr.ca'
 
@@ -75,30 +76,23 @@ export async function scrapeBillKerr(fetchText: Fetcher): Promise<RawReport[]> {
   const ids = await outingCategoryIds(fetchText)
   if (ids.length === 0) throw new Error('billkerr: no outing categories matched; the site has been recategorised')
 
+  const posts = await readAllPages<Post>(fetchText, page =>
+    `${BASE}/wp-json/wp/v2/posts?categories=${ids.join(',')}`
+    + `&per_page=${PAGE_SIZE}&page=${page}&_fields=title,link`)
+
   const reports = new Map<string, RawReport>()
-  for (let page = 1; page <= 20; page += 1) {
-    const url = `${BASE}/wp-json/wp/v2/posts?categories=${ids.join(',')}`
-      + `&per_page=100&page=${page}&_fields=title,link`
-    const body = await fetchText(url).catch(() => undefined)
-    if (body === undefined) break
-
-    const batch = JSON.parse(body) as Post[]
-    if (!Array.isArray(batch) || batch.length === 0) break
-
-    for (const post of batch) {
-      const raw = post.title?.rendered ?? ''
-      const title = cleanTitle(raw)
-      if (!title || !post.link || reports.has(post.link)) continue
-      if (NOT_A_TRIP.test(decodeEntities(raw))) continue
-      reports.set(post.link, {
-        sourceId: 'billkerr',
-        title,
-        url: post.link,
-        objectives: splitObjectives(title),
-        sourceRegion: matchArea(decodeEntities(raw))
-      })
-    }
-    if (batch.length < 100) break
+  for (const post of posts) {
+    const raw = post.title?.rendered ?? ''
+    const title = cleanTitle(raw)
+    if (!title || !post.link || reports.has(post.link)) continue
+    if (NOT_A_TRIP.test(decodeEntities(raw))) continue
+    reports.set(post.link, {
+      sourceId: 'billkerr',
+      title,
+      url: post.link,
+      objectives: splitObjectives(title),
+      sourceRegion: matchArea(decodeEntities(raw))
+    })
   }
   return [...reports.values()]
 }

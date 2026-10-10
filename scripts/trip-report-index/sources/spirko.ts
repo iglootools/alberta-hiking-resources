@@ -16,6 +16,7 @@
  * objectives inherit a region from another source instead.
  */
 import type { Fetcher } from '../fetch.ts'
+import { fetchUnlessStatus } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { anchors, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
@@ -80,7 +81,8 @@ async function regionOf(url: URL, fetchText: Fetcher): Promise<string | undefine
   const fromPath = regionFromPath(url)
   if (fromPath && REGION_MAP.spirko?.[fromPath]) return fromPath
 
-  const html = await fetchText(url.href).catch(() => undefined)
+  // A dead link falls back to the path's region; any other failure stops the run.
+  const html = await fetchUnlessStatus(fetchText, url.href, 404)
   const locality = html ? localityOf(html) : undefined
   return (locality ? matchArea(locality) : undefined) ?? fromPath
 }

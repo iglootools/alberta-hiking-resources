@@ -127,6 +127,104 @@ function splitHomonym(group: readonly RawReport[], fallbackRegion: string): Map<
   return partitions
 }
 
+/** Where one name group ends up after the first pass. */
+type Placement
+  = | { readonly kind: 'out-of-scope' }
+    | { readonly kind: 'unplaced', readonly objective: Objective }
+    | {
+      readonly kind: 'placed'
+      /** One per mountain: more than one only when the name is shared. */
+      readonly objectives: readonly Objective[]
+      readonly conflict?: BuildResult['conflicts'][number]
+    }
+
+/**
+ * One objective per region the group's reports split into. Two mountains
+ * sharing a name become two objectives; a partition outside the taxonomy is
+ * dropped.
+ */
+function partition(objective: Objective, group: readonly RawReport[]): Objective[] {
+  const partitions = isHomonym(group)
+    ? splitHomonym(group, objective.regionId)
+    : new Map([[objective.regionId, [...group]]])
+
+  return [...partitions]
+    .filter(([partitionRegion]) => REGION_IDS.has(partitionRegion))
+    .map(([partitionRegion, partitionReports]) => ({
+      ...objective,
+      regionId: partitionRegion,
+      subRange: partitionReports.find(report => report.subRange)?.subRange,
+      reports: sortReports(partitionReports)
+    }))
+}
+
+function place(key: string, group: readonly RawReport[], guidebooks?: GuidebookIndex): Placement {
+  const resolution = resolveRegion(group)
+  const overridden = REGION_OVERRIDES[key]
+
+  // A curated override outranks the sources, because it is only ever reached
+  // for objectives they failed to place — and it may say the objective is not
+  // ours to list at all.
+  if (overridden === OUT_OF_SCOPE) return { kind: 'out-of-scope' }
+  // A curated entry outranks the sources. It is usually reached only because
+  // they placed nothing, but it also has to win outright: Steven Song files
+  // the whole Selkirk range under one heading, so the only way to separate
+  // Rogers Pass from the Kokanee Glacier 200 km south is to say so by hand.
+  // A guidebook's own Region column ranks below the blogs and below curation,
+  // but above giving up: it is the book's filing, not a guess at one.
+  const regionId = overridden ?? resolution.regionId ?? guidebooks?.regions.get(key)
+  if (!regionId && resolution.outOfScope) return { kind: 'out-of-scope' }
+
+  const objective: Objective = {
+    key,
+    name: pickName(key, group),
+    regionId: regionId ?? '',
+    subRange: group.find(report => report.subRange)?.subRange,
+    reports: sortReports(group),
+    guidebooks: guidebooks?.entries.get(key)
+  }
+
+  if (!regionId) return { kind: 'unplaced', objective }
+  if (!REGION_IDS.has(regionId)) {
+    throw new Error(`Objective "${objective.name}" resolved to unknown region "${regionId}"`)
+  }
+  return {
+    kind: 'placed',
+    objectives: partition(objective, group),
+    conflict: resolution.conflicts.length > 0 ? { objective, conflicts: resolution.conflicts } : undefined
+  }
+}
+
+/**
+ * Second pass: places what the first left over, using the sub-ranges the
+ * placed objectives taught us. What still has no region stays unplaced.
+ */
+function placeBySubRange(
+  unplaced: readonly Objective[],
+  placed: readonly Objective[]
+): { placed: Objective[], unplaced: Objective[] } {
+  const learned = learnSubRanges(placed)
+  const regionOf = (objective: Objective) =>
+    objective.subRange ? learned.get(objective.subRange) : undefined
+  return {
+    placed: unplaced.flatMap((objective) => {
+      const regionId = regionOf(objective)
+      return regionId ? [{ ...objective, regionId }] : []
+    }),
+    unplaced: unplaced.filter(objective => !regionOf(objective))
+  }
+}
+
+/** Groups by region, each region's objectives sorted by name. */
+function groupByRegion(objectives: readonly Objective[]): Map<string, Objective[]> {
+  const byRegion = new Map<string, Objective[]>()
+  for (const objective of objectives) {
+    byRegion.set(objective.regionId, [...(byRegion.get(objective.regionId) ?? []), objective])
+  }
+  for (const list of byRegion.values()) list.sort(byName)
+  return byRegion
+}
+
 /**
  * `guidebooks` is optional so the builder can be exercised without fetching the
  * lists. When present it does two jobs: it annotates objectives with the books
@@ -136,86 +234,17 @@ export function buildObjectives(
   reports: readonly RawReport[],
   guidebooks?: GuidebookIndex
 ): BuildResult {
-  const byRegion = new Map<string, Objective[]>()
-  const unplaced: Objective[] = []
-  const conflicts: { objective: Objective, conflicts: readonly string[] }[] = []
-  let outOfScopeCount = 0
+  const placements = [...groupByObjective(reports.map(withCuratedObjectives))]
+    .map(([key, group]) => place(key, group, guidebooks))
 
-  for (const [key, group] of groupByObjective(reports.map(withCuratedObjectives))) {
-    const resolution = resolveRegion(group)
-    const overridden = REGION_OVERRIDES[key]
+  const placed = placements.flatMap(p => p.kind === 'placed' ? p.objectives : [])
+  const unplaced = placements.flatMap(p => p.kind === 'unplaced' ? [p.objective] : [])
+  const secondPass = placeBySubRange(unplaced, placed)
 
-    // A curated override outranks the sources, because it is only ever reached
-    // for objectives they failed to place — and it may say the objective is not
-    // ours to list at all.
-    if (overridden === OUT_OF_SCOPE) {
-      outOfScopeCount += 1
-      continue
-    }
-    // A curated entry outranks the sources. It is usually reached only because
-    // they placed nothing, but it also has to win outright: Steven Song files
-    // the whole Selkirk range under one heading, so the only way to separate
-    // Rogers Pass from the Kokanee Glacier 200 km south is to say so by hand.
-    // A guidebook's own Region column ranks below the blogs and below curation,
-    // but above giving up: it is the book's filing, not a guess at one.
-    const regionId = overridden ?? resolution.regionId ?? guidebooks?.regions.get(key)
-    if (!regionId && resolution.outOfScope) {
-      outOfScopeCount += 1
-      continue
-    }
-
-    const objective: Objective = {
-      key,
-      name: pickName(key, group),
-      regionId: regionId ?? '',
-      subRange: group.find(report => report.subRange)?.subRange,
-      reports: sortReports(group),
-      guidebooks: guidebooks?.entries.get(key)
-    }
-
-    if (!regionId) {
-      unplaced.push(objective)
-      continue
-    }
-    if (!REGION_IDS.has(regionId)) {
-      throw new Error(`Objective "${objective.name}" resolved to unknown region "${regionId}"`)
-    }
-    if (resolution.conflicts.length > 0) conflicts.push({ objective, conflicts: resolution.conflicts })
-
-    // Two mountains sharing a name become two objectives, one per region.
-    const partitions = isHomonym(group)
-      ? splitHomonym(group, regionId)
-      : new Map([[regionId, [...group]]])
-
-    for (const [partitionRegion, partitionReports] of partitions) {
-      if (!REGION_IDS.has(partitionRegion)) continue
-      if (!byRegion.has(partitionRegion)) byRegion.set(partitionRegion, [])
-      byRegion.get(partitionRegion)!.push({
-        ...objective,
-        regionId: partitionRegion,
-        subRange: partitionReports.find(report => report.subRange)?.subRange,
-        reports: sortReports(partitionReports)
-      })
-    }
-  }
-
-  // Second pass: place what is left using sub-ranges learned from the first.
-  const learned = learnSubRanges([...byRegion.values()].flat())
-  const stillUnplaced: Objective[] = []
-  for (const objective of unplaced) {
-    const regionId = objective.subRange ? learned.get(objective.subRange) : undefined
-    if (!regionId) {
-      stillUnplaced.push(objective)
-      continue
-    }
-    byRegion.get(regionId)!.push({ ...objective, regionId })
-  }
-
-  for (const objectives of byRegion.values()) objectives.sort(byName)
   return {
-    byRegion,
-    unplaced: stillUnplaced.sort(byName),
-    conflicts,
-    outOfScopeCount
+    byRegion: groupByRegion([...placed, ...secondPass.placed]),
+    unplaced: secondPass.unplaced.sort(byName),
+    conflicts: placements.flatMap(p => p.kind === 'placed' && p.conflict ? [p.conflict] : []),
+    outOfScopeCount: placements.filter(p => p.kind === 'out-of-scope').length
   }
 }

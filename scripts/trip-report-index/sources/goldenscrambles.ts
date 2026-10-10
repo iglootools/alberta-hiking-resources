@@ -12,6 +12,7 @@
  * it. That costs one request per unlisted summit, once, against the cache.
  */
 import type { Fetcher } from '../fetch.ts'
+import { fetchUnlessStatus } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { anchors, decodeEntities, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
@@ -49,9 +50,10 @@ function toReport(text: string, url: URL, region: string | undefined): RawReport
  * summit is dropped — the alphabetical log is roughly a third Colorado 14ers.
  * `undefined` means the page gave no usable answer at all (two 404s at the time
  * of writing), which leaves the summit for curation rather than discarding it.
+ * Only a 404 is read that way; any other failure stops the run.
  */
 async function areaOf(fetchText: Fetcher, url: string): Promise<string | 'foreign' | undefined> {
-  const html = await fetchText(url).catch(() => undefined)
+  const html = await fetchUnlessStatus(fetchText, url, 404)
   if (html === undefined) return undefined
   const area = AREA_FIELD.exec(textOf(html))?.[1]?.trim()
   if (!area) return undefined
