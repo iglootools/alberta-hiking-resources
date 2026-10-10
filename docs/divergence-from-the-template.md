@@ -187,6 +187,11 @@ a hiking site. These replace it:
   layered ridgeline drawn in the semantic colours. It is an SVG rather than a photo so it needs
   no licence clearance and follows light and dark mode on its own; a CC BY-SA–compatible photo
   of the Rockies would be the natural upgrade.
+- **Logo and favicon.** [AppLogo.vue](../app/components/AppLogo.vue) is a one-colour line mark
+  stroked in `currentColor`, which the header sets to `text-primary`. It replaced a pasted-in
+  Noto emoji whose fixed colours clashed with the palette and blurred at 24px.
+  `public/favicon.svg` draws the same paths and switches shade with `prefers-color-scheme`;
+  `favicon.ico` is the fallback, rendered from that SVG at 16, 32 and 48px.
 
 ## Licence: CC BY-SA 4.0, not the template's MIT or the org's Apache 2.0
 
