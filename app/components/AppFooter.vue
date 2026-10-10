@@ -5,7 +5,18 @@ const { footer } = useAppConfig()
 <template>
   <UFooter>
     <template #left>
-      {{ footer.credits }}
+      <span>
+        {{ footer.credits }}
+        <template v-if="footer.license">
+          · Content under
+          <ULink
+            :to="footer.license.to"
+            target="_blank"
+            class="text-default hover:text-primary"
+          >{{ footer.license.label }}</ULink>
+        </template>
+        · Built with Nuxt UI
+      </span>
     </template>
 
     <template #right>

@@ -51,13 +51,19 @@ export default defineAppConfig({
     }]
   },
   footer: {
-    credits: `Built with Nuxt UI • © ${new Date().getFullYear()}`,
+    credits: `© ${new Date().getFullYear()} Alberta Hiking Resources`,
+    // The site's content licence (see LICENSE), named in the footer because it
+    // is what a reader may reuse the content under.
+    license: {
+      label: 'CC BY-SA 4.0',
+      to: 'https://creativecommons.org/licenses/by-sa/4.0/'
+    },
     colorMode: false,
     links: [{
       'icon': 'i-lucide-github',
       'to': 'https://github.com/iglootools/alberta-hiking-resources/',
       'target': '_blank',
-      'aria-label': 'Alberta Hikers Together on Github'
+      'aria-label': 'Alberta Hiking Resources on GitHub'
     }]
   },
   toc: {
