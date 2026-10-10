@@ -166,7 +166,7 @@ stack itself is described in [architecture.md](architecture.md).
 
 - Content fully replaced: the template's demo docs → the 8 hiking sections.
 - Custom content components: `WeatherLocation`, `FacebookGroupLinks`,
-  `SafetyWarnings`, `HeroBackground`, `StarsBg`; added `pages/changelog.vue`.
+  `SafetyWarnings`, `HeroMountains`, `StarsBg`; added `pages/changelog.vue`.
   The template's `AppHeader/Footer/Logo`, `TemplateMenu`, `PageHeaderLinks`, and
   dynamic `[...slug].vue` routing are kept.
 - Added [architecture-decision-record.md](architecture-decision-record.md).
@@ -183,6 +183,10 @@ a hiking site. These replace it:
   Nuxt UI uses for light and dark mode, and are chosen to clear 4.5:1 text contrast in both. The
   OG image takes the colour as a literal in `[...slug].vue`, which has to be kept in step by
   hand.
+- **Landing hero.** The template's `HeroBackground` glow is replaced by `HeroMountains`, a
+  layered ridgeline drawn in the semantic colours. It is an SVG rather than a photo so it needs
+  no licence clearance and follows light and dark mode on its own; a CC BY-SA–compatible photo
+  of the Rockies would be the natural upgrade.
 
 ## Licence: CC BY-SA 4.0, not the template's MIT or the org's Apache 2.0
 

@@ -8,8 +8,8 @@ seo:
 ---
 orientation: horizontal
 ---
-#top
-:hero-background
+#bottom
+:hero-mountains
 
 #title
 Alberta [Hiking]{.text-primary} Resources.
