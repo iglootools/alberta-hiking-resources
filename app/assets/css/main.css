@@ -39,3 +39,18 @@
 :root {
   --ui-container: var(--container-8xl);
 }
+
+/* Tick-list marks on the generated trip report pages — "Kane — Easy",
+   "11,000ers — 3,410 m" — emitted by scripts/trip-report-index/render.ts as
+   `[…](…){.tick-mark}`. Styled as a pill so a grade reads apart from the run of
+   report links before it. Unlayered on purpose: ProseA's own classes sit in
+   Tailwind's utilities layer, and unlayered rules win over any layer without
+   needing !important. */
+.tick-mark {
+  @apply inline-block rounded-md px-1.5 py-px text-xs font-medium whitespace-nowrap align-[0.1em];
+  @apply text-secondary bg-secondary/10 border border-secondary/25;
+}
+
+.tick-mark:hover {
+  @apply border-secondary bg-secondary/15;
+}

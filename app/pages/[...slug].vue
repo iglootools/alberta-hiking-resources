@@ -79,6 +79,11 @@ const links = computed(() => {
     </UPageHeader>
 
     <UPageBody>
+      <AlphabetJump
+        v-if="page.body?.toc?.links"
+        :links="page.body.toc.links"
+      />
+
       <ContentRenderer
         v-if="page"
         :value="page"

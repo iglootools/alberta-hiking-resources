@@ -166,7 +166,9 @@ stack itself is described in [architecture.md](architecture.md).
 
 - Content fully replaced: the template's demo docs → the 8 hiking sections.
 - Custom content components: `WeatherLocation`, `FacebookGroupLinks`,
-  `SafetyWarnings`, `HeroMountains`, `StarsBg`; added `pages/changelog.vue`.
+  `SafetyWarnings`, `HeroMountains`, `StarsBg`; added `pages/changelog.vue`, and
+  `AlphabetJump`, a sticky A–Z strip `[...slug].vue` shows on pages whose headings are
+  all letters — in practice the generated trip report indexes.
   The template's `AppHeader/Footer/Logo`, `TemplateMenu`, `PageHeaderLinks`, and
   dynamic `[...slug].vue` routing are kept.
 - Added [architecture-decision-record.md](architecture-decision-record.md).
