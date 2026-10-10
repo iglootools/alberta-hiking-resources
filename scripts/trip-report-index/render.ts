@@ -51,11 +51,16 @@ function renderLink(report: RawReport, objectiveName: string): string {
  * The three guidebooks are not online and the 11,000ers is not a book, so there
  * is nothing else to point at; his page is the closest published record in
  * either case, and a reader who wants a route description goes to the book.
+ *
+ * The `{.tick-mark}` MDC attribute is what styles a mark as a pill on the page
+ * (see main.css), so it stands apart from the report links beside it. It is an
+ * attribute rather than a component so the mark stays an ordinary Markdown link
+ * for the readers that see the body as text.
  */
 function renderGuidebooks(objective: Objective): string {
   if (!objective.guidebooks?.length) return ''
   const marks = objective.guidebooks
-    .map(entry => `[${escapeText(entry.book)} — ${escapeText(entry.grade)}](${entry.url})`)
+    .map(entry => `[${escapeText(entry.book)} — ${escapeText(entry.grade)}](${entry.url}){.tick-mark}`)
     .join(', ')
   return ` · ${marks}`
 }
@@ -66,10 +71,15 @@ function renderObjective(objective: Objective): string {
   return `- **${escapeText(objective.name)}**${range} — ${links}${renderGuidebooks(objective)}`
 }
 
-/** A–Z buckets; anything not starting with a letter collects under "#". */
+/**
+ * A–Z buckets. Leading punctuation is stripped first, so anything that does not
+ * start with a letter starts with a digit, and collects under "0–9". That
+ * bucket was once "#", which slugifies to an empty heading id: the anchor went
+ * nowhere and the table of contents' scroll-spy threw on the selector "#".
+ */
 function bucketOf(objective: Objective): string {
   const first = objective.name.replace(/^[^\p{L}\p{N}]+/u, '').charAt(0).toUpperCase()
-  return /\p{L}/u.test(first) ? first : '#'
+  return /\p{L}/u.test(first) ? first : '0–9'
 }
 
 function groupByLetter(objectives: readonly Objective[]): Map<string, Objective[]> {

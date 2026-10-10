@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Same paths as app/components/AppLogo.vue. Colours are forest-500 and
+       forest-400 from app/assets/css/main.css, as literals because a favicon
+       cannot read the page's CSS variables. -->
+  <style>
+    path { stroke: #357A54; }
+    @media (prefers-color-scheme: dark) { path { stroke: #5EA67C; } }
+  </style>
+  <path d="M3 26 L12 9 L17.5 18.5 L21 13 L29 26 Z" />
+  <path d="M8.3 17 L10.6 18.8 L12.6 16.6 L14.8 18.4" />
+</svg>

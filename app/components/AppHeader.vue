@@ -43,7 +43,7 @@ const { header } = useAppConfig()
         :to="header?.to || '/'"
         class="flex items-center gap-2"
       >
-        <AppLogo class="w-auto h-6 shrink-0" />
+        <AppLogo class="w-auto h-6 shrink-0 text-primary" />
         Alberta Hiking Resources
       </NuxtLink>
 

@@ -2,8 +2,22 @@ export default defineAppConfig({
   repository: 'iglootools/alberta-hiking-resources',
   ui: {
     colors: {
-      primary: 'green',
+      primary: 'forest',
+      secondary: 'glacier',
       neutral: 'slate'
+    },
+    // A feature with `to` only gets a focus outline upstream, so the landing
+    // cards gave no sign they were links until clicked. Scoped to the `to`
+    // variant so unlinked features, like the hero's Motivation, are unchanged.
+    pageFeature: {
+      variants: {
+        to: {
+          true: {
+            root: 'group',
+            title: 'group-hover:text-primary transition-colors'
+          }
+        }
+      }
     },
     footer: {
       slots: {
@@ -37,13 +51,19 @@ export default defineAppConfig({
     }]
   },
   footer: {
-    credits: `Built with Nuxt UI • © ${new Date().getFullYear()}`,
+    credits: `© ${new Date().getFullYear()} Alberta Hiking Resources`,
+    // The site's content licence (see LICENSE), named in the footer because it
+    // is what a reader may reuse the content under.
+    license: {
+      label: 'CC BY-SA 4.0',
+      to: 'https://creativecommons.org/licenses/by-sa/4.0/'
+    },
     colorMode: false,
     links: [{
       'icon': 'i-lucide-github',
       'to': 'https://github.com/iglootools/alberta-hiking-resources/',
       'target': '_blank',
-      'aria-label': 'Alberta Hikers Together on Github'
+      'aria-label': 'Alberta Hiking Resources on GitHub'
     }]
   },
   toc: {

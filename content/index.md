@@ -8,8 +8,8 @@ seo:
 ---
 orientation: horizontal
 ---
-#top
-:hero-background
+#bottom
+:hero-mountains
 
 #title
 Alberta [Hiking]{.text-primary} Resources.
@@ -48,11 +48,11 @@ Find your way in the jungle of FB and Meetup groups. Hiking Partners. Informatio
   Motivation
 
   #description
-  We pulled together a bunch of useful goodies for anyone hiking or scrambling in the Canadian Rockies 🏔️
+  We pulled together a bunch of useful goodies for anyone hiking or scrambling in the Canadian Rockies.
 
   *—*
 
-  Whether you're brand new or just looking for a few pro tips, this is your one-stop mountain-friendly info hub 🍃
+  Whether you're brand new or just looking for a few pro tips, this is your one-stop mountain-friendly info hub.
   :::
 ::
 
@@ -76,19 +76,21 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-search
+  to: /meetup-groups
   ---
   #title
   Meetup Groups
 
   #description
-  Alberta's hiking scene has so many Facebook & Meetup groups, it's easy to get lost in the jungle 🌴.
+  Alberta's hiking scene has so many Facebook & Meetup groups, it's easy to get lost in the jungle.
   
-  So we've spotlighted some solid options to help you find your hiking fam 👣.
+  So we've spotlighted some solid options to help you find your hiking fam.
   :::
 
   :::u-page-feature
   ---
   icon: i-lucide-footprints
+  to: /hiking-scrambling-beta
   ---
   #title
   Hiking & Scrambling Beta
@@ -100,6 +102,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-cloud-sun
+  to: /weather-trail-conditions
   ---
   #title
   Weather & Trail Conditions
@@ -120,25 +123,27 @@ What you will find
   Accommodation
 
   #description
-  Campgrounds, hostels, and backcountry huts near the trailheads — and how to book them 🏕️.
+  Campgrounds, hostels, and backcountry huts near the trailheads — and how to book them.
   :::
 
 
   :::u-page-feature
   ---
   icon: i-lucide-calendar-days
+  to: /events
   ---
   #title
   Events
 
   #description
-  Community gatherings off the trail — like our annual Hikers Gathering around a communal campfire 🔥.
+  Community gatherings off the trail — like our annual Hikers Gathering around a communal campfire.
   :::
 
 
   :::u-page-feature
   ---
   icon: i-lucide-backpack
+  to: /outdoor-gear
   ---
   #title
   Outdoor Gear
@@ -150,27 +155,29 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-user-star
+  to: /hike-organizers
   ---
   #title
   Hike Organizers
 
   #description
-  A cozy space for organizers to share their vibe, style, and what to expect on their hikes 💬.
+  A cozy space for organizers to share their vibe, style, and what to expect on their hikes.
   
-  Because let's face it — Facebook posts aren't exactly great for nuance or trail philosophy 😅.
+  Because let's face it — Facebook posts aren't exactly great for nuance or trail philosophy.
   :::
 
 
   :::u-page-feature
   ---
   icon: i-lucide-message-circle-question-mark
+  to: /faq
   ---
   #title
   FAQ
 
   #description
-  Got a specific question buzzing in your brain? 🐝.
-  Chances are, we've answered it — or at least pretended to — in this section 😄.
+  Got a specific question buzzing in your brain?
+  Chances are, we've answered it — or at least pretended to — in this section.
   :::
 ::
 
@@ -187,7 +194,7 @@ What you will find
       variant: subtle
       icon: i-lucide-github
   title: Want to contribute to this site?
-  description: Whether it's a quick fix, a full section, or just a friendly pointer to better info — every little bit helps 🫶🌲.
+  description: Whether it's a quick fix, a full section, or just a friendly pointer to better info — every little bit helps.
   class: dark:bg-neutral-950
   ---
 

@@ -166,10 +166,34 @@ stack itself is described in [architecture.md](architecture.md).
 
 - Content fully replaced: the template's demo docs → the 8 hiking sections.
 - Custom content components: `WeatherLocation`, `FacebookGroupLinks`,
-  `SafetyWarnings`, `HeroBackground`, `StarsBg`; added `pages/changelog.vue`.
+  `SafetyWarnings`, `HeroMountains`, `StarsBg`; added `pages/changelog.vue`, and
+  `AlphabetJump`, a sticky A–Z strip `[...slug].vue` shows on pages whose headings are
+  all letters — in practice the generated trip report indexes.
   The template's `AppHeader/Footer/Logo`, `TemplateMenu`, `PageHeaderLinks`, and
   dynamic `[...slug].vue` routing are kept.
 - Added [architecture-decision-record.md](architecture-decision-record.md).
+
+## Visual identity
+
+The template's look is Nuxt's own brand, and a site left on it reads as a Nuxt demo rather than
+a hiking site. These replace it:
+
+- **Palette.** The template overrides Tailwind's `green` with Nuxt's brand scale (`#00DC82`).
+  This site drops that override and defines two scales of its own in
+  [main.css](../app/assets/css/main.css): `forest` as `primary` and `glacier` as `secondary`.
+  Tailwind's stock `green` is back in place for `success`. The 500 and 400 shades are the ones
+  Nuxt UI uses for light and dark mode, and are chosen to clear 4.5:1 text contrast in both. The
+  OG image takes the colour as a literal in `[...slug].vue`, which has to be kept in step by
+  hand.
+- **Landing hero.** The template's `HeroBackground` glow is replaced by `HeroMountains`, a
+  layered ridgeline drawn in the semantic colours. It is an SVG rather than a photo so it needs
+  no licence clearance and follows light and dark mode on its own; a CC BY-SA–compatible photo
+  of the Rockies would be the natural upgrade.
+- **Logo and favicon.** [AppLogo.vue](../app/components/AppLogo.vue) is a one-colour line mark
+  stroked in `currentColor`, which the header sets to `text-primary`. It replaced a pasted-in
+  Noto emoji whose fixed colours clashed with the palette and blurred at 24px.
+  `public/favicon.svg` draws the same paths and switches shade with `prefers-color-scheme`;
+  `favicon.ico` is the fallback, rendered from that SVG at 16, 32 and 48px.
 
 ## Licence: CC BY-SA 4.0, not the template's MIT or the org's Apache 2.0
 

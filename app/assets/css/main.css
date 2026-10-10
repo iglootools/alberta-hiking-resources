@@ -7,19 +7,50 @@
   --container-8xl: 90rem;
   --font-sans: 'Public Sans', sans-serif;
 
-  --color-green-50: #EFFDF5;
-  --color-green-100: #D9FBE8;
-  --color-green-200: #B3F5D1;
-  --color-green-300: #75EDAE;
-  --color-green-400: #00DC82;
-  --color-green-500: #00C16A;
-  --color-green-600: #00A155;
-  --color-green-700: #007F45;
-  --color-green-800: #016538;
-  --color-green-900: #0A5331;
-  --color-green-950: #052E16;
+  /* Pine-forest primary and glacier-water secondary, replacing the Nuxt brand
+     green the template ships. Nuxt UI resolves primary to the 500 shade in
+     light mode and the 400 shade in dark mode, so those two are tuned for
+     text contrast (>= 4.5:1) against white and against neutral-950. */
+  --color-forest-50: #F1F8F3;
+  --color-forest-100: #DDEEE2;
+  --color-forest-200: #BCDCC7;
+  --color-forest-300: #8FC3A3;
+  --color-forest-400: #5EA67C;
+  --color-forest-500: #357A54;
+  --color-forest-600: #2A6443;
+  --color-forest-700: #24533A;
+  --color-forest-800: #1F4432;
+  --color-forest-900: #1A392A;
+  --color-forest-950: #0D2118;
+
+  --color-glacier-50: #EFF8FB;
+  --color-glacier-100: #D7EEF5;
+  --color-glacier-200: #B2DCEA;
+  --color-glacier-300: #7EC3DA;
+  --color-glacier-400: #45A3C3;
+  --color-glacier-500: #23779A;
+  --color-glacier-600: #1F6582;
+  --color-glacier-700: #1E546B;
+  --color-glacier-800: #1D4759;
+  --color-glacier-900: #1B3C4C;
+  --color-glacier-950: #0F2733;
 }
 
 :root {
   --ui-container: var(--container-8xl);
+}
+
+/* Tick-list marks on the generated trip report pages — "Kane — Easy",
+   "11,000ers — 3,410 m" — emitted by scripts/trip-report-index/render.ts as
+   `[…](…){.tick-mark}`. Styled as a pill so a grade reads apart from the run of
+   report links before it. Unlayered on purpose: ProseA's own classes sit in
+   Tailwind's utilities layer, and unlayered rules win over any layer without
+   needing !important. */
+.tick-mark {
+  @apply inline-block rounded-md px-1.5 py-px text-xs font-medium whitespace-nowrap align-[0.1em];
+  @apply text-secondary bg-secondary/10 border border-secondary/25;
+}
+
+.tick-mark:hover {
+  @apply border-secondary bg-secondary/15;
 }
