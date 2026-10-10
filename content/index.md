@@ -76,6 +76,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-search
+  to: /meetup-groups
   ---
   #title
   Meetup Groups
@@ -89,6 +90,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-footprints
+  to: /hiking-scrambling-beta
   ---
   #title
   Hiking & Scrambling Beta
@@ -100,6 +102,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-cloud-sun
+  to: /weather-trail-conditions
   ---
   #title
   Weather & Trail Conditions
@@ -127,6 +130,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-calendar-days
+  to: /events
   ---
   #title
   Events
@@ -139,6 +143,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-backpack
+  to: /outdoor-gear
   ---
   #title
   Outdoor Gear
@@ -150,6 +155,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-user-star
+  to: /hike-organizers
   ---
   #title
   Hike Organizers
@@ -164,6 +170,7 @@ What you will find
   :::u-page-feature
   ---
   icon: i-lucide-message-circle-question-mark
+  to: /faq
   ---
   #title
   FAQ

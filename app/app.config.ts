@@ -6,6 +6,19 @@ export default defineAppConfig({
       secondary: 'glacier',
       neutral: 'slate'
     },
+    // A feature with `to` only gets a focus outline upstream, so the landing
+    // cards gave no sign they were links until clicked. Scoped to the `to`
+    // variant so unlinked features, like the hero's Motivation, are unchanged.
+    pageFeature: {
+      variants: {
+        to: {
+          true: {
+            root: 'group',
+            title: 'group-hover:text-primary transition-colors'
+          }
+        }
+      }
+    },
     footer: {
       slots: {
         root: 'border-t border-default',
