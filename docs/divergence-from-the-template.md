@@ -54,41 +54,36 @@ stack itself is described in [architecture.md](architecture.md).
   `unist-util-visit` (unimported in the template too), and
   `simple-icons`/`vscode-icons` (every `i-simple-icons-*` was swapped for
   `i-lucide-*`, so only `@iconify-json/lucide` is needed).
-- `@nuxtjs/mdc` was trimmed on the same grounds and has been **restored to the
-  template's `^0.23.0`**, because it is unimported but not idle: the module registers
+- `@nuxtjs/mdc` was trimmed on the same grounds and has been **restored, as the
+  template declares it**, because it is unimported but not idle: the module registers
   ten `@nuxtjs/mdc > <pkg>` entries in `vite.optimizeDeps.include`, and Vite resolves
   the left-hand side from the project root. Here the package arrives only through
   `@nuxt/content`, so without the declaration all ten fail and every dev run reports
   `NUXT_B7002` — which `shamefullyHoist` had been masking. Declaring it is how the
   template keeps them resolvable, and matching the template is the point: a
   one-package `publicHoistPattern` also worked and was dropped in favour of this.
-  The cost is a known wart rather than a bug: `@nuxt/content` requires `^0.22.2`,
-  which `^0.23.0` does not satisfy, so the tree holds two copies and Vite
-  pre-bundles against the one that does not run.
+  It is the one package declared without being imported, which cuts against the
+  trimming of unused template deps above; it does not weaken the rule, which is
+  about not *omitting* what you import.
 
-  ```
-  @nuxtjs/mdc@0.22.2   ← what @nuxt/content actually loads
-  @nuxtjs/mdc@0.23.1   ← our declaration, linked at the root, what Vite resolves
-  ```
+  It is now an ordinary dependency: a single copy in the tree, the one
+  `@nuxt/content` loads and Vite pre-bundles. For its first two months it was not.
+  `@nuxt/content` 3.15 required `^0.22.2`, which the declared `^0.23.0` did not
+  satisfy, so the tree held two copies and Vite pre-bundled against the one that did
+  not run — harmless only because both versions pinned identical ranges for the ten
+  pre-bundled packages. `@nuxt/content` 3.16.1 widened its range to `^0.23.1`, which
+  collapsed the two (#212), exactly as this entry had predicted it would retire.
 
-  That is harmless while both agree on the ten packages being pre-bundled, and
-  today they agree exactly — `remark-gfm ^4.0.1`, `remark-mdc ^3.11.1`,
-  `parse5 ^8.0.1` and the rest are identical in both. It is also the one package
-  declared without being imported, which cuts against the trimming of unused
-  template deps above; it does not weaken the rule, which is about not *omitting*
-  what you import.
-
-  **Watch for** those transitive ranges diverging, which is what would turn the
-  wart into a real bug; a Renovate bump on either side is the likely trigger:
+  **Watch for** the split coming back: a Renovate bump that takes our declaration
+  past a minor `@nuxt/content` has not adopted yet, which in 0.x is any minor. The
+  signal is more than one line from:
 
   ```bash
-  for v in 0.22.2 0.23.1; do npm view @nuxtjs/mdc@$v dependencies --json; done
+  ls -d node_modules/.pnpm/@nuxtjs+mdc@*
   ```
 
-  **Retires when** `@nuxt/content`'s range admits the version declared here,
-  collapsing the tree to one copy and making this an ordinary dependency. Check
-  with `npm view @nuxt/content dependencies.@nuxtjs/mdc`, then confirm with
-  `ls -d node_modules/.pnpm/@nuxtjs+mdc@* | wc -l` returning 1.
+  If it happens, compare the two versions' `dependencies` with `npm view`; the split is
+  tolerable only while they agree on the pre-bundled packages.
 - `@vueuse/core`, `minimark`, `tailwindcss` and `ufo` were trimmed too, and have
   been restored as direct dependencies. They are imported directly by our own
   code — `@vueuse/core` in `app/components/PageHeaderLinks.vue`, `minimark` and
@@ -96,11 +91,48 @@ stack itself is described in [architecture.md](architecture.md).
   `app/assets/css/main.css` — so leaving them undeclared meant the versions we
   compiled against were whatever `shamefullyHoist` happened to lift to the root,
   with nothing pinning them. That is not merely theoretical: `@vueuse/core` still
-  resolves to two versions in the tree (10.x transitively, 14.x for us), and a
+  resolves to three versions in the tree (10.x transitively, 14.x for `@nuxt/ui`,
+  15.x for us), and a
   stale local `node_modules` was observed hoisting a different major of `h3` than
   a clean `pnpm install --frozen-lockfile` did, which broke `typecheck` locally
   while CI stayed green. Import it, declare it. Declaring these four is what made
   dropping `shamefullyHoist` possible.
+
+- **`minimark` is on `^1.0.0`; the template and `@nuxt/content` are on `^0.2.0`.**
+  Nobody chose this. It was declared at the template's `^0.2.0` and went to 1.0 in a
+  grouped Renovate update (#170), which is why it was undocumented until now. It
+  matters more than a version number usually does, because the version is the whole
+  output of `/raw/*.md` — what the page header's Markdown links serve and what the MCP
+  `get-page` tool returns — and the two majors render this site's content very differently.
+  `@nuxt/content` builds the AST with 0.2 and we stringify it with 1.0, so this is also
+  the one place where two majors of a package meet.
+
+  Measured by stringifying every page body in the content database with each version
+  (103 entries; the 7 `.navigation` entries fail in both and are never served; 13
+  pages are identical, 90 differ):
+
+  | | 0.2 | 1.0 |
+  |---|---|---|
+  | Tables (2 pages) | raw `<table>` HTML | Markdown tables |
+  | Link `title`s | dropped | kept (2,912) |
+  | Components such as `<weather-location>` | stray blank lines, closing tag on its own | closed inline |
+  | Array/object props (`:extra-webcams`, 34) | kept as a `:` binding | `:` dropped, so a JSON value reads as a string |
+  | External links | plain `[text](url)` | `{rel="[\"nofollow\"]"}` on every one — 7,919 on 60 pages |
+  | Total size | 0.92 MB | 1.19 MB (+30%) |
+
+  Neither is clean. 1.0 is more faithful about structure, and 0.2 is far quieter about
+  links. The `rel` attribute is not even well-formed — it is the JSON of an array
+  wrapped in quotes — and it repeats on almost every line of the trip report pages,
+  which are most of the site by volume. It is kept for now because the structural
+  losses in 0.2 are information a reader cannot recover, while the `rel` noise is
+  redundant.
+
+  **Revisit if** a later `minimark` serialises `rel` properly or omits it, or if the
+  noise is worth dropping in our route instead: deleting `rel` from link props before
+  `stringify` in
+  [server/routes/raw/\[...slug\].md.get.ts](../server/routes/raw/[...slug].md.get.ts)
+  would keep 1.0's structure without it. **Retires when** `@nuxt/content` and the
+  template move to `minimark` 1.x, at which point this is no longer a divergence.
 
 - `@types/node` is declared, though nothing imports it by name. The trip report
   index scripts (see

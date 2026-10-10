@@ -155,5 +155,6 @@ rediscover from scratch.
 This applies beyond this file — [ADR-003](architecture-decision-record.md#adr-003--let-the-dev-container-run-ahead-of-the-ci-runner)
 names what retires it, and the `@nuxtjs/mdc` declaration in
 [divergence-from-the-template.md](divergence-from-the-template.md#toolchain--dependency-management-net-new)
-names both what to
-watch in the meantime and what retires it.
+named both what to
+watch in the meantime and what retired it — and was rewritten as an ordinary dependency
+when that condition was met.
