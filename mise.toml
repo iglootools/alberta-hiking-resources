@@ -30,12 +30,17 @@ run = "pnpm lint"
 description = "Run Nuxt typecheck"
 run = "pnpm typecheck"
 
+[tasks.test]
+description = "Run the trip report index tests"
+run = "pnpm test"
+
 [tasks.ci]
 description = "Run CI pipeline"
 run = [
   { task = "install" },
   { task = "lint" },
   { task = "typecheck" },
+  { task = "test" },
   { task = "build" },
 ]
 

@@ -9,6 +9,7 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck && tsc -p scripts/tsconfig.json",
+    "test": "node --test 'scripts/**/*.test.ts'",
     "build:pages": "nuxt build --preset github_pages",
     "build:trip-index": "node scripts/trip-report-index/main.ts"
   },

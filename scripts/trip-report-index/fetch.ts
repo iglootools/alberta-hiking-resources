@@ -52,9 +52,13 @@ async function readCached(path: string): Promise<string | undefined> {
  * a meta tag, which `fetch` does not consult, so its accented names would
  * otherwise arrive mojibaked.
  *
- * `now` is the throttle's clock, a parameter so a test can drive it.
+ * `now` (the throttle's clock) and `fetchImpl` are parameters so a test can
+ * drive the fetcher without the network or the wall clock.
  */
-export function createFetcher(cacheDir: string, now: () => number = Date.now): Fetcher {
+export function createFetcher(
+  cacheDir: string,
+  { now = Date.now, fetchImpl = fetch }: { now?: () => number, fetchImpl?: typeof fetch } = {}
+): Fetcher {
   let lastRequest = 0
 
   return async function fetchText(url: string): Promise<string> {
@@ -66,7 +70,7 @@ export function createFetcher(cacheDir: string, now: () => number = Date.now): F
     if (wait > 0) await sleep(wait)
     lastRequest = now()
 
-    const response = await fetch(url, { headers: { 'user-agent': USER_AGENT } })
+    const response = await fetchImpl(url, { headers: { 'user-agent': USER_AGENT } })
     if (!response.ok) throw new HttpError(response.status, response.statusText, url)
 
     const buffer = Buffer.from(await response.arrayBuffer())
