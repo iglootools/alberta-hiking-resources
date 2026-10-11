@@ -77,6 +77,10 @@ export default defineAppConfig({
         to: 'https://github.com/iglootools/alberta-hiking-resources',
         target: '_blank'
       }, {
+        icon: 'i-lucide-history',
+        label: 'Changelog',
+        to: '/changelog'
+      }, {
         icon: 'i-lucide-circle-dot',
         label: 'Contact Us',
         to: 'https://www.instagram.com/samidalouche/',

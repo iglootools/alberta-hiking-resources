@@ -158,8 +158,9 @@ export default defineNuxtConfig({
 
       // Those default globs skip .ts, so nothing in app.config.ts is scanned.
       // These are the icons it declares that nothing else pulls in:
-      // i-lucide-history on the header's Changelog link, and i-lucide-circle-dot
-      // on the footer's Contact Us link. It declares two others that are covered
+      // i-lucide-history on the Changelog links in the header and the table of
+      // contents, and i-lucide-circle-dot on the table of contents' Contact Us
+      // link. It declares two others that are covered
       // incidentally and so are not repeated here — i-lucide-github also appears
       // in a scanned .vue file, and i-lucide-star is one of the icons @nuxt/ui
       // registers itself. Nothing guarantees either stays true, but the failure
