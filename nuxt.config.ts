@@ -1,6 +1,22 @@
+import { execFileSync } from 'node:child_process'
+
 const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://www.alberta-hiking-resources.org'
 const siteTitle = 'Alberta Hiking Resources'
 const siteDescription = 'Find your way in the jungle of FB and Meetup groups. Hiking Partners. Information. Ideas.'
+
+// The release the footer names, linking to /changelog. package.json carries no
+// version (semantic-release only tags), so the latest tag is the source of
+// truth. publish.yml checks out with full history and tags, and builds after
+// release.yml has tagged the commit, so the deployed site names its own
+// release. CI's shallow checkout has no tags, so `undefined` there is expected
+// rather than an error, and the footer falls back to a plain "Changelog" label.
+const siteVersion = (() => {
+  try {
+    return execFileSync('git', ['describe', '--tags', '--abbrev=0'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || undefined
+  } catch {
+    return undefined
+  }
+})()
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -64,7 +80,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Keys within public are also exposed client-side
     public: {
-      siteUrl: siteUrl
+      siteUrl: siteUrl,
+      siteVersion: siteVersion
     }
   },
 
@@ -141,8 +158,9 @@ export default defineNuxtConfig({
 
       // Those default globs skip .ts, so nothing in app.config.ts is scanned.
       // These are the icons it declares that nothing else pulls in:
-      // i-lucide-history on the header's Changelog link, and i-lucide-circle-dot
-      // on the footer's Contact Us link. It declares two others that are covered
+      // i-lucide-history on the Changelog links in the header and the table of
+      // contents, and i-lucide-circle-dot on the table of contents' Contact Us
+      // link. It declares two others that are covered
       // incidentally and so are not repeated here — i-lucide-github also appears
       // in a scanned .vue file, and i-lucide-star is one of the icons @nuxt/ui
       // registers itself. Nothing guarantees either stays true, but the failure

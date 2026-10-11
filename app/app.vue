@@ -31,6 +31,15 @@ useSeoMeta({
   twitterCard: 'summary_large_image'
 })
 
+// Pages outside the content collection are absent from `files`, so search
+// only finds them when listed here.
+const searchLinks = [{
+  label: 'Changelog',
+  description: 'Latest releases and updates to this site.',
+  icon: 'i-lucide-history',
+  to: '/changelog'
+}]
+
 provide('navigation', navigation)
 </script>
 
@@ -52,6 +61,7 @@ provide('navigation', navigation)
       <LazyUContentSearch
         :files="files"
         :navigation="navigation"
+        :links="searchLinks"
       />
     </ClientOnly>
   </UApp>

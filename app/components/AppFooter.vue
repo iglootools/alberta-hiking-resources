@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { footer } = useAppConfig()
+const { siteVersion } = useRuntimeConfig().public
 </script>
 
 <template>
@@ -16,6 +17,12 @@ const { footer } = useAppConfig()
           >{{ footer.license.label }}</ULink>
         </template>
         · Built with Nuxt UI
+        ·
+        <ULink
+          to="/changelog"
+          :aria-label="siteVersion ? `Changelog, ${siteVersion}` : undefined"
+          class="text-default hover:text-primary"
+        >{{ siteVersion || 'Changelog' }}</ULink>
       </span>
     </template>
 
