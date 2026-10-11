@@ -1,6 +1,22 @@
+import { execFileSync } from 'node:child_process'
+
 const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://www.alberta-hiking-resources.org'
 const siteTitle = 'Alberta Hiking Resources'
 const siteDescription = 'Find your way in the jungle of FB and Meetup groups. Hiking Partners. Information. Ideas.'
+
+// The release the footer names, linking to /changelog. package.json carries no
+// version (semantic-release only tags), so the latest tag is the source of
+// truth. publish.yml checks out with full history and tags, and builds after
+// release.yml has tagged the commit, so the deployed site names its own
+// release. CI's shallow checkout has no tags, so `undefined` there is expected
+// rather than an error, and the footer falls back to a plain "Changelog" label.
+const siteVersion = (() => {
+  try {
+    return execFileSync('git', ['describe', '--tags', '--abbrev=0'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || undefined
+  } catch {
+    return undefined
+  }
+})()
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -64,7 +80,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Keys within public are also exposed client-side
     public: {
-      siteUrl: siteUrl
+      siteUrl: siteUrl,
+      siteVersion: siteVersion
     }
   },
 
