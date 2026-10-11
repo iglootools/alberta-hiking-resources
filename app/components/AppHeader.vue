@@ -58,12 +58,16 @@ const { header } = useAppConfig()
 
       <UColorModeButton v-if="header?.colorMode" />
 
+      <!-- The links are icon-only, so the tooltip is what tells a sighted
+           reader that the clock icon is the changelog. -->
       <template v-if="header?.links">
-        <UButton
+        <UTooltip
           v-for="(link, index) of header.links"
           :key="index"
-          v-bind="{ color: 'neutral', variant: 'ghost', ...link }"
-        />
+          :text="link['aria-label']"
+        >
+          <UButton v-bind="{ color: 'neutral', variant: 'ghost', ...link }" />
+        </UTooltip>
       </template>
     </template>
 
