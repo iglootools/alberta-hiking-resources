@@ -18,13 +18,17 @@
  * what is in each book anywhere online.
  */
 import type { Fetcher } from './fetch.ts'
-import { canonKey, splitObjectives } from './canon.ts'
-import { ALIASES } from './curation.ts'
+import { objectiveKey, splitObjectives } from './canon.ts'
 import { MinimumNotMetError } from './errors.ts'
 import { matchArea } from './areas.ts'
 import { decodeEntities, textOf } from './html.ts'
 
-const BASE = 'https://adamlaycock.ca/Lists/'
+/**
+ * Lower case since the site's September 2026 rebuild. The old capitalised paths
+ * still answer 200, with an empty page, so it is the row minimums below that
+ * catch a move like that one rather than a 404.
+ */
+const BASE = 'https://adamlaycock.ca/lists/'
 
 interface ListSpec {
   readonly slug: string
@@ -54,10 +58,10 @@ const METRES = (cell: string): string => {
 }
 
 const LISTS: readonly ListSpec[] = [
-  { slug: '11000ers-of-the-Canadian-Rockies', book: '11,000ers', mark: METRES, minimumRows: 50 },
-  { slug: 'Kane-Scrambles', book: 'Kane', mark: GRADE, minimumRows: 150 },
-  { slug: 'Nugara-Scrambles', book: 'Nugara', mark: GRADE, minimumRows: 100 },
-  { slug: 'Don%27t-waste-your-time', book: 'Don’t Waste Your Time', mark: GRADE, minimumRows: 120 }
+  { slug: '11000ers-of-the-canadian-rockies', book: '11,000ers', mark: METRES, minimumRows: 50 },
+  { slug: 'kane-scrambles', book: 'Kane', mark: GRADE, minimumRows: 150 },
+  { slug: 'nugara-scrambles', book: 'Nugara', mark: GRADE, minimumRows: 100 },
+  { slug: 'don%27t-waste-your-time', book: 'Don’t Waste Your Time', mark: GRADE, minimumRows: 120 }
 ]
 
 const ROW = /<tr[^>]*>([\s\S]*?)<\/tr>/gi
@@ -81,12 +85,6 @@ export interface GuidebookIndex {
   readonly entries: ReadonlyMap<string, readonly GuidebookEntry[]>
   /** The region each list states, by canonical objective name. */
   readonly regions: ReadonlyMap<string, string>
-}
-
-/** Canonical key with the curated aliases applied, as the builder does. */
-function keyOf(name: string): string {
-  const key = canonKey(name)
-  return ALIASES[key] ?? key
 }
 
 /** One objective's mark from one list row, before the lists are merged. */
@@ -120,7 +118,7 @@ function marksOfRow(rowHtml: string, { slug, book, mark }: ListSpec): Mark[] | u
   // A list row can name several destinations ("Bourgeau Lake & Harvey
   // Pass"), split the same way a report title is so each one is marked.
   return splitObjectives(name)
-    .map(objective => keyOf(objective))
+    .map(objective => objectiveKey(objective))
     .filter(key => key)
     .map(key => ({ key, entry, area }))
 }

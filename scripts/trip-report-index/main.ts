@@ -18,9 +18,12 @@ import { buildObjectives } from './build.ts'
 import { checkIndexLinks, checkMirroredSections } from './checks.ts'
 import { MinimumNotMetError } from './errors.ts'
 import { clearCache, createFetcher } from './fetch.ts'
+import { readGazetteer } from './gazetteer.ts'
 import { readGuidebooks } from './guidebooks.ts'
+import { inferRegions } from './inference.ts'
 import { indent, shown } from './output.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
+import { isStated } from './types.ts'
 import { SOURCES } from './sources/index.ts'
 import { renderRegionPage } from './render.ts'
 import { writeReview } from './review.ts'
@@ -114,11 +117,14 @@ async function finishPages(written: readonly string[]): Promise<void> {
 }
 
 function printSummary(result: BuildResult, reportCount: number): void {
-  const total = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
-  console.log(`\n${total} objectives across ${REGIONS.length} pages, `
+  const listings = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
+  const placed = result.objectives.length - result.unplaced.length
+  const multiRegion = result.objectives.filter(objective => new Set(objective.claims.map(claim => claim.regionId)).size > 1).length
+  const inferredOnly = result.objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated)).length
+  console.log(`\n${placed} objectives placed, ${listings} listings across ${REGIONS.length} pages, `
     + `${reportCount} reports, ${result.outOfScopeCount} out of scope.`)
-  console.log(`${result.unplaced.length} unplaced and ${result.conflicts.length} conflicted — `
-    + `see ${shown(REVIEW_PATH)}`)
+  console.log(`${multiRegion} in more than one region, ${inferredOnly} placed by inference alone, `
+    + `${result.unplaced.length} unplaced — see ${shown(REVIEW_PATH)}`)
 }
 
 async function main(): Promise<void> {
@@ -133,8 +139,13 @@ async function main(): Promise<void> {
 
   const guidebooks = await readGuidebooks(createFetcher(CACHE_DIR))
   console.log(indent(`${'Guidebook lists'.padEnd(18)} ${String(guidebooks.entries.size).padStart(5)} objectives`))
+  const gazetteer = await readGazetteer(createFetcher(CACHE_DIR))
+  console.log(indent(`${'Place names'.padEnd(18)} ${String(gazetteer.size).padStart(5)} names`))
 
-  const result = buildObjectives(reports, guidebooks)
+  // Twice: inference reads where the first build placed things, and the second
+  // lists every objective under every region a stated or inferred signal names.
+  const statedOnly = buildObjectives(reports, guidebooks)
+  const result = buildObjectives(reports, guidebooks, inferRegions(statedOnly, gazetteer))
   const written = await writeRegionPages(result, reviewOnly)
   if (!reviewOnly) await finishPages(written)
 

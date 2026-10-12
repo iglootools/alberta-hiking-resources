@@ -1,58 +1,32 @@
 /**
  * Folds every scraped report into the objective list the pages are rendered
- * from: group by canonical name, place each objective in a region, drop what is
- * out of scope, and set aside what could not be placed.
+ * from: group by canonical name, collect every claim about where each objective
+ * is, drop what is out of scope, and set aside what nothing places.
+ *
+ * An objective is listed under *every* region a signal names, not only the one
+ * that wins. Bow Peak is filed under Banff by one blog and the Icefields
+ * Parkway by two, and it is in both, on the boundary; a reader browsing either
+ * should find it. Each claim keeps its signal so the page can say who says so.
  */
-import type { Objective, RawReport } from './types.ts'
+import type { Claim, Objective, RawReport, Signal } from './types.ts'
 import type { GuidebookIndex } from './guidebooks.ts'
-import { ALIASES, REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
-import { canonKey, displayName } from './canon.ts'
+import type { Inferred } from './inference.ts'
+import { REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
+import { displayName, objectiveKey } from './canon.ts'
 import { UnknownRegionError } from './errors.ts'
-import { OUT_OF_SCOPE, REGION_IDS, isHomonym, mappedRegionOf, resolveRegion } from './regions.ts'
+import { NOTHING_INFERRED } from './inference.ts'
+import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, isHomonym, mappedRegionOf, strongestStatedRegion } from './regions.ts'
 import { SOURCE_ORDER } from './sources/index.ts'
-
-/**
- * Learns which region each sub-range belongs to from the objectives that are
- * already placed.
- *
- * Explor8ion publishes a sub-range ("Misty Range", "Opal Range") on every trip,
- * including the few dozen its region pages omit. Those ranges are the source's
- * own vocabulary, already tied to regions by the 800-odd trips that *are*
- * listed, so the mapping is read off the data rather than written by hand — no
- * curation entry, and it follows the source if they re-file a range.
- *
- * A range spanning two regions is awarded to the one holding more of it.
- */
-function learnSubRanges(placed: Iterable<Objective>): Map<string, string> {
-  const tally = new Map<string, Map<string, number>>()
-  for (const objective of placed) {
-    if (!objective.subRange) continue
-    if (!tally.has(objective.subRange)) tally.set(objective.subRange, new Map())
-    const counts = tally.get(objective.subRange)!
-    counts.set(objective.regionId, (counts.get(objective.regionId) ?? 0) + 1)
-  }
-
-  const learned = new Map<string, string>()
-  for (const [subRange, counts] of tally) {
-    const [best] = [...counts].sort((left, right) => right[1] - left[1])
-    if (best) learned.set(subRange, best[0])
-  }
-  return learned
-}
+import { isStated } from './types.ts'
 
 export interface BuildResult {
+  /** Every objective once, placed or not. */
+  readonly objectives: readonly Objective[]
+  /** Each region's objectives; an objective with claims on two regions is in both lists. */
   readonly byRegion: ReadonlyMap<string, readonly Objective[]>
-  /** Objectives no source placed and no override covers. Input to curation. */
+  /** Objectives nothing places and no override covers. Input to curation. */
   readonly unplaced: readonly Objective[]
-  /** Objectives whose sources disagreed on region, with the ranking applied. */
-  readonly conflicts: readonly { objective: Objective, conflicts: readonly string[] }[]
   readonly outOfScopeCount: number
-}
-
-/** Applies a curated alias so both spellings collapse onto one objective. */
-function keyOf(name: string): string {
-  const key = canonKey(name)
-  return ALIASES[key] ?? key
 }
 
 /** Applies a curated REPORT_OBJECTIVES entry in place of the title's own parse. */
@@ -65,7 +39,7 @@ function groupByObjective(reports: readonly RawReport[]): Map<string, RawReport[
   const groups = new Map<string, RawReport[]>()
   for (const report of reports) {
     for (const objective of report.objectives) {
-      const key = keyOf(objective)
+      const key = objectiveKey(objective)
       if (!key) continue
       if (!groups.has(key)) groups.set(key, [])
       groups.get(key)!.push(report)
@@ -88,7 +62,7 @@ const sourceRank = (sourceId: string) => {
 function pickName(key: string, reports: readonly RawReport[]): string {
   const candidates = reports
     .flatMap(report => report.objectives.map(objective => ({ report, objective })))
-    .filter(candidate => keyOf(candidate.objective) === key)
+    .filter(candidate => objectiveKey(candidate.objective) === key)
     .sort((left, right) => sourceRank(left.report.sourceId) - sourceRank(right.report.sourceId))
   return displayName(candidates[0]?.objective ?? key)
 }
@@ -103,15 +77,67 @@ function byName(left: Objective, right: Objective): number {
   return left.name.localeCompare(right.name, 'en')
 }
 
+/** Strongest kind first; the stated kinds lead, and blogs rank among themselves as in REGION_PRIORITY. */
+const KIND_RANK: Readonly<Record<Signal['kind'], number>> = {
+  'curated': 0, 'stated': 1, 'tick-list': 2, 'sub-range': 3, 'linked': 4, 'trailhead': 5, 'named-place': 6
+}
+
+function claimRank(claim: Claim): [number, number] {
+  const sourceId = 'sourceId' in claim.signal ? claim.signal.sourceId : ''
+  const priority = REGION_PRIORITY.indexOf(sourceId)
+  return [KIND_RANK[claim.signal.kind], priority === -1 ? REGION_PRIORITY.length + sourceRank(sourceId) : priority]
+}
+
+function byStrength(left: Claim, right: Claim): number {
+  const [leftKind, leftSource] = claimRank(left)
+  const [rightKind, rightSource] = claimRank(right)
+  return leftKind - rightKind || leftSource - rightSource
+}
+
+/**
+ * One claim per region, signal kind and source. Several of one blog's reports
+ * of the same objective — Nugara's "Middle Sister II" beside "Middle Sister" —
+ * would otherwise say the same thing once each; their link votes are summed
+ * instead, so the page reads "6 of 7 linked reports" rather than "3 of 3" twice.
+ */
+function mergeClaims(claims: readonly Claim[]): Claim[] {
+  const merged = new Map<string, Claim>()
+  for (const claim of claims) {
+    const sourceId = 'sourceId' in claim.signal ? claim.signal.sourceId : ''
+    const weak = 'weak' in claim.signal && claim.signal.weak ? 'weak' : ''
+    const id = `${claim.regionId}|${claim.signal.kind}|${sourceId}|${weak}`
+    const existing = merged.get(id)
+    if (existing?.signal.kind === 'linked' && claim.signal.kind === 'linked') {
+      merged.set(id, {
+        regionId: claim.regionId,
+        signal: { ...claim.signal, agreeing: existing.signal.agreeing + claim.signal.agreeing, total: existing.signal.total + claim.signal.total }
+      })
+    } else if (!existing) {
+      merged.set(id, claim)
+    }
+  }
+  return [...merged.values()].sort(byStrength)
+}
+
+/** What each report's own source states, mapped onto the taxonomy. */
+function statedClaims(reports: readonly RawReport[]): Claim[] {
+  return reports.flatMap((report) => {
+    const regionId = mappedRegionOf(report)
+    return regionId && regionId !== OUT_OF_SCOPE ? [{ regionId, signal: { kind: 'stated', sourceId: report.sourceId } }] : []
+  })
+}
+
 /**
  * Splits a shared name back into one objective per mountain.
  *
  * Reports go to the region their own source filed them under; the ones whose
  * source named no region stay with the winning partition, since there is
  * nothing better to go on. Both peaks keep the name — they are on different
- * pages, which is the disambiguation.
+ * pages, which is the disambiguation. Inferred claims are not applied to
+ * either: a link vote or a position is evidence about a name, and this name
+ * belongs to two places.
  */
-function splitHomonym(group: readonly RawReport[], fallbackRegion: string): Map<string, RawReport[]> {
+function splitHomonym(group: readonly RawReport[], fallbackRegion: string | undefined): Map<string, RawReport[]> {
   const partitions = new Map<string, RawReport[]>()
   const unplaced: RawReport[] = []
 
@@ -124,103 +150,105 @@ function splitHomonym(group: readonly RawReport[], fallbackRegion: string): Map<
     if (!partitions.has(mapped)) partitions.set(mapped, [])
     partitions.get(mapped)!.push(report)
   }
-  if (partitions.has(fallbackRegion)) partitions.get(fallbackRegion)!.push(...unplaced)
+  if (fallbackRegion && partitions.has(fallbackRegion)) partitions.get(fallbackRegion)!.push(...unplaced)
   return partitions
 }
 
-/** Where one name group ends up after the first pass. */
-type Placement
-  = | { readonly kind: 'out-of-scope' }
-    | { readonly kind: 'unplaced', readonly objective: Objective }
-    | {
-      readonly kind: 'placed'
-      /** One per mountain: more than one only when the name is shared. */
-      readonly objectives: readonly Objective[]
-      readonly conflict?: BuildResult['conflicts'][number]
-    }
-
-/**
- * One objective per region the group's reports split into. Two mountains
- * sharing a name become two objectives; a partition outside the taxonomy is
- * dropped.
- */
-function partition(objective: Objective, group: readonly RawReport[]): Objective[] {
-  const partitions = isHomonym(group)
-    ? splitHomonym(group, objective.regionId)
-    : new Map([[objective.regionId, [...group]]])
-
-  return [...partitions]
-    .filter(([partitionRegion]) => REGION_IDS.has(partitionRegion))
-    .map(([partitionRegion, partitionReports]) => ({
-      ...objective,
-      regionId: partitionRegion,
-      subRange: partitionReports.find(report => report.subRange)?.subRange,
-      reports: sortReports(partitionReports)
-    }))
+interface Context {
+  readonly guidebooks?: GuidebookIndex
+  readonly inferred: Inferred
 }
 
-function place(key: string, group: readonly RawReport[], guidebooks?: GuidebookIndex): Placement {
-  const resolution = resolveRegion(group)
+/**
+ * Every claim about one name group that is not a homonym. A curated override
+ * replaces the rest rather than joining them: it exists because the sources are
+ * wrong about this objective — Steven Song files the whole Selkirk range under
+ * one heading, which puts Rogers Pass and the Kokanee Glacier 200 km apart in
+ * one bucket — and listing it under their region as well would undo it.
+ */
+function claimsOf(key: string, group: readonly RawReport[], { guidebooks, inferred }: Context): Claim[] {
   const overridden = REGION_OVERRIDES[key]
+  if (overridden) return [{ regionId: overridden, signal: { kind: 'curated' } }]
 
-  // A curated override outranks the sources, because it is only ever reached
-  // for objectives they failed to place — and it may say the objective is not
-  // ours to list at all.
-  if (overridden === OUT_OF_SCOPE) return { kind: 'out-of-scope' }
-  // A curated entry outranks the sources. It is usually reached only because
-  // they placed nothing, but it also has to win outright: Steven Song files
-  // the whole Selkirk range under one heading, so the only way to separate
-  // Rogers Pass from the Kokanee Glacier 200 km south is to say so by hand.
-  // A guidebook's own Region column ranks below the blogs and below curation,
-  // but above giving up: it is the book's filing, not a guess at one.
-  const regionId = overridden ?? resolution.regionId ?? guidebooks?.regions.get(key)
-  if (!regionId && resolution.outOfScope) return { kind: 'out-of-scope' }
+  const tickList = guidebooks?.regions.get(key)
+  return mergeClaims([
+    ...statedClaims(group),
+    ...(tickList ? [{ regionId: tickList, signal: { kind: 'tick-list' } } satisfies Claim] : []),
+    ...group.flatMap(report => inferred.byReport.get(report.url) ?? []),
+    ...(inferred.byKey.get(key) ?? [])
+  ])
+}
 
-  const objective: Objective = {
+/** Thin or split inferred evidence, used only for an objective nothing else places. */
+function weakClaimsOf(key: string, group: readonly RawReport[], inferred: Inferred): Claim[] {
+  return mergeClaims([
+    ...group.flatMap(report => inferred.weak.byReport.get(report.url) ?? []),
+    ...(inferred.weak.byKey.get(key) ?? [])
+  ])
+}
+
+/** Whether a position says the objective is outside every region: a trailhead abroad, a name in northern BC. */
+function isOutside(key: string, group: readonly RawReport[], inferred: Inferred): boolean {
+  return inferred.outside.has(key) || group.some(report => inferred.outside.has(report.url))
+}
+
+function objectiveOf(key: string, name: string, reports: readonly RawReport[], claims: readonly Claim[], guidebooks?: GuidebookIndex): Objective {
+  for (const claim of claims) {
+    if (!REGION_IDS.has(claim.regionId)) throw new UnknownRegionError(name, claim.regionId)
+  }
+  return {
     key,
-    name: pickName(key, group),
-    regionId: regionId ?? '',
-    subRange: group.find(report => report.subRange)?.subRange,
-    reports: sortReports(group),
+    name,
+    claims,
+    subRange: reports.find(report => report.subRange)?.subRange,
+    reports: sortReports(reports),
     guidebooks: guidebooks?.entries.get(key)
   }
-
-  if (!regionId) return { kind: 'unplaced', objective }
-  if (!REGION_IDS.has(regionId)) {
-    throw new UnknownRegionError(objective.name, regionId)
-  }
-  return {
-    kind: 'placed',
-    objectives: partition(objective, group),
-    conflict: resolution.conflicts.length > 0 ? { objective, conflicts: resolution.conflicts } : undefined
-  }
 }
 
 /**
- * Second pass: places what the first left over, using the sub-ranges the
- * placed objectives taught us. What still has no region stays unplaced.
+ * The objectives one name group becomes: none if it is out of scope, one
+ * normally, one per mountain if two share the name.
+ *
+ * Out of scope means a blog files it somewhere this site does not cover and
+ * nothing *stated* places it here. An inferred region does not rescue it: a
+ * Utah peak sharing a name with a Kananaskis one is still in Utah.
  */
-function placeBySubRange(
-  unplaced: readonly Objective[],
-  placed: readonly Objective[]
-): { placed: Objective[], unplaced: Objective[] } {
-  const learned = learnSubRanges(placed)
-  const regionOf = (objective: Objective) =>
-    objective.subRange ? learned.get(objective.subRange) : undefined
-  return {
-    placed: unplaced.flatMap((objective) => {
-      const regionId = regionOf(objective)
-      return regionId ? [{ ...objective, regionId }] : []
-    }),
-    unplaced: unplaced.filter(objective => !regionOf(objective))
+function place(key: string, group: readonly RawReport[], context: Context): Objective[] {
+  if (REGION_OVERRIDES[key] === OUT_OF_SCOPE) return []
+  const name = pickName(key, group)
+
+  if (isHomonym(group)) {
+    const fallback = REGION_OVERRIDES[key] ?? strongestStatedRegion(group)
+    return [...splitHomonym(group, fallback)]
+      .filter(([regionId]) => REGION_IDS.has(regionId))
+      .map(([regionId, reports]) => objectiveOf(key, name, reports,
+        mergeClaims(statedClaims(reports).filter(claim => claim.regionId === regionId)), context.guidebooks))
   }
+
+  const claims = claimsOf(key, group, context)
+  const outOfScope = group.some(report => mappedRegionOf(report) === OUT_OF_SCOPE)
+  if (outOfScope && !claims.some(isStated)) return []
+  if (claims.length > 0) return [objectiveOf(key, name, group, claims, context.guidebooks)]
+
+  // Nothing places it: settle for weak evidence, then for knowing it is outside
+  // every region, before leaving it unsorted.
+  const weak = weakClaimsOf(key, group, context.inferred)
+  if (weak.length === 0 && isOutside(key, group, context.inferred)) return []
+  return [objectiveOf(key, name, group, weak, context.guidebooks)]
 }
 
-/** Groups by region, each region's objectives sorted by name. */
+/** The distinct regions an objective is listed under, strongest first. */
+export function regionsOf(objective: Objective): string[] {
+  return [...new Set(objective.claims.map(claim => claim.regionId))]
+}
+
 function groupByRegion(objectives: readonly Objective[]): Map<string, Objective[]> {
   const byRegion = new Map<string, Objective[]>()
   for (const objective of objectives) {
-    byRegion.set(objective.regionId, [...(byRegion.get(objective.regionId) ?? []), objective])
+    for (const regionId of regionsOf(objective)) {
+      byRegion.set(regionId, [...(byRegion.get(regionId) ?? []), objective])
+    }
   }
   for (const list of byRegion.values()) list.sort(byName)
   return byRegion
@@ -228,24 +256,25 @@ function groupByRegion(objectives: readonly Objective[]): Map<string, Objective[
 
 /**
  * `guidebooks` is optional so the builder can be exercised without fetching the
- * lists. When present it does two jobs: it annotates objectives with the books
- * they appear in, and its Region column places objectives no blog places.
+ * lists. When present it annotates objectives with the books they appear in,
+ * and its Region column is one more stated claim.
+ *
+ * `inferred` comes from inference.ts, which reads a first build made without
+ * it; see there for why the build runs twice.
  */
 export function buildObjectives(
   reports: readonly RawReport[],
-  guidebooks?: GuidebookIndex
+  guidebooks?: GuidebookIndex,
+  inferred: Inferred = NOTHING_INFERRED
 ): BuildResult {
-  const placements = [...groupByObjective(reports.map(withCuratedObjectives))]
-    .map(([key, group]) => place(key, group, guidebooks))
-
-  const placed = placements.flatMap(p => p.kind === 'placed' ? p.objectives : [])
-  const unplaced = placements.flatMap(p => p.kind === 'unplaced' ? [p.objective] : [])
-  const secondPass = placeBySubRange(unplaced, placed)
+  const groups = [...groupByObjective(reports.map(withCuratedObjectives))]
+  const objectives = groups.flatMap(([key, group]) => place(key, group, { guidebooks, inferred })).sort(byName)
+  const placedKeys = new Set(objectives.map(objective => objective.key))
 
   return {
-    byRegion: groupByRegion([...placed, ...secondPass.placed]),
-    unplaced: secondPass.unplaced.sort(byName),
-    conflicts: placements.flatMap(p => p.kind === 'placed' && p.conflict ? [p.conflict] : []),
-    outOfScopeCount: placements.filter(p => p.kind === 'out-of-scope').length
+    objectives,
+    byRegion: groupByRegion(objectives),
+    unplaced: objectives.filter(objective => objective.claims.length === 0),
+    outOfScopeCount: groups.filter(([key]) => !placedKeys.has(key)).length
   }
 }

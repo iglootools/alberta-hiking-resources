@@ -15,6 +15,7 @@
  * aliases.ts instead, and `nearMisses` exists to surface candidates for that
  * file rather than to act on them.
  */
+import { ALIASES } from './curation.ts'
 
 /** Trailing generic that a source moved to the front: "Albert, Mount". */
 const INVERTED = /^(.*?),\s*(Mount|Mt\.?|The|Peak|Mountain|Ridge|Lake|Hill)$/i
@@ -108,4 +109,13 @@ export function canonKey(title: string): string {
     .trim()
     .replace(/^the\s+/, '')
     .replace(/\s+/g, ' ')
+}
+
+/**
+ * The key objectives are grouped by: the canonical name, then any curated alias
+ * applied, so two confirmed spellings of one peak collapse onto one entry.
+ */
+export function objectiveKey(name: string): string {
+  const key = canonKey(name)
+  return ALIASES[key] ?? key
 }

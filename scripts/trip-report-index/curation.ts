@@ -296,6 +296,11 @@ export const REGION_OVERRIDES: Readonly<Record<string, string>> = {
   'tricouni meadows east': 'sea-to-sky',
   'tricouni peak': 'sea-to-sky',
 
+  // --- Jasper and Mount Robson ---
+  // Steven Song files it with the Monashees, which it is, but at their far
+  // northern end above Valemount, 300 km from the Shuswap and beside Robson.
+  'canoe mountain': 'jasper-robson',
+
   // --- Fraser Valley and the Cascades ---
   'conway peak': 'fraser-valley', // "in Cheam Range"
   'edge peak': 'fraser-valley', // Golden Ears

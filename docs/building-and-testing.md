@@ -105,10 +105,13 @@ mise run build-trip-index -- --refresh # discard the HTTP cache first
 
 Responses are cached under `node_modules/.cache/trip-report-index`, so iterating on a
 parser costs nothing; `--refresh` is what an actual content refresh uses. A full read is
-around 450 requests, throttled, and takes a few minutes — most of them the individual
-Bob Spirko and Golden Scrambles pages that are read only because their index gives no
-region. `--review-only` reports what
-would change without touching any page.
+around 2,200 requests, throttled, and takes a quarter of an hour. Most are individual
+reports read only because their index gives no region: Bob Spirko's and Golden Scrambles'
+for a locality line, Andrew Nugara's for his links to neighbouring reports, and On-Top's
+for the trailhead's coordinates. Another 294 read the federal gazetteer, whose place-name
+positions place objectives by the placed ones around them — see
+[ADR-007](architecture-decision-record.md#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals).
+`--review-only` reports what would change without touching any page.
 
 ### Annie Ouellet's YouTube channel needs an API key
 
@@ -133,7 +136,7 @@ the RSS feed. Scraping the channel page is allowed but reaches only the newest 3
 The failure is deliberate, and it is a precondition rather than an error partway through:
 every source's preflight runs before the first request, so a missing key stops the run in
 the first second, having written nothing and fetched nothing. Carrying on without it would
-be worse than stopping — the other six sources would scrape, all fourteen pages would be
+be worse than stopping — the other sources would scrape, every region page would be
 rewritten, and Annie's videos would quietly disappear from every one of them. A missing key
 is a broken refresh, not a smaller one.
 
@@ -143,8 +146,9 @@ It is deliberately **not** part of `mise run ci` or the build. The output is com
 a blog being unreachable delays a refresh rather than breaking a deploy.
 
 Each run also writes `trip-report-review.md` at the repo root (gitignored): the objectives
-no source could place, the ones whose sources disagreed on region, and near-miss names that
-may be duplicates. Work through it and record the decisions in
+nothing could place, the ones listed in more than one region, the ones placed by inference
+alone (about one in ten of which is expected to be wrong), and near-miss names that may be
+duplicates. Work through it and record the decisions in
 [scripts/trip-report-index/curation.ts](../scripts/trip-report-index/curation.ts) — that
 file, and the blogs themselves, are the only correct places to fix a wrong entry. Editing a
 generated `.md` is pointless; the next run overwrites it.

@@ -107,7 +107,7 @@ running the task inherits it — a terminal-only `export` is not visible to a pr
 started elsewhere.
 
 The failure is deliberate rather than a convenience check: skipping the source would let
-the other six scrape, rewrite all fourteen pages, and silently drop Annie's videos from
+the other sources scrape, rewrite every region page, and silently drop Annie's videos from
 every one of them. A missing key is a broken refresh, not a smaller one. The reasoning,
 and why the channel is not simply scraped, are in
 [building-and-testing.md](building-and-testing.md#annie-ouellets-youtube-channel-needs-an-api-key).

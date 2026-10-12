@@ -28,7 +28,11 @@ export const AREA_KEYWORDS: readonly (readonly [RegExp, string])[] = [
   [/vancouver island|strathcona|tofino|cumberland|courtenay|comox/i, 'vancouver-island'],
   [/vancouver|squamish|whistler|pemberton|north shore|sunshine coast|sechelt|powell river|garibaldi|joffre lakes|duffey|cypress provincial|mount seymour|stawamus|capilano|lynn headwaters/i, 'sea-to-sky'],
   [/chilliwack|fraser valley|cheam|manning|coquihalla|bc cascades|golden ears|north cascades|sumas mountain/i, 'fraser-valley'],
-  [/okanagan|kelowna|penticton|osoyoos|kamloops|vernon|keremeos|cathedral park|lumby|salmon arm|enderby|falkland|celista|pritchard|saint ives|cherryville|thompson valley|apex mountain|white lake grasslands|lac du bois/i, 'okanagan'],
+  // Above the Okanagan, which "Shuswap" and the lakes north of Vernon used to
+  // fall into before they had a region of their own. Lumby is here rather than
+  // with Vernon: it is the road to Mabel Lake and, by Cherryville, the Monashees.
+  [/shuswap|monashee|salmon arm|sicamous|sorrento|blind bay|tappen|enderby|mara lake|mabel lake|celista|scotch creek|saint ives|\bst\.? ives|lumby|cherryville|sugar lake|three valley gap|craigellachie|malakwa|eagle pass|keefer lake/i, 'shuswap-monashees'],
+  [/okanagan|kelowna|penticton|osoyoos|kamloops|vernon|keremeos|cathedral park|falkland|pritchard|thompson valley|apex mountain|white lake grasslands|lac du bois/i, 'okanagan'],
   [/nelson|kokanee|west kootenay|slocan|kaslo|new denver|rossland|creston|stagleap|kootenay pass|valhalla|whitewater ski|crawford bay|gray creek|gladstone provincial|grand forks/i, 'west-kootenay'],
   [/banff|lake louise|moraine|sunshine|skoki|castle junction/i, 'banff'],
   [/jasper|robson|hinton|brule|miette|valemount|coal branch|grande cache|willmore|queen elizabeth range/i, 'jasper-robson'],
