@@ -20,6 +20,11 @@
       "description": "Hold TypeScript inside typescript-eslint's peer range, which is `>=4.8.4 <6.1.0` (seven packages in pnpm-lock.yaml declare it). typescript-eslint reaches us transitively via @nuxt/eslint -> @nuxt/eslint-config, so we cannot bump it independently; forcing TS7 crashes eslint with \"Cannot read properties of undefined (reading 'Cjs')\". The bound is <6.1 rather than <7 so it tracks the peer range itself instead of merely excluding the next major -- TS 6.1 would violate the peer range too. This rule only constrains what renovate proposes, so the devDependency is `~6.0.3` rather than `^6.0.3`; otherwise lockFileMaintenance would resolve 6.1 inside the caret range and bypass this entirely. Lift the bound and widen the range together once typescript-eslint widens its peer: `npm view typescript-eslint peerDependencies`.",
       "matchPackageNames": ["typescript"],
       "allowedVersions": "<6.1"
+    },
+    {
+      "description": "Hold the mdast-util-to-markdown override in pnpm-workspace.yaml at 2.1.2: from 2.1.3 remark-mdc recurses forever stringifying bold and italic text, /llms-full.txt returns 500, and the build fails (nuxt-content/remark-mdc#161). Without this rule Renovate bumps the override in the grouped PR and, rewriting the YAML, deletes the comment that explains the hold. Remove this rule together with the override once remark-mdc ships a fix: `npm view remark-mdc version`.",
+      "matchPackageNames": ["mdast-util-to-markdown"],
+      "allowedVersions": "<2.1.3"
     }
   ],
   "customManagers": [
