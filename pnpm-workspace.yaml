@@ -1,6 +1,41 @@
+# esbuild is forced past the range fontless asks for, to clear GHSA-g7r4-m6w7-qqqr.
+#
+# The advisory is fixed in 0.28.1. fontless@0.2.1 — the latest release, reached via
+# @nuxt/fonts — declares `esbuild: ^0.27.0`, which caps at 0.27.7, so Dependabot's
+# security update is not merely absent but impossible: it fails the weekly run with
+# `security_update_not_possible` rather than opening a PR.
+#
+# Nothing else in the tree holds esbuild back. Vite 8 accepts `^0.27.0 || ^0.28.0`
+# and already resolves 0.28.2; unplugin and @unhead/bundler accept anything recent.
+# fontless is the sole dissenter, so this override does not introduce a version —
+# it collapses a second copy onto the one every other consumer had already picked.
+#
+# 0.28.0 is a breaking release only in that it added integrity checks to esbuild's
+# fallback binary download; the compile API fontless uses is unchanged.
+#
+# Retires when fontless widens its range to admit 0.28. Check with
+# `npm view fontless dependencies.esbuild`; when it accepts ^0.28, delete this block,
+# run `pnpm install`, and confirm `grep -c 'esbuild@0.27' pnpm-lock.yaml` finds none.
+#
+# mdast-util-to-markdown is held at 2.1.2 because remark-mdc cannot stringify bold or
+# italic text with anything newer (nuxt-content/remark-mdc#161).
+#
+# 2.1.3 rewrote the `strong` and `emphasis` handlers to hand the node back to
+# `containerPhrasing`, which dispatches to whatever handler is registered and expects it
+# to carry an `attention` property. remark-mdc 3.11.1 registers plain wrappers that call
+# the default handler, so the two call each other until the stack overflows. On this site
+# that is /llms-full.txt, which @nuxt/content stringifies through remark-mdc: it returns
+# 500 and the build exits on the prerender error. The failure is loud, so a refresh that
+# drops this hold cannot ship it unnoticed.
+#
+# renovate.json caps this package below 2.1.3 so the grouped update stops proposing it.
+#
+# Retires when remark-mdc releases a fix. Check with `npm view remark-mdc version` against
+# that issue, then delete this entry and that rule, run `pnpm install`, and confirm `mise run build`
+# prerenders /llms-full.txt.
 overrides:
   esbuild: ^0.28.2
-  mdast-util-to-markdown: 2.1.3
+  mdast-util-to-markdown: 2.1.2
 
 allowBuilds:
   '@parcel/watcher': false
