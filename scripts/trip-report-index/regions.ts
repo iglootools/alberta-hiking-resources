@@ -61,6 +61,7 @@ export const REGIONS: readonly Region[] = [
   { id: 'sea-to-sky', icon: 'i-lucide-tram-front', title: 'Sea to Sky and the Coast Mountains', description: 'Trip reports and GPS traces by objective for Vancouver, the North Shore, Squamish, Whistler, and Pemberton.' },
   { id: 'fraser-valley', icon: 'i-lucide-cloud-drizzle', title: 'Fraser Valley and the Cascades', description: 'Trip reports and GPS traces by objective for Chilliwack, the Cheam Range, Manning Park, and the Coquihalla.' },
   { id: 'okanagan', icon: 'i-lucide-sun', title: 'Okanagan and Thompson', description: 'Trip reports and GPS traces by objective for Kamloops, Kelowna, Penticton, and the Okanagan ranges.' },
+  { id: 'shuswap-monashees', icon: 'i-lucide-anchor', title: 'Shuswap and the Monashees', description: 'Trip reports and GPS traces by objective for Salmon Arm, Sicamous, Shuswap Lake, and the Monashee Mountains.' },
   { id: 'west-kootenay', icon: 'i-lucide-tree-pine', title: 'West Kootenay', description: 'Trip reports and GPS traces by objective for Nelson, the Kokanee Glacier, and the southern Selkirks.' },
   { id: 'vancouver-island', icon: 'i-lucide-ship', title: 'Vancouver Island', description: 'Trip reports and GPS traces by objective for Strathcona Park and the island ranges.' }
 ]
@@ -78,14 +79,15 @@ export const REGION_IDS: ReadonlySet<string> = new Set(REGIONS.map(region => reg
  * It exists because four sources publish no region anywhere. Andrew Nugara and
  * On-Top state none in any field; their reports mention regions in prose, but
  * measured against objectives other sources place, the prose is right 45% and
- * 64% of the time respectively, and a wrong region is worse than none. So these
- * objectives are published together rather than filed on a guess.
+ * 64% of the time respectively, so it is not read. Their links and trailheads
+ * are, and place most of their objectives as inferred (see inference.ts);
+ * what is left here had no such evidence, or evidence too mixed to act on.
  */
 export const UNSORTED: Region = {
   id: 'unsorted',
   icon: 'i-lucide-circle-help',
   title: 'Not yet sorted by region',
-  description: 'Objectives whose region none of the source blogs states, published here rather than filed on a guess.'
+  description: 'Objectives whose region no blog states and nothing else settles, published here rather than filed on a guess.'
 }
 
 /**
@@ -97,9 +99,11 @@ export const UNSORTED: Region = {
 export const OUT_OF_SCOPE = 'out-of-scope'
 
 /**
- * Which source's region wins when two disagree, most trusted first. Explor8ion
- * leads because its regions are hand-curated per trip; Steep Sheep is absent
- * because it publishes none at all.
+ * Blogs by how much their region is trusted, most first. An objective is listed
+ * under every region a blog states, so this no longer picks a winner; it orders
+ * the claims on the page, and picks the peak that keeps a homonym's unfiled
+ * reports. Explor8ion leads because its regions are hand-curated per trip; Steep
+ * Sheep is absent because it publishes none at all.
  */
 export const REGION_PRIORITY: readonly string[] = [
   'explor8ion',
@@ -230,14 +234,11 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
     // Summits the image map does not list carry an `area:` field on their own
     // page, which the adapter resolves through the shared matcher in areas.ts.
     // Only what that does not recognise needs an entry, and all of it is the
-    // Monashees, the Cariboo, or northern BC — near enough to appear, far
-    // enough from anything this site covers.
+    // Cariboo, the North Thompson, or northern BC — near enough to appear, far
+    // enough from anything this site covers. Its Monashee areas (Craigellachie,
+    // Three Valley Gap, Malakwa, Keefer Lake) used to be listed here too, and
+    // now resolve to their own region.
     ...SELF_RESOLVED,
-    'area:Craigellachie,BC': OUT_OF_SCOPE,
-    'area:Three Valley Gap,BC': OUT_OF_SCOPE,
-    'area:Malakwa,BC': OUT_OF_SCOPE,
-    'area:Monashee Provincial Park,BC': OUT_OF_SCOPE,
-    'area:Keefer Lake,BC': OUT_OF_SCOPE,
     'area:Clinton,BC': OUT_OF_SCOPE,
     'area:Clearwater,BC': OUT_OF_SCOPE,
     'area:Hope,BC': OUT_OF_SCOPE,
@@ -262,8 +263,7 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
     'bc-cascades': 'fraser-valley',
     'okanagan': 'okanagan',
     'vancouver-island': 'vancouver-island',
-    // Between the Okanagan and the Selkirks, and covered by nothing else here.
-    'monashee-mountains': OUT_OF_SCOPE,
+    'monashee-mountains': 'shuswap-monashees',
     'cariboo-mountains': OUT_OF_SCOPE,
     'bc-central-coast': OUT_OF_SCOPE,
     'montana': 'glacier-montana',
@@ -283,6 +283,10 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
 
   // Reads its own LOCATION column through the shared matcher.
   sonnybou: SELF_RESOLVED,
+
+  // Its categories are activities, so the adapter reads the area from the post
+  // title ("Sulphur Mountain, Banff June 1, 2019") through the shared matcher.
+  billkerr: SELF_RESOLVED,
 
   // Each route page states a Region property, resolved through the matcher.
   adamlaycock: SELF_RESOLVED,
@@ -360,23 +364,6 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
   }
 }
 
-/**
- * Picks one region for an objective from the regions its reports carry.
- *
- * This is also where cross-source inheritance happens: the reports passed in
- * are every report for one objective, from every source, so a Steep Sheep trip
- * that publishes no region is placed by whichever other blog also climbed it.
- *
- * `regionId` is absent when no report names a region we recognise. `outOfScope`
- * says the objective was placed, but somewhere this site does not cover — which
- * means drop it, not that it needs curating.
- */
-export interface RegionResolution {
-  readonly regionId?: string
-  readonly outOfScope: boolean
-  readonly conflicts: readonly string[]
-}
-
 /** The region one report names, mapped onto our taxonomy. */
 export function mappedRegionOf(report: RawReport): string | undefined {
   return report.sourceRegion ? REGION_MAP[report.sourceId]?.[report.sourceRegion] : undefined
@@ -401,33 +388,19 @@ export function isHomonym(reports: readonly RawReport[]): boolean {
   return [...perSource.values()].some(regions => regions.size > 1)
 }
 
-export function resolveRegion(reports: readonly RawReport[]): RegionResolution {
-  const byRegion = new Map<string, Set<string>>()
-  let outOfScope = false
-
-  for (const report of reports) {
-    const mapped = mappedRegionOf(report)
-    if (mapped === OUT_OF_SCOPE) {
-      outOfScope = true
-      continue
-    }
-    if (!mapped) continue
-    if (!byRegion.has(mapped)) byRegion.set(mapped, new Set())
-    byRegion.get(mapped)!.add(report.sourceId)
-  }
-  if (byRegion.size === 0) return { outOfScope, conflicts: [] }
-
-  const ranked = [...byRegion.entries()].sort((left, right) => rank(left[1]) - rank(right[1]))
-  const conflicts = byRegion.size > 1
-    ? ranked.map(([regionId, sourceIds]) => `${regionId} (${[...sourceIds].sort().join(', ')})`)
-    : []
-  return { regionId: ranked[0]![0], outOfScope: false, conflicts }
+/**
+ * The region stated by the most trusted blog among `reports`, or undefined
+ * when none states one we cover.
+ */
+export function strongestStatedRegion(reports: readonly RawReport[]): string | undefined {
+  const ranked = reports
+    .map(report => ({ regionId: mappedRegionOf(report), rank: rank(report.sourceId) }))
+    .filter(entry => entry.regionId && entry.regionId !== OUT_OF_SCOPE)
+    .sort((left, right) => left.rank - right.rank)
+  return ranked[0]?.regionId
 }
 
-function rank(sourceIds: ReadonlySet<string>): number {
-  const ranks = [...sourceIds].map((id) => {
-    const index = REGION_PRIORITY.indexOf(id)
-    return index === -1 ? REGION_PRIORITY.length : index
-  })
-  return Math.min(...ranks)
+function rank(sourceId: string): number {
+  const index = REGION_PRIORITY.indexOf(sourceId)
+  return index === -1 ? REGION_PRIORITY.length : index
 }

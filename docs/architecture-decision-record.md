@@ -432,3 +432,148 @@ Assiniboine, which has no forecast of its own.
   search read. The trip report side is emitted by
   [render.ts](../scripts/trip-report-index/render.ts) rather than written by hand, and the
   catch-all page is excluded because it is not a region and has no sibling.
+
+---
+
+## ADR-007 — List an objective under every region a signal names, and show the signals
+
+**Date:** 2026-10-11
+**Status:** Accepted — supersedes, in
+[ADR-005](#adr-005--generate-the-by-objective-trip-report-index-into-markdown-and-match-objective-names-exactly),
+"where sources disagree, the one with the finest taxonomy wins" and the rule that an
+objective no blog places waits on the catch-all page
+
+### Context
+
+The index placed each objective in exactly one region: the one stated by the most trusted
+blog, per `REGION_PRIORITY`. That had two costs.
+
+- **Disagreement was invisible.** Bow Peak is filed under the Icefields Parkway by two blogs
+  and under Banff by one. It appeared on one page, and a reader browsing the other had no way
+  to know it existed, or that the blogs disagree about it.
+- **A third of the index was unsorted.** Four blogs state no region anywhere. Their
+  objectives — 831 of them, more than half Andrew Nugara's and On-Top's — sat on the
+  catch-all page, because the only evidence read was region words in their prose, which
+  were right 45% and 64% of the time.
+
+Those two blogs turned out to publish better evidence than prose, just not as a region.
+Nugara's reports link his reports of neighbouring peaks; On-Top's link the trailhead on
+Google Maps, with coordinates in the URL; and official place names have positions in the
+federal gazetteer. Each can be turned into a region by asking where the *placed* objectives
+around it are. Measured leave-one-out against objectives the blogs do place:
+
+| Signal | Rule | Right |
+|---|---|---|
+| Nugara's links | ≥ 2 placed links, ≥ 80% agreeing | 186 / 198 (94%) |
+| On-Top's trailheads | 5 nearest landmarks, ≥ 80% of the distance-weighted vote, nearest ≤ 25 km | 183 / 195 (94%) |
+| Place-name positions | the same, from the name's position | 521 / 571 (91%) |
+| Name lookup, for Nugara alone | — | places 49 of 413: his names are mostly unofficial |
+
+Park polygons (CPCAD, Alberta's public land use zones) were assessed and not used. Half the
+taxonomy is not a park — Kananaskis and Canmore, the Ghost, the Purcells — and the regions
+follow how the blogs file trips rather than legal boundaries, which nearest neighbours
+among those very filings reproduce without anyone drawing a line.
+
+### Decision
+
+Collect every **claim** about where an objective is, each recording its **signal** — a
+blog's stated region, a curated override, a tick-list's region, or an inference from
+sub-ranges, links, trailheads or place names — and list the objective on **every** region
+page a claim names. Under each entry, a line says which signals put it in which region,
+this page's first and the others linked. Inferred regions say so.
+
+The build runs twice: once with stated claims only, which [inference.ts](../scripts/trip-report-index/inference.ts)
+reads for the neighbours it votes among, then again with the inferred claims added.
+
+### Rationale
+
+- **A boundary objective belongs on both sides.** That is already the rule for weather
+  locations ([ADR-006](#adr-006--one-region-taxonomy-across-trip-reports-weather-and-accommodation)),
+  for the same reason: a reader browsing either region should find it.
+- **Showing the signals is what makes inference acceptable.** ADR-005 kept unplaced
+  objectives off the region pages because a wrong region is worse than none. That holds
+  for a wrong region presented as fact. One presented as "inferred from 4 of the 5 Nugara
+  reports it links to", next to whatever the blogs state, lets the reader weigh it — and
+  the alternative was not listing a third of the index anywhere useful.
+- **Weak evidence beats none.** Below those thresholds — one placed link, a trailhead
+  between two regions, a vote split three ways — an objective nothing else places is
+  listed under each region with a meaningful share, marked *weakly inferred* with its
+  counts. A weak vote never adds a region to an objective that already has one, so it
+  cannot dilute a stated placement; it only replaces the catch-all page.
+- **A position can also say "outside".** A trailhead or place name more than 50 km from
+  every placed objective is outside the taxonomy — On-Top's include Arizona, Hawaii and
+  Bavaria — and an objective nothing else places is dropped as out of scope on that
+  basis, as it would be had a blog filed it abroad.
+- **Curation still wins outright.** A `REGION_OVERRIDES` entry replaces every other claim
+  rather than joining them, because it exists for cases where the sources are wrong —
+  Steven Song files the whole Selkirk range under one heading.
+- **Homonyms are untouched.** A name one blog files in two regions is still split into
+  two objectives, and inferred claims are not applied to either: a link vote or a position
+  is evidence about a name, and that name belongs to two places.
+- **No new runtime dependency, and no committed geodata.** The gazetteer is read through
+  the same cached fetcher as the blogs; the geometry is twenty lines.
+
+### Consequences
+
+- **Every region page grows**: one evidence line per entry, plus each objective that is
+  disputed or newly inferred. The first run's figures are in the PR that introduced this.
+- **About one inferred placement in ten is wrong**, concentrated at boundaries — Banff and
+  the Icefields Parkway, Sunshine and Assiniboine, Highway 93 South and Kootenay. The
+  review worksheet lists every objective placed by inference alone, for spot-checking, and
+  a `REGION_OVERRIDES` entry fixes one.
+- **A refresh is slower**: each Nugara and On-Top report is read once (about 1,500 pages)
+  and the gazetteer is read in 294 tiles, all cached.
+- The place-name positions are under the Open Government Licence – Canada, whose one
+  condition is attribution, given on every region page.
+- **Revisit** the thresholds in `inference.ts` if the worksheet shows a run of wrong
+  inferences; they trade coverage for accuracy, and the measurements above are the
+  baseline. Park polygons remain the natural next step for the boundary errors, applied
+  to coordinates only.
+
+---
+
+## ADR-008 — Promote the Shuswap and the Monashees to a region
+
+**Date:** 2026-10-11
+**Status:** Accepted
+
+### Context
+
+The Monashees were out of scope: Steven Song's Monashee trips were filtered out before they
+were read, Golden Scrambles' Craigellachie, Three Valley Gap, Malakwa and Monashee Park
+areas were mapped to out-of-scope by hand, and the Shuswap fell into the Okanagan through
+keywords like "Salmon Arm" and "Enderby". With
+[ADR-007](#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)
+reading every blog's evidence, enough objectives turned up between the Okanagan and the
+Selkirks to stand on their own — 36 on the first run — and a "Further afield" page grouping
+everything else by province was the alternative considered.
+
+### Decision
+
+Add `shuswap-monashees` as a full region, with its own weather and accommodation pages as
+[ADR-006](#adr-006--one-region-taxonomy-across-trip-reports-weather-and-accommodation)
+requires, placed after the Okanagan under "Beyond the Rockies".
+
+### Rationale
+
+- It is a weekend from Calgary down the Trans-Canada, the same footing as the other regions
+  in its group, and two blogs already treat it as an area of its own: Steven Song's
+  "Monashee Mountains" and Golden Scrambles' area fields.
+- **Boundaries.** Salmon Arm, Sicamous, Enderby, Shuswap, Mara and Mabel lakes, Lumby,
+  Cherryville, Sugar Lake and Monashee Park are in. A trip report goes to the one region a
+  place fits best: Lumby here, as the road to Mabel Lake and the Monashees; Vernon and
+  Falkland to the Okanagan; Revelstoke to Rogers Pass, whose peaks are the Selkirks'. Weather
+  is the exception, as ADR-006 allows: a town between two regions is a card on both pages,
+  which is why Lumby is on the Okanagan's as well as this one. Canoe Mountain, which Steven
+  Song files with the Monashees at their far northern end above Valemount, is curated to
+  Jasper and Mount Robson.
+
+### Consequences
+
+- The Okanagan loses the Shuswap's objectives, and its accommodation page loses Noisy Creek
+  and Hidden Lake, which moved with them.
+- The weather and accommodation pages after the Okanagan are renumbered, per ADR-006's
+  zero-padded ordering. No URL changes.
+- AccuWeather refuses automated reads, so its links on the new cards were confirmed by
+  hand. Cherryville has none, nor an IQAir link, which answered only with a bot check;
+  ADR-006's rule is that an unverified link is worse than none.

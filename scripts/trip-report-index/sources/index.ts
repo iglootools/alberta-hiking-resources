@@ -63,9 +63,10 @@ export const SOURCES: readonly SourceAdapter[] = [
     label: 'Steven Song',
     home: 'https://stevensong.com/',
     scrape: scrapeStevenSong,
-    // Counts only the Rockies, Selkirks, Purcells and Montana; the archive as a
-    // whole is roughly five times this and mostly coastal BC and the US.
-    minimumReports: 150
+    // Counts only the regions this site covers, about 1,280 when the adapter
+    // was fixed to read the alphabetical list. Set above the 460 its sitemap
+    // alone yields, so a return to reading only the capped sitemap fails here.
+    minimumReports: 1000
   },
   {
     id: 'goldenscrambles',
@@ -108,7 +109,7 @@ export const SOURCES: readonly SourceAdapter[] = [
   {
     id: 'adamlaycock',
     label: 'Adam Laycock',
-    home: 'https://adamlaycock.ca/Routes',
+    home: 'https://adamlaycock.ca/routes/',
     scrape: scrapeAdamLaycock,
     minimumReports: 350
   },

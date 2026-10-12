@@ -47,7 +47,10 @@ async function regionOf(fetchText: Fetcher, url: string): Promise<string | undef
 export async function scrapeAdamLaycock(fetchText: Fetcher): Promise<RawReport[]> {
   const index = JSON.parse(await fetchText(CONTENT_INDEX)) as Record<string, Entry>
   const routes = Object.entries(index)
-    .filter(([slug, entry]) => slug.startsWith('Routes/') && entry.title)
+    // Matched without regard to case: the site moved from `Routes/Akamina-Ridge`
+    // to `routes/akamina-ridge` in September 2026, and a test on the exact
+    // casing is what emptied the source then.
+    .filter(([slug, entry]) => slug.toLowerCase().startsWith('routes/') && entry.title)
 
   const reports: RawReport[] = []
   for (const [slug, entry] of routes) {

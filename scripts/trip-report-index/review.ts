@@ -8,8 +8,10 @@
  * curation.ts, and its entries are printed ready to paste there.
  */
 import type { BuildResult } from './build.ts'
-import type { Objective } from './types.ts'
+import type { Claim, Objective } from './types.ts'
+import { regionsOf } from './build.ts'
 import { REGIONS } from './regions.ts'
+import { isStated } from './types.ts'
 
 /** Similarity above which two names are worth a human looking at them. */
 const NEAR_MISS_CUTOFF = 0.86
@@ -35,13 +37,50 @@ function unplacedSection(unplaced: readonly Objective[]): string[] {
   ]
 }
 
-function conflictSection(conflicts: BuildResult['conflicts']): string[] {
-  if (conflicts.length === 0) return ['No region conflicts.', '']
+/** "stated by explor8ion", "linked from anugara (3 of 4)" — terse, for the worksheet only. */
+function claimText(claim: Claim): string {
+  const signal = claim.signal
+  const text = signalText(signal)
+  return 'weak' in signal && signal.weak ? `${text}, weak` : text
+}
+
+function signalText(signal: Claim['signal']): string {
+  switch (signal.kind) {
+    case 'stated': return signal.sourceId
+    case 'linked': return `${signal.sourceId} links ${signal.agreeing}/${signal.total}`
+    case 'sub-range': return `${signal.sourceId} sub-range ${signal.subRange}`
+    case 'trailhead': return `${signal.sourceId} trailhead`
+    default: return signal.kind
+  }
+}
+
+function claimsText(objective: Objective): string {
+  return regionsOf(objective)
+    .map(regionId => `${regionId} (${objective.claims.filter(claim => claim.regionId === regionId).map(claimText).join(', ')})`)
+    .join(' vs ')
+}
+
+function multiRegionSection(objectives: readonly Objective[]): string[] {
+  const listed = objectives.filter(objective => regionsOf(objective).length > 1)
+  if (listed.length === 0) return ['No objective is listed in more than one region.', '']
   return [
-    `${conflicts.length} objectives whose sources disagreed on region. The first listed`,
-    'won, by source priority. Add a REGION_OVERRIDES entry only where that is wrong:',
+    `${listed.length} objectives listed in more than one region, strongest claim first. That is`,
+    'intended where the objective sits on a boundary. Where one region is simply wrong, a',
+    'REGION_OVERRIDES entry replaces every claim with the curated one:',
     '',
-    ...conflicts.map(entry => `- **${entry.objective.name}** → ${entry.conflicts.join(' vs ')}`),
+    ...listed.map(objective => `- **${objective.name}** → ${claimsText(objective)}`),
+    ''
+  ]
+}
+
+function inferredOnlySection(objectives: readonly Objective[]): string[] {
+  const inferred = objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated))
+  if (inferred.length === 0) return ['No objective is placed by inference alone.', '']
+  return [
+    `${inferred.length} objectives placed only by inference. These are the ones to spot-check:`,
+    'about one in ten is expected to be wrong.',
+    '',
+    ...inferred.map(objective => `- **${objective.name}** → ${claimsText(objective)} — ${objective.reports[0]?.url ?? ''}`),
     ''
   ]
 }
@@ -68,7 +107,7 @@ function similarity(left: string, right: string): number {
 }
 
 function nearMissSection(result: BuildResult): string[] {
-  const keys = [...result.byRegion.values()].flat().map(objective => objective.key).sort()
+  const keys = [...new Set(result.objectives.map(objective => objective.key))].sort()
   const pairs: string[] = []
   for (let index = 0; index < keys.length; index += 1) {
     for (let other = index + 1; other < Math.min(index + 12, keys.length); other += 1) {
@@ -97,9 +136,12 @@ export function writeReview(result: BuildResult, generatedOn: Date): string {
     '## Unplaced objectives',
     '',
     ...unplacedSection(result.unplaced),
-    '## Region conflicts',
+    '## Listed in more than one region',
     '',
-    ...conflictSection(result.conflicts),
+    ...multiRegionSection(result.objectives),
+    '## Placed by inference alone',
+    '',
+    ...inferredOnlySection(result.objectives),
     '## Possible duplicate names',
     '',
     ...nearMissSection(result)
