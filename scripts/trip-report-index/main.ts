@@ -10,10 +10,11 @@
  *   --refresh      discard the HTTP cache and re-read every source
  *   --review-only  report what would change without writing any page
  */
-import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { BuildResult } from './build.ts'
+import type { Objective } from './types.ts'
 import { buildObjectives } from './build.ts'
 import { checkIndexLinks, checkMirroredSections } from './checks.ts'
 import { MinimumNotMetError } from './errors.ts'
@@ -25,7 +26,7 @@ import { indent, shown } from './output.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { isStated } from './types.ts'
 import { SOURCES } from './sources/index.ts'
-import { renderRegionPage } from './render.ts'
+import { entryName, entryNames, renderRegionPage } from './render.ts'
 import { writeReview } from './review.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -73,6 +74,18 @@ function pageName(position: number, slug: string): string {
   return `${String(position).padStart(2, '0')}.${slug}.md`
 }
 
+const UNSORTED_PAGE = pageName(REGIONS.length + 2, UNSORTED.id)
+
+/** The names on the catch-all page as committed, or none on the first run. */
+async function previouslyUnsorted(): Promise<Set<string>> {
+  try {
+    return entryNames(await readFile(join(PAGES_DIR, UNSORTED_PAGE), 'utf8'))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return new Set()
+    throw error
+  }
+}
+
 /** Removes region pages for regions that no longer exist. */
 async function pruneStalePages(keep: ReadonlySet<string>): Promise<string[]> {
   const existing = await readdir(PAGES_DIR)
@@ -96,7 +109,7 @@ async function writeRegionPages(result: BuildResult, reviewOnly: boolean): Promi
       objectives: result.byRegion.get(region.id) ?? [],
       name: pageName(index + 2, region.id)
     })),
-    { region: UNSORTED, objectives: result.unplaced, name: pageName(REGIONS.length + 2, UNSORTED.id) }
+    { region: UNSORTED, objectives: result.unplaced, name: UNSORTED_PAGE }
   ]
 
   await mkdir(PAGES_DIR, { recursive: true })
@@ -116,15 +129,19 @@ async function finishPages(written: readonly string[]): Promise<void> {
   await checkMirroredSections(MIRRORED_SECTIONS, slugs)
 }
 
-function printSummary(result: BuildResult, reportCount: number): void {
+function printSummary(result: BuildResult, reportCount: number, newlyUnsorted: readonly Objective[]): void {
   const listings = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
   const placed = result.objectives.length - result.unplaced.length
   const multiRegion = result.objectives.filter(objective => new Set(objective.claims.map(claim => claim.regionId)).size > 1).length
   const inferredOnly = result.objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated)).length
   console.log(`\n${placed} objectives placed, ${listings} listings across ${REGIONS.length} pages, `
-    + `${reportCount} reports, ${result.outOfScopeCount} out of scope.`)
+    + `${reportCount} reports, ${result.dropped.length} out of scope.`)
   console.log(`${multiRegion} in more than one region, ${inferredOnly} placed by inference alone, `
     + `${result.unplaced.length} unplaced — see ${shown(REVIEW_PATH)}`)
+  if (newlyUnsorted.length > 0) {
+    console.log(`\n${newlyUnsorted.length} new on the catch-all page:`)
+    for (const objective of newlyUnsorted) console.log(indent(objective.name))
+  }
 }
 
 async function main(): Promise<void> {
@@ -146,11 +163,14 @@ async function main(): Promise<void> {
   // lists every objective under every region a stated or inferred signal names.
   const statedOnly = buildObjectives(reports, guidebooks)
   const result = buildObjectives(reports, guidebooks, inferRegions(statedOnly, gazetteer))
+  // Read before the pages are rewritten: this is the page the run replaces.
+  const before = await previouslyUnsorted()
+  const newlyUnsorted = result.unplaced.filter(objective => !before.has(entryName(objective)))
   const written = await writeRegionPages(result, reviewOnly)
   if (!reviewOnly) await finishPages(written)
 
-  await writeFile(REVIEW_PATH, writeReview(result, new Date()), 'utf8')
-  printSummary(result, reports.length)
+  await writeFile(REVIEW_PATH, writeReview(result, new Date(), { newlyUnsorted }), 'utf8')
+  printSummary(result, reports.length, newlyUnsorted)
 }
 
 /**

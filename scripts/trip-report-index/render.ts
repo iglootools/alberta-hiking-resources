@@ -238,7 +238,35 @@ const UNSORTED_NOTE = [
   'index\u2019s curation file.'
 ]
 
+/** An entry's name as its page shows it, for comparing a build with the page it replaces. */
+export function entryName(objective: Objective): string {
+  return escapeText(objective.name)
+}
+
+/** The names of the entries on a rendered page, as `entryName` gives them. */
+export function entryNames(markdown: string): Set<string> {
+  return new Set([...markdown.matchAll(/^- \*\*(.+?)\*\*/gm)].map(match => match[1]!))
+}
+
+/**
+ * A page with nothing on it. The catch-all page is the one that empties in
+ * practice, once curation catches up with the blogs, and the usual summary
+ * ("0 objectives indexed from 0 blogs") and notes about entries would read
+ * as a fault rather than as the good news it is.
+ */
+function renderEmptyPage(region: Region): string {
+  const body = region.id === UNSORTED.id
+    ? [
+        'Every objective the indexed blogs publish is on a region page at the moment. A report',
+        'whose region nothing settles appears here after the next refresh, until its region is',
+        'recorded by hand in the index\u2019s curation file.'
+      ]
+    : ['No objectives are listed here yet.']
+  return [frontmatter(region), '', GENERATED_NOTE, '', ...crossLinkLine(region), ...body, ''].join('\n')
+}
+
 export function renderRegionPage(region: Region, objectives: readonly Objective[]): string {
+  if (objectives.length === 0) return renderEmptyPage(region)
   const sections = [...groupByLetter(objectives)].map(([letter, group]) =>
     [`## ${letter}`, '', ...group.flatMap(objective => renderObjective(objective, region))].join('\n'))
 

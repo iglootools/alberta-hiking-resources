@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { Objective } from '../types.ts'
-import { REGIONS } from '../regions.ts'
-import { renderRegionPage } from '../render.ts'
+import { REGIONS, UNSORTED } from '../regions.ts'
+import { entryName, entryNames, renderRegionPage } from '../render.ts'
 
 const region = (id: string) => REGIONS.find(candidate => candidate.id === id)!
 
@@ -37,5 +37,21 @@ describe('renderRegionPage', () => {
     assert.ok(renderRegionPage(region('kananaskis-canmore'), [nugara]).includes(
       '  - **Kananaskis Country and Canmore**: inferred from 4 of the 5 placed Andrew Nugara reports it links to'
     ))
+  })
+})
+
+describe('entryNames', () => {
+  it('reads back the names a rendered page lists, as entryName gives them', () => {
+    const tricky: Objective = { ...bowPeak, key: 'k', name: 'Ship*s [Prow]', claims: [] }
+    const page = renderRegionPage(region('banff'), [bowPeak, tricky])
+    assert.deepEqual(entryNames(page), new Set([entryName(bowPeak), entryName(tricky)]))
+  })
+})
+
+describe('renderRegionPage, empty', () => {
+  it('says the catch-all page is empty rather than counting nothing', () => {
+    const page = renderRegionPage(UNSORTED, [])
+    assert.match(page, /Every objective the indexed blogs publish is on a region page/)
+    assert.doesNotMatch(page, /0 objectives indexed/)
   })
 })

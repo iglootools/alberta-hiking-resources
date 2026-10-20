@@ -22,9 +22,12 @@
  * off the wrong page. Only add a report you have read.
  */
 export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
-  // Climbed from Echo Lake in the Coast Mountains, not the Rockies peak above
-  // the Icefields Parkway that every other source means.
-  'https://coastbackcountry.com/2007/07/31/mount-murchison/': ['Mount Murchison, Echo Lake'],
+  // The Mount Murchison above Woodfibre near Squamish, not the Rockies 11,000er
+  // every other source means. Coast Backcountry climbed it from Echo Lake.
+  // Named apart, the Rockies peak — which Explor8ion files under Banff and
+  // Steven Song under the Icefields Parkway — stays one entry.
+  'https://coastbackcountry.com/2007/07/31/mount-murchison/': ['Mount Murchison, Squamish'],
+  'https://stevensong.com/coastal-interior-bc/sea-to-sky/mount-murchison-bc/': ['Mount Murchison, Squamish'],
   // The Fisher Peak above Cranbrook, not the Kananaskis one every other source
   // means; merged, it put the Kananaskis peak on the BC Rockies page too.
   'https://www.billkerr.ca/index.php/fisher-peak-cranbrook-july-52011/': ['Fisher Peak, Cranbrook'],
@@ -47,7 +50,16 @@ export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
   // Paradise Peak on St. Martin and Santa María in Guatemala. Spectacular
   // Mountains' older pages name no locality, so its adapter cannot tell.
   'https://www.spectacularmountains.com/paradise-peak-st-martin/': [],
-  'https://www.spectacularmountains.com/santa-maria/': []
+  'https://www.spectacularmountains.com/santa-maria/': [],
+  // The Kananaskis Old Baldy, north of Mount McDougall, which other blogs call
+  // Old Baldy Mountain. "Old Baldy" also names a Clearwater and a Cascades peak,
+  // so it is renamed by report rather than aliased by name.
+  'http://bobspirko.ca/Hiking/Kananaskis/OldBaldy/OldBaldy.html': ['Old Baldy Mountain'],
+  'https://explor8ion.com/trips/old-baldy-mount-mcdougall/': ['Old Baldy Mountain', 'Mount McDougall'],
+  // Swany's Ridge and Îyarhe Îpan, the foothills ridges off McLean Creek, which
+  // each blog spells and splits its own way.
+  'https://www.billkerr.ca/index.php/swany-and-iyre-ipan-july-16-2020/': ['Swany\u2019s Ridge', '\u00cEyarhe \u00cEpan'],
+  'https://www.spectacularmountains.com/canada/kananaskis/iyarhe-ipan-swanys-ridge-quirk-ridge/': ['\u00cEyarhe \u00cEpan', 'Swany\u2019s Ridge', 'Quirk Ridge']
 }
 
 /**
@@ -202,8 +214,39 @@ export const ALIASES: Readonly<Record<string, string>> = {
   'fisera ridge skin up': 'fisera ridge',
   'skin up fisera ridge trail': 'fisera ridge',
   'ship prows mountain': 'ships prow mountain',
-  'st eloi': 'st eloi mountain' // "St. Eloi Mountain, 2nd peak of Syncline Mountain"
+  'st eloi': 'st eloi mountain', // "St. Eloi Mountain, 2nd peak of Syncline Mountain"
+  'west castle': 'west castle mountain', // "one of two official peaks on Lys Ridge"
+  'swanys': 'swanys ridge'
 }
+
+/**
+ * Pairs of keys confirmed to be different objectives, which the review
+ * worksheet would otherwise offer as alias candidates on every run. Each was
+ * checked against its reports; most share a word and nothing else — The Wedge
+ * in Kananaskis and Wedge Mountain above Whistler.
+ */
+export const DISTINCT_NAMES: readonly (readonly [string, string])[] = [
+  ['beehive', 'beehive mountain'],
+  ['big white', 'big white mountain'], // Spirko's is above Island Lake by Fernie; the other is the Okanagan ski hill // the Beehive above Lake Agnes; Beehive Mountain in the Highwood
+  ['carry', 'carry peak'],
+  ['cirque', 'cirque peak'], // "Cirque & Chephren Lakes"
+  ['cory', 'mount cory'], // "Cory & Edith Passes"
+  ['dog', 'dog mountain'],
+  ['eagle', 'eagle mountain'], // a canoe trip
+  ['fortress', 'fortress mountain'],
+  ['ghost', 'ghost peak'],
+  ['little goat', 'little goat mountain'],
+  ['marble', 'marble mountain'],
+  ['onion', 'onion peak'], // the Onion on the Wapta
+  ['pulsatilla', 'pulsatilla mountain'], // "Pulsatilla & Badger Passes"
+  ['sphinx', 'sphinx mountain'],
+  ['table', 'table mountain'],
+  ['tent', 'tent mountain'], // the Tent in Garibaldi
+  ['unnamed', 'unnamed peak'],
+  ['wapta', 'wapta mountain'], // the Wapta Icefield
+  ['wedge', 'wedge mountain'],
+  ['whitehorn', 'whitehorn mountain'] // the ski hill at Lake Louise; Whitehorn Mountain at Robson
+]
 
 /**
  * The region an objective belongs to, keyed by canonical name, overriding
@@ -561,6 +604,17 @@ export const REGION_OVERRIDES: Readonly<Record<string, string>> = {
   'cannon mountain': 'glacier-montana',
   'henkel mountain': 'glacier-montana',
   'mount logan glacier national park': 'glacier-montana',
+  // Researched, the reports naming no place (October 2026). Funnel Peak is on
+  // the BC side of the High Rock Range but reached up Dutch Creek, among Mount
+  // Erris, Tornado Mountain and Gould Dome.
+  'funnel peak': 'crowsnest-castle',
+  // A bivouac.com name in the Barkley Valley above D'Arcy, which Steven Song
+  // photographs from Crystal Peak. Less certain than the rest.
+  'elusive peak': 'sea-to-sky',
+  // Almost certainly Devils Tongue in the Chilliwack group of the North
+  // Cascades, reached from Hope by the Silver-Skagit Road; no BC peak has the
+  // name. Less certain: the author lived in Kimberley at the time.
+  'devils tongue': 'fraser-valley',
   // Beyond the Rockies.
   'eagles landing': 'bc-rockies-purcells', // "north ridge of Angel's Peak in the East Kootenays"
   'graves lookout': 'bc-rockies-purcells', // Sonny Bou: "White River, BC"

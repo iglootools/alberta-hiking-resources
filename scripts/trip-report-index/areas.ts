@@ -26,7 +26,7 @@ export const AREA_KEYWORDS: readonly (readonly [RegExp, string])[] = [
   // its "sunshine", and above each other because "Vancouver Island" contains
   // "Vancouver".
   [/vancouver island|strathcona|tofino|cumberland|courtenay|comox/i, 'vancouver-island'],
-  [/vancouver|squamish|whistler|pemberton|north shore|sunshine coast|sechelt|powell river|garibaldi|joffre lakes|duffey|cypress provincial|mount seymour|stawamus|capilano|lynn headwaters/i, 'sea-to-sky'],
+  [/vancouver|squamish|whistler|pemberton|north shore|sunshine coast|sechelt|powell river|garibaldi|joffre lakes|duffey|lillooet|cypress provincial|mount seymour|stawamus|capilano|lynn headwaters/i, 'sea-to-sky'],
   [/chilliwack|fraser valley|cheam|manning|coquihalla|bc cascades|golden ears|north cascades|sumas mountain/i, 'fraser-valley'],
   // Above the Okanagan, which "Shuswap" and the lakes north of Vernon used to
   // fall into before they had a region of their own. Lumby is here rather than

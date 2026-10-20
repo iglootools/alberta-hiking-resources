@@ -14,10 +14,15 @@
  * just as useful: a page that does not open with a date is not a trip at all
  * but the About page, the disclaimer, a region's introduction, or one of the
  * Rakayib camel-caravan articles, none of which name an objective.
+ *
+ * Trips also link the author's trips to the peaks around them — Funnel Peak
+ * links Gould Dome and Mount Erris — which inference.ts reads the way it reads
+ * Andrew Nugara's, for the trips that neither a path nor a locality places.
  */
 import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { matchArea } from '../areas.ts'
+import { anchors, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
 import { readSelfHostedPosts } from './selfhosted-wordpress.ts'
 
@@ -88,10 +93,28 @@ export function regionOfLocality(locality: string): string | undefined {
   return 'elsewhere'
 }
 
+/** The site's other pages this one links to, as absolute URLs without fragments, once each. */
+export function siteLinks(html: string, pageUrl: string): string[] {
+  const page = new URL(pageUrl)
+  const linked = new Set<string>()
+  for (const anchor of anchors(html)) {
+    let url: URL
+    try {
+      url = new URL(anchor.href, page)
+    } catch {
+      continue
+    }
+    url.hash = ''
+    url.search = ''
+    if (url.hostname === page.hostname && url.pathname !== '/' && url.href !== page.href && !/\/wp-content\//.test(url.pathname)) linked.add(url.href)
+  }
+  return [...linked]
+}
+
 export async function scrapeSpectacularMountains(fetchText: Fetcher): Promise<RawReport[]> {
   const pages = await readSelfHostedPosts(fetchText, BASE, 'pages', '', { withContent: true })
   return pages.flatMap((page) => {
-    const locality = tripLocality(page.text ?? '')
+    const locality = tripLocality(textOf(page.html ?? ''))
     if (locality === undefined || NOT_A_TRIP_TITLE.test(page.title)) return []
     const sourceRegion = regionFromPath(page.url) ?? regionOfLocality(locality)
     return [{
@@ -99,6 +122,7 @@ export async function scrapeSpectacularMountains(fetchText: Fetcher): Promise<Ra
       title: page.title,
       url: page.url,
       objectives: splitObjectives(page.title),
+      relatedUrls: siteLinks(page.html ?? '', page.url),
       ...(sourceRegion ? { sourceRegion } : {})
     }]
   })

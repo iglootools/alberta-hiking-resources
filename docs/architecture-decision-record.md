@@ -620,6 +620,13 @@ Read that evidence, in five changes, and curate the residue by hand:
    and 82 in 97 when they are split, which is used as a weak inference.
 5. **The USGS gazetteer for the American side of the extent**, adding names only where the
    Canadian one has none.
+6. **Spectacular Mountains' links between its own trips**, read by the same link vote as
+   Andrew Nugara's. Leave-one-out on trips the site places, they agree 68 times in 68, and
+   the weak votes 72 in 76.
+7. **The worksheet shows what a refresh changes**: objectives new on the catch-all page since
+   the version the run replaces, and every name dropped as out of scope with its reason, so a
+   wrong exclusion is reviewable rather than invisible. Pairs confirmed to be different
+   places go in `DISTINCT_NAMES` and stop being offered as alias candidates.
 
 ### Rationale
 
@@ -640,18 +647,25 @@ Read that evidence, in five changes, and curate the residue by hand:
 - **Ice and sport climbs are out of scope**, alongside trips abroad and posts that are not
   trips. The index is of hikes and scrambles; an icefall is not an objective a reader of
   these pages is looking for.
-- **What remains is left unsorted on purpose.** Six objectives are on the catch-all page,
-  each one whose report does not say enough to place it with confidence. A guess on a
-  hiking site is worse than an honest "not yet sorted".
+- **The residue was researched rather than guessed.** The last six named no place at all,
+  and were placed from BC Geographical Names, other blogs' reports of the same objective,
+  and route descriptions — Mount Murchison is the one above Woodfibre, with an Echo Lake 2 km
+  east of it; Devil's Tongue is in the North Cascades. The two judged less certain say so
+  in `curation.ts`. A guess on a hiking site is worse than an honest "not yet sorted", which
+  is why the page stays: it is empty now, and says so, until a refresh brings something
+  nothing settles.
 
 ### Consequences
 
-- The catch-all page went from 317 objectives to 6, with 77 more placed, 90 more dropped as
-  out of scope or not trips, and 82 duplicate entries merged by the new aliases.
+- The catch-all page went from 317 objectives to none, with 75 more placed, 90 more dropped
+  as out of scope or not trips, and 82 duplicate entries merged by the new aliases.
 - Reading the evidence exposed three merges of two mountains under one name — Fisher Peak
   (Kananaskis and Cranbrook), Mount Henry (Jasper and Glacier National Park), and the region
   index pages Spectacular Mountains files beside its trips. The first two are separated in
-  `REPORT_OBJECTIVES`; the last are dropped by the adapter.
+  `REPORT_OBJECTIVES`; the last are dropped by the adapter. Mount Murchison was a fourth,
+  above Squamish, and showed a related fault: when one blog files a name in two regions the
+  name is split, and each half carried the other's tick-list mark. A mark now goes only to
+  the half in the tick-list's own region.
 - A test now fails if a `REGION_OVERRIDES` entry is keyed by a spelling an alias replaces.
   Four were, after the aliases above, and had silently stopped applying.
 - **Watch for** a source the shared keyword table does not know. Sonny Bou's LOCATION

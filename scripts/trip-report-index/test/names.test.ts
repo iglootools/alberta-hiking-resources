@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
+import { matchArea } from '../areas.ts'
 import { canonKey } from '../canon.ts'
 import { ALIASES, REGION_OVERRIDES } from '../curation.ts'
 import { OUT_OF_SCOPE, REGION_IDS } from '../regions.ts'
@@ -12,6 +13,17 @@ describe('canonKey', () => {
   })
 })
 
+describe('matchArea', () => {
+  it('puts Lillooet with the Sea to Sky', () => {
+    assert.equal(matchArea('Lillooet, BC'), 'sea-to-sky')
+  })
+
+  it('puts the north coast out of scope without catching "terrace" in a peak name', () => {
+    assert.equal(matchArea('Terrace, BC'), 'elsewhere')
+    assert.equal(matchArea('Hays Terrace'), undefined)
+  })
+})
+
 describe('bareNameCandidates', () => {
   it('pairs a bare name with the one spelling that adds its generic back', () => {
     assert.deepEqual(bareNameCandidates(new Set(['brett', 'mount brett'])), [['brett', 'mount brett']])
@@ -19,6 +31,10 @@ describe('bareNameCandidates', () => {
 
   it('leaves a bare name with two such spellings to a human', () => {
     assert.deepEqual(bareNameCandidates(new Set(['cascade', 'mount cascade', 'cascade mountain'])), [])
+  })
+
+  it('skips a pair confirmed to be two different places', () => {
+    assert.deepEqual(bareNameCandidates(new Set(['wedge', 'wedge mountain'])), [])
   })
 
   it('looks only at names without a generic of their own', () => {

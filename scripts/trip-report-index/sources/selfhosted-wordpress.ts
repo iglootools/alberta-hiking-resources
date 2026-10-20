@@ -8,7 +8,7 @@
 import type { Fetcher } from '../fetch.ts'
 import { PageLimitError, SourceChangedError } from '../errors.ts'
 import { fetchUnlessStatus } from '../fetch.ts'
-import { decodeEntities, textOf } from '../html.ts'
+import { decodeEntities } from '../html.ts'
 
 /** Items per request; every caller's URL must ask for exactly this many. */
 export const PAGE_SIZE = 100
@@ -29,8 +29,8 @@ interface Post {
 export interface WordPressPost {
   readonly title: string
   readonly url: string
-  /** The body as plain text, when asked for: what a blog states on the page rather than in its metadata. */
-  readonly text?: string
+  /** The body's HTML, when asked for: what a blog states on the page rather than in its metadata. */
+  readonly html?: string
 }
 
 /**
@@ -84,6 +84,6 @@ export async function readSelfHostedPosts(
   return batch.flatMap((post) => {
     const title = decodeEntities(post.title?.rendered ?? '').replace(/\s+/g, ' ').trim()
     if (!title || !post.link) return []
-    return [withContent ? { title, url: post.link, text: textOf(post.content?.rendered ?? '') } : { title, url: post.link }]
+    return [withContent ? { title, url: post.link, html: post.content?.rendered ?? '' } : { title, url: post.link }]
   })
 }

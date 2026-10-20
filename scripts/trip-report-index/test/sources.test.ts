@@ -5,7 +5,7 @@ import { objectivesOf, relatedLinks } from '../sources/anugara.ts'
 import { trailheadOf } from '../sources/ontop.ts'
 import { scrapeStevenSong } from '../sources/stevensong.ts'
 import { regionFromTags, scrapeBillKerr } from '../sources/billkerr.ts'
-import { regionOfLocality, scrapeSpectacularMountains, tripLocality } from '../sources/spectacularmountains.ts'
+import { regionOfLocality, scrapeSpectacularMountains, siteLinks, tripLocality } from '../sources/spectacularmountains.ts'
 import { scrapeCoastBackcountry } from '../sources/coastbackcountry.ts'
 import { readWordPress } from '../sources/wordpress.ts'
 import { stubFetcher } from './support.ts'
@@ -194,6 +194,16 @@ describe('scrapeSpectacularMountains', () => {
       ['Gaff Peak', 'bc-rockies-purcells'],
       ['Puigmal', 'elsewhere']
     ])
+  })
+})
+
+describe('siteLinks (Spectacular Mountains)', () => {
+  it('keeps links to the site\u2019s other pages, once each, without fragments', () => {
+    const html = '<a href="/gould-dome/">Gould Dome</a> <a href="https://s.com/mount-erris/#top">Erris</a>'
+      + ' <a href="/gould-dome/">again</a> <a href="https://s.com/funnel-peak/">itself</a>'
+      + ' <a href="https://s.com/">home</a> <a href="https://s.com/wp-content/uploads/a.jpg">photo</a>'
+      + ' <a href="https://peakbagger.com/x">elsewhere</a>'
+    assert.deepEqual(siteLinks(html, 'https://s.com/funnel-peak/'), ['https://s.com/gould-dome/', 'https://s.com/mount-erris/'])
   })
 })
 

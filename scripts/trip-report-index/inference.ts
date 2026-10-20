@@ -4,7 +4,7 @@
  * Four blogs state no region anywhere, and their objectives used to wait on the
  * catch-all page until another blog covered them. What they do publish is
  * evidence of place: Andrew Nugara's reports link his reports of neighbouring
- * peaks, On-Top's link the trailhead on a map, and Explor8ion names a sub-range
+ * peaks (as do Spectacular Mountains' trips, on the pages its paths do not file), On-Top's link the trailhead on a map, and Explor8ion names a sub-range
  * even on trips its region pages omit. Official names can also be found on a
  * map. None of that is a region, but each can be turned into one by asking
  * where the *placed* objectives around it are.
@@ -21,6 +21,7 @@
  *   | signal              | right, at these thresholds |
  *   |---------------------|----------------------------|
  *   | Nugara's links      | 186 of 198 (94%)           |
+ *   | Spectacular's links | 68 of 68                   |
  *   | On-Top's trailheads | 183 of 195 (94%)           |
  *   | named places        | 521 of 571 (91%)           |
  *   | same-report peaks   | 648 of 655 (99%)           |
