@@ -12,6 +12,12 @@
  * shares the name, so this places few of them on its own (measured: 49 of
  * Andrew Nugara's 413). Its larger job is supplying the landmarks that
  * trailhead coordinates are voted against; see inference.ts.
+ *
+ * South of the border, the same extent is read from the USGS Geographic Names
+ * Information System, which is in the public domain. Without it, Glacier
+ * National Park in Montana — a region of its own here — had no positions at
+ * all: its peaks could neither be found by name nor serve as landmarks, so
+ * nothing near them could be inferred.
  */
 import type { Fetcher } from './fetch.ts'
 import type { Coordinates } from './types.ts'
@@ -40,6 +46,24 @@ const SAME_PLACE_KM = 10
 /** Well under the ~14,000 the extent held when this was written. */
 const MINIMUM_FEATURES = 8000
 
+const US_API = 'https://carto.nationalmap.gov/arcgis/rest/services/geonames/MapServer/5/query'
+
+/**
+ * GNIS classes worth reading. Its Landforms layer also holds capes, islands,
+ * gaps, valleys and flats, which outnumber the summits on the Washington coast
+ * and would push the tiles past the page size for nothing.
+ */
+const US_CLASSES = ['Summit', 'Ridge', 'Pillar'] as const
+
+/** The part of EXTENT south of the 49th parallel. */
+const US_EXTENT = { west: EXTENT.west, east: EXTENT.east, south: EXTENT.south, north: 49 }
+
+/** The service's page size; as with the Canadian API, a full page has been cut short. */
+const US_PAGE = 2000
+
+/** Well under the ~2,300 the band held when this was written. */
+const US_MINIMUM_FEATURES = 1500
+
 export interface Feature extends Coordinates {
   readonly name: string
   readonly featureClass: string
@@ -47,6 +71,11 @@ export interface Feature extends Coordinates {
 
 /** One position per name the gazetteer can place unambiguously, by canonical key. */
 export type Gazetteer = ReadonlyMap<string, Coordinates>
+
+interface UsFeature {
+  readonly attributes?: { readonly gaz_name?: string }
+  readonly geometry?: { readonly points?: readonly (readonly [number, number])[], readonly x?: number, readonly y?: number }
+}
 
 interface ApiItem {
   readonly name: string
@@ -74,6 +103,40 @@ async function readTile(fetchText: Fetcher, url: string): Promise<Feature[]> {
   }
   const featureClass = /concise=(\w+)/.exec(url)?.[1] ?? ''
   return body.items.map(item => ({ name: item.name, lat: item.latitude, lon: item.longitude, featureClass }))
+}
+
+function usTileUrls(): string[] {
+  const where = `gaz_featureclass IN (${US_CLASSES.map(name => `'${name}'`).join(',')})`
+  const urls: string[] = []
+  for (let lon = US_EXTENT.west; lon < US_EXTENT.east; lon += 1) {
+    const query = new URLSearchParams({
+      where,
+      geometry: `${lon},${US_EXTENT.south},${lon + 1},${US_EXTENT.north}`,
+      geometryType: 'esriGeometryEnvelope',
+      inSR: '4326',
+      outSR: '4326',
+      spatialRel: 'esriSpatialRelIntersects',
+      outFields: 'gaz_name',
+      returnGeometry: 'true',
+      f: 'json'
+    })
+    urls.push(`${US_API}?${query}`)
+  }
+  return urls
+}
+
+/** One GNIS tile. Its features are all landforms, so they rank as mountains when a name is also a lake. */
+async function readUsTile(fetchText: Fetcher, url: string): Promise<Feature[]> {
+  const body = JSON.parse(await fetchText(url)) as { features?: UsFeature[], exceededTransferLimit?: boolean }
+  if (!Array.isArray(body.features)) throw new SourceChangedError('gazetteer', `no features array at ${url}`)
+  if (body.exceededTransferLimit || body.features.length >= US_PAGE) {
+    throw new SourceChangedError('gazetteer', `${url} returned a full page; split the tiles`)
+  }
+  return body.features.flatMap((feature) => {
+    const name = feature.attributes?.gaz_name
+    const [lon, lat] = feature.geometry?.points?.[0] ?? [feature.geometry?.x, feature.geometry?.y]
+    return name && typeof lat === 'number' && typeof lon === 'number' ? [{ name, lat, lon, featureClass: 'MTN' }] : []
+  })
 }
 
 /**
@@ -112,5 +175,28 @@ export async function readGazetteer(fetchText: Fetcher): Promise<Gazetteer> {
   if (features.length < MINIMUM_FEATURES) {
     throw new MinimumNotMetError('gazetteer', features.length, MINIMUM_FEATURES, 'named features')
   }
-  return indexFeatures(features)
+  const usFeatures: Feature[] = []
+  for (const url of usTileUrls()) usFeatures.push(...await readUsTile(fetchText, url))
+  if (usFeatures.length < US_MINIMUM_FEATURES) {
+    throw new MinimumNotMetError('gazetteer', usFeatures.length, US_MINIMUM_FEATURES, 'named US features')
+  }
+  return withAmericanGaps(features, usFeatures)
+}
+
+/**
+ * The Canadian index, with American names added only where Canada has no
+ * feature of that name at all.
+ *
+ * Indexing both together would drop every name found on both sides of the
+ * border as ambiguous, and border names repeat often: Sumas Mountain is in
+ * both British Columbia and Washington, and there are Pinnacle Mountains in
+ * Banff and in Montana. Those were placed correctly before the American names
+ * were read, and would no longer be. Filling gaps instead means no name
+ * resolves differently than it did on Canadian data alone, while the
+ * Montana-only names, which are why the American data is read, are added.
+ */
+export function withAmericanGaps(canadian: readonly Feature[], american: readonly Feature[]): Gazetteer {
+  const canadianKeys = new Set(canadian.map(feature => objectiveKey(feature.name)))
+  const gaps = [...indexFeatures(american)].filter(([key]) => !canadianKeys.has(key))
+  return new Map([...indexFeatures(canadian), ...gaps])
 }

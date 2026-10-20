@@ -23,11 +23,14 @@ const MAX_PAGES = 50
 interface Post {
   readonly link?: string
   readonly title?: { readonly rendered?: string }
+  readonly content?: { readonly rendered?: string }
 }
 
 export interface WordPressPost {
   readonly title: string
   readonly url: string
+  /** The body's HTML, when asked for: what a blog states on the page rather than in its metadata. */
+  readonly html?: string
 }
 
 /**
@@ -64,17 +67,23 @@ export async function readAllPages<T>(
  *
  * `filter` is extra query parameters, for a blog whose trips are one category
  * among several — Coast Backcountry's `categories=…`.
+ *
+ * `withContent` also reads each body, which is several times the size of the
+ * rest; only a blog that states something in its text and nowhere else needs it.
  */
 export async function readSelfHostedPosts(
   fetchText: Fetcher,
   base: string,
   type: 'posts' | 'pages' = 'posts',
-  filter = ''
+  filter = '',
+  { withContent = false }: { readonly withContent?: boolean } = {}
 ): Promise<WordPressPost[]> {
+  const fields = withContent ? 'title,link,content' : 'title,link'
   const batch = await readAllPages<Post>(fetchText, page =>
-    `${base}/wp-json/wp/v2/${type}?per_page=${PAGE_SIZE}&page=${page}&_fields=title,link${filter ? `&${filter}` : ''}`)
+    `${base}/wp-json/wp/v2/${type}?per_page=${PAGE_SIZE}&page=${page}&_fields=${fields}${filter ? `&${filter}` : ''}`)
   return batch.flatMap((post) => {
     const title = decodeEntities(post.title?.rendered ?? '').replace(/\s+/g, ' ').trim()
-    return title && post.link ? [{ title, url: post.link }] : []
+    if (!title || !post.link) return []
+    return [withContent ? { title, url: post.link, html: post.content?.rendered ?? '' } : { title, url: post.link }]
   })
 }

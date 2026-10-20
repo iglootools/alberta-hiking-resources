@@ -19,6 +19,24 @@ import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, isHomonym, mappedRegionOf, s
 import { SOURCE_ORDER } from './sources/index.ts'
 import { isStated } from './types.ts'
 
+/**
+ * Why a name group was left off every page. A wrong exclusion is otherwise
+ * invisible — the objective simply disappears — so each is kept for the
+ * worksheet rather than only counted.
+ *
+ * - `curated`: REGION_OVERRIDES says out-of-scope.
+ * - `filed-elsewhere`: a blog files it somewhere this site does not cover
+ *   (`sourceIds`), and nothing stated places it here.
+ * - `outside`: a trailhead or place-name position is far from every region.
+ */
+export interface Dropped {
+  readonly key: string
+  readonly name: string
+  readonly reason: 'curated' | 'filed-elsewhere' | 'outside'
+  readonly sourceIds: readonly string[]
+  readonly url: string
+}
+
 export interface BuildResult {
   /** Every objective once, placed or not. */
   readonly objectives: readonly Objective[]
@@ -26,7 +44,8 @@ export interface BuildResult {
   readonly byRegion: ReadonlyMap<string, readonly Objective[]>
   /** Objectives nothing places and no override covers. Input to curation. */
   readonly unplaced: readonly Objective[]
-  readonly outOfScopeCount: number
+  /** Name groups left off every page as out of scope, with the reason. */
+  readonly dropped: readonly Dropped[]
 }
 
 /** Applies a curated REPORT_OBJECTIVES entry in place of the title's own parse. */
@@ -79,7 +98,7 @@ function byName(left: Objective, right: Objective): number {
 
 /** Strongest kind first; the stated kinds lead, and blogs rank among themselves as in REGION_PRIORITY. */
 const KIND_RANK: Readonly<Record<Signal['kind'], number>> = {
-  'curated': 0, 'stated': 1, 'tick-list': 2, 'sub-range': 3, 'linked': 4, 'trailhead': 5, 'named-place': 6
+  'curated': 0, 'stated': 1, 'tick-list': 2, 'sub-range': 3, 'companion': 4, 'linked': 5, 'trailhead': 6, 'named-place': 7
 }
 
 function claimRank(claim: Claim): [number, number] {
@@ -97,7 +116,7 @@ function byStrength(left: Claim, right: Claim): number {
 /**
  * One claim per region, signal kind and source. Several of one blog's reports
  * of the same objective — Nugara's "Middle Sister II" beside "Middle Sister" —
- * would otherwise say the same thing once each; their link votes are summed
+ * would otherwise say the same thing once each; their votes are summed
  * instead, so the page reads "6 of 7 linked reports" rather than "3 of 3" twice.
  */
 function mergeClaims(claims: readonly Claim[]): Claim[] {
@@ -107,7 +126,7 @@ function mergeClaims(claims: readonly Claim[]): Claim[] {
     const weak = 'weak' in claim.signal && claim.signal.weak ? 'weak' : ''
     const id = `${claim.regionId}|${claim.signal.kind}|${sourceId}|${weak}`
     const existing = merged.get(id)
-    if (existing?.signal.kind === 'linked' && claim.signal.kind === 'linked') {
+    if (existing && isVote(existing.signal) && isVote(claim.signal)) {
       merged.set(id, {
         regionId: claim.regionId,
         signal: { ...claim.signal, agreeing: existing.signal.agreeing + claim.signal.agreeing, total: existing.signal.total + claim.signal.total }
@@ -117,6 +136,13 @@ function mergeClaims(claims: readonly Claim[]): Claim[] {
     }
   }
   return [...merged.values()].sort(byStrength)
+}
+
+type Vote = Extract<Signal, { kind: 'linked' | 'companion' }>
+
+/** A signal that counts how many of its neighbours agree, and so sums across reports. */
+function isVote(signal: Signal): signal is Vote {
+  return signal.kind === 'linked' || signal.kind === 'companion'
 }
 
 /** What each report's own source states, mapped onto the taxonomy. */
@@ -206,6 +232,10 @@ function objectiveOf(key: string, name: string, reports: readonly RawReport[], c
   }
 }
 
+function dropped(key: string, group: readonly RawReport[], reason: Dropped['reason'], sourceIds: readonly string[]): Dropped {
+  return { key, name: pickName(key, group), reason, sourceIds, url: group[0]?.url ?? '' }
+}
+
 /**
  * The objectives one name group becomes: none if it is out of scope, one
  * normally, one per mountain if two share the name.
@@ -214,27 +244,33 @@ function objectiveOf(key: string, name: string, reports: readonly RawReport[], c
  * nothing *stated* places it here. An inferred region does not rescue it: a
  * Utah peak sharing a name with a Kananaskis one is still in Utah.
  */
-function place(key: string, group: readonly RawReport[], context: Context): Objective[] {
-  if (REGION_OVERRIDES[key] === OUT_OF_SCOPE) return []
+function place(key: string, group: readonly RawReport[], context: Context): Objective[] | Dropped {
+  if (REGION_OVERRIDES[key] === OUT_OF_SCOPE) return dropped(key, group, 'curated', [])
   const name = pickName(key, group)
 
   if (isHomonym(group)) {
     const fallback = REGION_OVERRIDES[key] ?? strongestStatedRegion(group)
+    // A tick-list entry is about one of the mountains, the one in its region:
+    // Steven Song's Mount Murchison above Squamish is not the 11,000er.
+    const tickRegion = context.guidebooks?.regions.get(key)
     return [...splitHomonym(group, fallback)]
       .filter(([regionId]) => REGION_IDS.has(regionId))
       .map(([regionId, reports]) => objectiveOf(key, name, reports,
-        mergeClaims(statedClaims(reports).filter(claim => claim.regionId === regionId)), context.guidebooks))
+        mergeClaims(statedClaims(reports).filter(claim => claim.regionId === regionId)),
+        !tickRegion || tickRegion === regionId ? context.guidebooks : undefined))
   }
 
   const claims = claimsOf(key, group, context)
-  const outOfScope = group.some(report => mappedRegionOf(report) === OUT_OF_SCOPE)
-  if (outOfScope && !claims.some(isStated)) return []
+  const filedElsewhere = group.filter(report => mappedRegionOf(report) === OUT_OF_SCOPE)
+  if (filedElsewhere.length > 0 && !claims.some(isStated)) {
+    return dropped(key, group, 'filed-elsewhere', [...new Set(filedElsewhere.map(report => report.sourceId))])
+  }
   if (claims.length > 0) return [objectiveOf(key, name, group, claims, context.guidebooks)]
 
   // Nothing places it: settle for weak evidence, then for knowing it is outside
   // every region, before leaving it unsorted.
   const weak = weakClaimsOf(key, group, context.inferred)
-  if (weak.length === 0 && isOutside(key, group, context.inferred)) return []
+  if (weak.length === 0 && isOutside(key, group, context.inferred)) return dropped(key, group, 'outside', [])
   return [objectiveOf(key, name, group, weak, context.guidebooks)]
 }
 
@@ -268,13 +304,13 @@ export function buildObjectives(
   inferred: Inferred = NOTHING_INFERRED
 ): BuildResult {
   const groups = [...groupByObjective(reports.map(withCuratedObjectives))]
-  const objectives = groups.flatMap(([key, group]) => place(key, group, { guidebooks, inferred })).sort(byName)
-  const placedKeys = new Set(objectives.map(objective => objective.key))
+  const outcomes = groups.map(([key, group]) => place(key, group, { guidebooks, inferred }))
+  const objectives = outcomes.flatMap(outcome => Array.isArray(outcome) ? outcome : []).sort(byName)
 
   return {
     objectives,
     byRegion: groupByRegion(objectives),
     unplaced: objectives.filter(objective => objective.claims.length === 0),
-    outOfScopeCount: groups.filter(([key]) => !placedKeys.has(key)).length
+    dropped: outcomes.flatMap(outcome => Array.isArray(outcome) ? [] : [outcome]).sort((left, right) => left.key.localeCompare(right.key))
   }
 }

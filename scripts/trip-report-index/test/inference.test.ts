@@ -4,7 +4,7 @@ import type { Gazetteer } from '../gazetteer.ts'
 import type { Landmark } from '../geo.ts'
 import type { RawReport } from '../types.ts'
 import { buildObjectives } from '../build.ts'
-import { indexFeatures, readGazetteer } from '../gazetteer.ts'
+import { indexFeatures, readGazetteer, withAmericanGaps } from '../gazetteer.ts'
 import { distanceKm, nearestRegion } from '../geo.ts'
 import { inferRegions, linkVote, weakLinkVotes } from '../inference.ts'
 import { stubFetcher } from './support.ts'
@@ -116,6 +116,30 @@ describe('inferRegions', () => {
     assert.deepEqual(inferred.weak.byReport.get(report.url)?.map(claim => claim.regionId).sort(), ['banff', 'yoho'])
   })
 
+  it('places an objective by the placed peaks in the same report', () => {
+    const report: RawReport = { sourceId: 'anugara', title: 'Peak One and GR123456', url: 'https://n/4', objectives: ['Peak One', 'GR123456'] }
+    const inferred = inferRegions(buildObjectives([...placed, report]), new Map())
+    assert.deepEqual(inferred.byKey.get('gr123456'),
+      [{ regionId: 'banff', signal: { kind: 'companion', sourceId: 'anugara', agreeing: 1, total: 1 } }])
+    assert.equal(inferred.byKey.get('peak one'), undefined)
+  })
+
+  it('names each region weakly when the peaks in the same report disagree', () => {
+    const yoho: RawReport = { sourceId: 'spirko', title: 'Yoho One', url: 'https://p/6', objectives: ['Yoho One'], sourceRegion: 'Field' }
+    const report: RawReport = { sourceId: 'anugara', title: 'Traverse', url: 'https://n/5', objectives: ['Peak One', 'Yoho One', 'Col Between'] }
+    const inferred = inferRegions(buildObjectives([...placed, yoho, report]), new Map())
+    assert.equal(inferred.byKey.get('col between'), undefined)
+    assert.deepEqual(inferred.weak.byKey.get('col between')?.map(claim => claim.regionId).sort(), ['banff', 'yoho'])
+  })
+
+  it('takes no vote from a name two peaks share', () => {
+    const elsewhere: RawReport = { sourceId: 'spirko', title: 'Peak One', url: 'https://p/7', objectives: ['Peak One'], sourceRegion: 'Field' }
+    const report: RawReport = { sourceId: 'anugara', title: 'Peak One and Hidden Col', url: 'https://n/6', objectives: ['Peak One', 'Hidden Col'] }
+    const inferred = inferRegions(buildObjectives([...placed, elsewhere, report]), new Map())
+    assert.equal(inferred.byKey.get('hidden col'), undefined)
+    assert.equal(inferred.weak.byKey.get('hidden col'), undefined)
+  })
+
   it('places an objective whose name the gazetteer finds', () => {
     const report: RawReport = { sourceId: 'anugara', title: 'Nameless Knob', url: 'https://n/3', objectives: ['Nameless Knob'] }
     const inferred = inferRegions(buildObjectives([...placed, report]), gazetteer)
@@ -138,6 +162,28 @@ describe('indexFeatures', () => {
       { name: 'Mount Temple', featureClass: 'LAKE', lat: 50.0, lon: -116.0 }
     ])
     assert.deepEqual(gazetteer.get('mount temple'), BANFF)
+  })
+})
+
+describe('withAmericanGaps', () => {
+  const MONTANA = { lat: 48.67, lon: -113.76 }
+
+  it('adds an American name Canada does not have', () => {
+    const gazetteer = withAmericanGaps([{ name: 'Mount Temple', featureClass: 'MTN', ...BANFF }], [{ name: 'Bearhat Mountain', featureClass: 'MTN', ...MONTANA }])
+    assert.deepEqual(gazetteer.get('bearhat mountain'), MONTANA)
+  })
+
+  it('keeps the Canadian position of a name found on both sides of the border', () => {
+    const gazetteer = withAmericanGaps([{ name: 'Pinnacle Mountain', featureClass: 'MTN', ...BANFF }], [{ name: 'Pinnacle Mountain', featureClass: 'MTN', ...MONTANA }])
+    assert.deepEqual(gazetteer.get('pinnacle mountain'), BANFF)
+  })
+
+  it('does not settle a name Canada already finds ambiguous', () => {
+    const gazetteer = withAmericanGaps([
+      { name: 'Storm Mountain', featureClass: 'MTN', ...BANFF },
+      { name: 'Storm Mountain', featureClass: 'MTN', lat: 50.5, lon: -114.8 }
+    ], [{ name: 'Storm Mountain', featureClass: 'MTN', ...MONTANA }])
+    assert.equal(gazetteer.has('storm mountain'), false)
   })
 })
 

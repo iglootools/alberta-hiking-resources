@@ -108,9 +108,11 @@ parser costs nothing; `--refresh` is what an actual content refresh uses. A full
 around 2,200 requests, throttled, and takes a quarter of an hour. Most are individual
 reports read only because their index gives no region: Bob Spirko's and Golden Scrambles'
 for a locality line, Andrew Nugara's for his links to neighbouring reports, and On-Top's
-for the trailhead's coordinates. Another 294 read the federal gazetteer, whose place-name
-positions place objectives by the placed ones around them — see
-[ADR-007](architecture-decision-record.md#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals).
+for the trailhead's coordinates. Another 294 read the federal gazetteer, and 14 the USGS
+one for the American side of the border, whose place-name positions place objectives by
+the placed ones around them — see
+[ADR-007](architecture-decision-record.md#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)
+and [ADR-009](architecture-decision-record.md#adr-009--empty-the-catch-all-page-from-evidence-the-sources-already-publish).
 `--review-only` reports what would change without touching any page.
 
 ### Annie Ouellet's YouTube channel needs an API key
@@ -145,10 +147,14 @@ is a broken refresh, not a smaller one.
 It is deliberately **not** part of `mise run ci` or the build. The output is committed, so
 a blog being unreachable delays a refresh rather than breaking a deploy.
 
-Each run also writes `trip-report-review.md` at the repo root (gitignored): the objectives
-nothing could place, the ones listed in more than one region, the ones placed by inference
-alone (about one in ten of which is expected to be wrong), and near-miss names that may be
-duplicates. Work through it and record the decisions in
+Each run also writes `trip-report-review.md` at the repo root (gitignored). It opens with the
+objectives that are new on the catch-all page since the version the run replaced — what a
+refresh brought in, to place first — then lists the objectives nothing could place, the ones listed in more than one region, the ones placed by inference
+alone (about one in ten of which is expected to be wrong), near-miss names that may be
+duplicates, and names written without their "Mount" or "Peak" beside the objective that has
+it. The last two are candidates for `ALIASES`, never merged automatically; a pair confirmed
+to be two places goes in `DISTINCT_NAMES` instead, so it is not offered again. It ends with
+every name dropped as out of scope and why, to catch a peak excluded by mistake. Work through it and record the decisions in
 [scripts/trip-report-index/curation.ts](../scripts/trip-report-index/curation.ts) — that
 file, and the blogs themselves, are the only correct places to fix a wrong entry. Editing a
 generated `.md` is pointless; the next run overwrites it.

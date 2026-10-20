@@ -4,7 +4,7 @@
  * Four blogs state no region anywhere, and their objectives used to wait on the
  * catch-all page until another blog covered them. What they do publish is
  * evidence of place: Andrew Nugara's reports link his reports of neighbouring
- * peaks, On-Top's link the trailhead on a map, and Explor8ion names a sub-range
+ * peaks (as do Spectacular Mountains' trips, on the pages its paths do not file), On-Top's link the trailhead on a map, and Explor8ion names a sub-range
  * even on trips its region pages omit. Official names can also be found on a
  * map. None of that is a region, but each can be turned into one by asking
  * where the *placed* objectives around it are.
@@ -21,8 +21,10 @@
  *   | signal              | right, at these thresholds |
  *   |---------------------|----------------------------|
  *   | Nugara's links      | 186 of 198 (94%)           |
+ *   | Spectacular's links | 68 of 68                   |
  *   | On-Top's trailheads | 183 of 195 (94%)           |
  *   | named places        | 521 of 571 (91%)           |
+ *   | same-report peaks   | 648 of 655 (99%)           |
  *
  * The misses cluster at boundaries that are hard to see from neighbours — Banff
  * against the Icefields Parkway, Sunshine against Assiniboine, Highway 93 South
@@ -132,7 +134,7 @@ function placedLinks(report: RawReport, regions: ReadonlyMap<string, ReadonlySet
   })
 }
 
-/** Each region's share of a link vote, largest first. One placed in two regions splits its vote. */
+/** Each region's share of a vote among placed neighbours, largest first. One placed in two regions splits its vote. */
 function linkShares(placed: readonly ReadonlySet<string>[]): [string, number][] {
   const weights = new Map<string, number>()
   for (const set of placed) {
@@ -299,6 +301,57 @@ function inferFromNames(findings: Findings, objectives: readonly Objective[], ga
   }
 }
 
+/**
+ * Objectives one report covers alongside one the blogs place. A report is one
+ * day out, so the peaks it names are within a day's walk of each other:
+ * Nugara's "Lineham Ridge and GR593982", Explor8ion's "Ward, Mount & Allison &
+ * Window". Measured leave-one-out on objectives that are placed, the other
+ * peaks in the same report name the right region 648 times in 655 when at
+ * least MIN_SHARE of them agree — one companion is enough — and 82 in 97 when
+ * they are split, which is a weak inference.
+ *
+ * A name two peaks share is left out on both sides, since its region is
+ * evidence about the other mountain as often as this one: Nugara's "Medicine
+ * Peak, Mount Henry, Mount Ellsworth, Appistoki Peak" is in Montana, and the
+ * Mount Henry other blogs place is in Jasper.
+ */
+function inferFromCompanions(findings: Findings, objectives: readonly Objective[]): void {
+  const occurrences = new Map<string, number>()
+  for (const objective of objectives) occurrences.set(objective.key, (occurrences.get(objective.key) ?? 0) + 1)
+  const unique = objectives.filter(objective => occurrences.get(objective.key) === 1)
+
+  const placedByUrl = new Map<string, { key: string, regions: Set<string> }[]>()
+  for (const objective of unique) {
+    const regions = statedRegions(objective)
+    if (regions.size === 0) continue
+    for (const report of objective.reports) {
+      placedByUrl.set(report.url, [...(placedByUrl.get(report.url) ?? []), { key: objective.key, regions }])
+    }
+  }
+
+  for (const objective of unique) {
+    if (statedRegions(objective).size > 0) continue
+    for (const report of objective.reports) {
+      const placed = (placedByUrl.get(report.url) ?? []).filter(companion => companion.key !== objective.key).map(companion => companion.regions)
+      if (placed.length === 0) continue
+      const shares = linkShares(placed)
+      const [regionId, share] = shares[0]!
+      const claim = (region: string, weak: boolean): Claim => ({
+        regionId: region,
+        signal: {
+          kind: 'companion',
+          sourceId: report.sourceId,
+          agreeing: placed.filter(set => set.has(region)).length,
+          total: placed.length,
+          ...(weak ? { weak: true } : {})
+        }
+      })
+      if (share >= MIN_SHARE) findings.add(objective.key, claim(regionId, false))
+      else findings.addWeak(objective.key, shares.filter(([, weight]) => weight >= WEAK_MIN_SHARE).map(([region]) => claim(region, true)))
+    }
+  }
+}
+
 /** Every report, once, across all objectives. */
 function reportsOf(objectives: readonly Objective[]): RawReport[] {
   return [...new Map(objectives.flatMap(objective => objective.reports.map(report => [report.url, report] as const))).values()]
@@ -325,6 +378,7 @@ export function inferRegions(firstPass: BuildResult, gazetteer: Gazetteer): Infe
 
   const byKey = new Findings()
   inferFromNames(byKey, objectives, gazetteer, landmarks)
+  inferFromCompanions(byKey, objectives)
 
   return {
     byReport: byReport.claims,

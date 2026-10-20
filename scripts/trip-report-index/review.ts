@@ -7,14 +7,22 @@
  * on every run and is not committed — it is a worksheet for editing
  * curation.ts, and its entries are printed ready to paste there.
  */
-import type { BuildResult } from './build.ts'
+import type { BuildResult, Dropped } from './build.ts'
 import type { Claim, Objective } from './types.ts'
 import { regionsOf } from './build.ts'
+import { DISTINCT_NAMES } from './curation.ts'
 import { REGIONS } from './regions.ts'
 import { isStated } from './types.ts'
 
 /** Similarity above which two names are worth a human looking at them. */
 const NEAR_MISS_CUTOFF = 0.86
+
+const distinct = new Set(DISTINCT_NAMES.flatMap(([left, right]) => [`${left}|${right}`, `${right}|${left}`]))
+
+/** Whether a candidate pair has been checked and found to be two objectives. */
+function isDistinct(left: string, right: string): boolean {
+  return distinct.has(`${left}|${right}`)
+}
 
 function sources(objective: Objective): string {
   return [...new Set(objective.reports.map(report => report.sourceId))].join(', ')
@@ -48,6 +56,7 @@ function signalText(signal: Claim['signal']): string {
   switch (signal.kind) {
     case 'stated': return signal.sourceId
     case 'linked': return `${signal.sourceId} links ${signal.agreeing}/${signal.total}`
+    case 'companion': return `${signal.sourceId} same report ${signal.agreeing}/${signal.total}`
     case 'sub-range': return `${signal.sourceId} sub-range ${signal.subRange}`
     case 'trailhead': return `${signal.sourceId} trailhead`
     default: return signal.kind
@@ -112,7 +121,7 @@ function nearMissSection(result: BuildResult): string[] {
   for (let index = 0; index < keys.length; index += 1) {
     for (let other = index + 1; other < Math.min(index + 12, keys.length); other += 1) {
       const [left, right] = [keys[index]!, keys[other]!]
-      if (similarity(left, right) >= NEAR_MISS_CUTOFF) pairs.push(`- \`${left}\` vs \`${right}\``)
+      if (similarity(left, right) >= NEAR_MISS_CUTOFF && !isDistinct(left, right)) pairs.push(`- \`${left}\` vs \`${right}\``)
     }
   }
   return [
@@ -125,14 +134,105 @@ function nearMissSection(result: BuildResult): string[] {
   ]
 }
 
+/** The generic words a bare name may have dropped, as the forms to look for. */
+const GENERIC_FORMS: readonly ((bare: string) => string)[] = [
+  bare => `mount ${bare}`,
+  bare => `${bare} mountain`,
+  bare => `${bare} peak`
+]
+
+const GENERIC_WORD = /\b(?:mount|mountain|peak|ridge|hill|lake|pass|tower|butte|glacier|falls|creek|valley|dome|spire|needle|col)\b/
+
+/**
+ * Names written without their generic — Bill Kerr's "Brett" and "Lady
+ * MacDonald", Andrew Nugara's "Edith Cavell" — beside the one spelling that
+ * adds it back. Edit distance does not see these, the gap being a whole word,
+ * and an exact key cannot merge them.
+ *
+ * Only a name with exactly one such form is listed: "Cascade" is both Mount
+ * Cascade and Cascade Mountain, and choosing between them is not a spelling
+ * question. Like near misses, these are candidates for ALIASES, never acted on
+ * automatically.
+ */
+export function bareNameCandidates(keys: ReadonlySet<string>): [string, string][] {
+  return [...keys].sort().flatMap((key) => {
+    if (GENERIC_WORD.test(key) || /\d/.test(key)) return []
+    const forms = GENERIC_FORMS.map(form => form(key)).filter(form => keys.has(form))
+    return forms.length === 1 && !isDistinct(key, forms[0]!) ? [[key, forms[0]!] as [string, string]] : []
+  })
+}
+
+function bareNameSection(result: BuildResult): string[] {
+  const candidates = bareNameCandidates(new Set(result.objectives.map(objective => objective.key)))
+  return [
+    `${candidates.length} names that may be another objective without its "Mount", "Mountain" or`,
+    '"Peak". Check each against the report, then add it to ALIASES or, if the two are different',
+    'places, to DISTINCT_NAMES so it is not offered again:',
+    '',
+    '```ts',
+    ...candidates.map(([bare, full]) => `  '${bare}': '${full}',`),
+    '```',
+    ''
+  ]
+}
+
+function newlyUnsortedSection(newlyUnsorted: readonly Objective[]): string[] {
+  if (newlyUnsorted.length === 0) return ['Nothing is new on the catch-all page since the version this run replaced.', '']
+  return [
+    `${newlyUnsorted.length} objectives are new on the catch-all page since the version this run`,
+    'replaced — usually reports a blog has published since the last refresh. These are the',
+    'ones to place first, before they pile up:',
+    '',
+    ...newlyUnsorted.map(objective => `- **${objective.name}** — ${sources(objective)} — ${objective.reports[0]?.url ?? ''}`),
+    ''
+  ]
+}
+
+const DROP_REASONS: Readonly<Record<Dropped['reason'], string>> = {
+  'curated': 'Set out of scope in REGION_OVERRIDES',
+  'filed-elsewhere': 'Filed by a blog somewhere this site does not cover, and placed here by nothing it states',
+  'outside': 'Positioned by a trailhead or the map far from every region'
+}
+
+function droppedSection(dropped: readonly Dropped[]): string[] {
+  const reasons = Object.keys(DROP_REASONS) as Dropped['reason'][]
+  return [
+    `${dropped.length} names left off every page as out of scope. A wrong one disappears from the`,
+    'site without trace, so skim for a peak this site covers; a REGION_OVERRIDES entry naming',
+    'its region brings it back. Pages a source adapter drops as not being trips at all are not',
+    'listed here.',
+    '',
+    ...reasons.flatMap((reason) => {
+      const entries = dropped.filter(entry => entry.reason === reason)
+      return entries.length === 0
+        ? []
+        : [
+            `### ${DROP_REASONS[reason]} (${entries.length})`,
+            '',
+            ...entries.map(entry => `- \`${entry.key}\`${entry.sourceIds.length ? ` (${entry.sourceIds.join(', ')})` : ''} — ${entry.url}`),
+            ''
+          ]
+    })
+  ]
+}
+
+/** What a run knows beyond the build itself. */
+export interface ReviewContext {
+  /** Unplaced objectives that were not on the catch-all page this run replaced. */
+  readonly newlyUnsorted?: readonly Objective[]
+}
+
 /** `generatedOn` is supplied by the caller, so the worksheet is a pure function of its inputs. */
-export function writeReview(result: BuildResult, generatedOn: Date): string {
+export function writeReview(result: BuildResult, generatedOn: Date, { newlyUnsorted = [] }: ReviewContext = {}): string {
   return [
     '# Trip report index — review',
     '',
     `Generated by \`mise run build-trip-index\` on ${generatedOn.toISOString().slice(0, 10)} (UTC).`,
     'Not committed. Work through it, edit `scripts/trip-report-index/curation.ts`, re-run.',
     '',
+    '## New on the catch-all page',
+    '',
+    ...newlyUnsortedSection(newlyUnsorted),
     '## Unplaced objectives',
     '',
     ...unplacedSection(result.unplaced),
@@ -144,6 +244,12 @@ export function writeReview(result: BuildResult, generatedOn: Date): string {
     ...inferredOnlySection(result.objectives),
     '## Possible duplicate names',
     '',
-    ...nearMissSection(result)
+    ...nearMissSection(result),
+    '## Names without their generic',
+    '',
+    ...bareNameSection(result),
+    '## Dropped as out of scope',
+    '',
+    ...droppedSection(result.dropped)
   ].join('\n')
 }

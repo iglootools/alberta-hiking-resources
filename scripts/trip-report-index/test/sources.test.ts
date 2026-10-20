@@ -4,7 +4,8 @@ import { readUploads, requireApiKey } from '../sources/annie.ts'
 import { objectivesOf, relatedLinks } from '../sources/anugara.ts'
 import { trailheadOf } from '../sources/ontop.ts'
 import { scrapeStevenSong } from '../sources/stevensong.ts'
-import { scrapeBillKerr } from '../sources/billkerr.ts'
+import { regionFromTags, scrapeBillKerr } from '../sources/billkerr.ts'
+import { regionOfLocality, scrapeSpectacularMountains, siteLinks, tripLocality } from '../sources/spectacularmountains.ts'
 import { scrapeCoastBackcountry } from '../sources/coastbackcountry.ts'
 import { readWordPress } from '../sources/wordpress.ts'
 import { stubFetcher } from './support.ts'
@@ -135,5 +136,112 @@ describe('scrapeStevenSong', () => {
     const reports = await scrapeStevenSong(stubFetcher(url => url.endsWith('sitemap.xml') ? sitemap : list))
     assert.deepEqual(reports.map(report => [report.title, report.sourceRegion]).sort(),
       [['Mount Aylmer', 'banff'], ['Pyramid Mountain', 'jasper']])
+  })
+})
+
+describe('tripLocality (Spectacular Mountains)', () => {
+  it('reads the locality before the date', () => {
+    assert.equal(tripLocality('Elkford, BC, Canada 24 September 2021 Solo Beautiful ridge walk'), 'Elkford, BC, Canada')
+  })
+
+  it('accepts a span of days and the ISO date one page uses', () => {
+    assert.equal(tripLocality('Castle, AB, Canada 26 & 27 July 2020 With Don'), 'Castle, AB, Canada')
+    assert.equal(tripLocality('Kananaskis, AB, Canada Winter ascent (attempt) on 2019-10-06'), 'Kananaskis, AB, Canada Winter ascent (attempt) on')
+  })
+
+  it('gives an empty locality for an older trip that opens with its date', () => {
+    assert.equal(tripLocality('31 July 2017 With Wen Beehive Mountain was a brilliant outing'), '')
+  })
+
+  it('finds no trip on a page that does not open with a date', () => {
+    assert.equal(tripLocality('Hi – my name is Cornelius and this is my personal site, started in 2015 or so'), undefined)
+  })
+})
+
+describe('regionOfLocality (Spectacular Mountains)', () => {
+  it('resolves a Canadian locality through the shared matcher', () => {
+    assert.equal(regionOfLocality('Mount Robson Prov. Park, BC, Canada'), 'jasper-robson')
+  })
+
+  it('passes a Canadian locality the matcher does not know to the region map', () => {
+    assert.equal(regionOfLocality('Castle, AB, Canada'), 'locality:Castle')
+  })
+
+  it('puts a locality abroad out of scope, whatever words it contains', () => {
+    assert.equal(regionOfLocality('Svaneti, Georgia (Caucasus)'), 'elsewhere')
+    assert.equal(regionOfLocality('Gaspésie, Quebec'), 'elsewhere')
+  })
+
+  it('has nothing to say about an empty locality', () => {
+    assert.equal(regionOfLocality(''), undefined)
+  })
+})
+
+describe('scrapeSpectacularMountains', () => {
+  const page = (link: string, title: string, content: string) => ({ link, title: { rendered: title }, content: { rendered: `<p>${content}</p>` } })
+
+  it('keeps trips, placed by path or locality, and drops pages that are not trips', async () => {
+    const fetchText = stubFetcher(() => JSON.stringify([
+      page('https://s/canada/ghost/castle-rock/', 'Castle Rock', 'Ghost, AB, Canada 3 June 2021 Solo'),
+      page('https://s/gaff-peak/', 'Gaff Peak', 'Elkford, BC, Canada 24 September 2021 Solo'),
+      page('https://s/puigmal/', 'Puigmal', 'Pyrenees, Spain 8 June 2018 With Wen'),
+      page('https://s/contact/', 'Contact', 'If you would like to get in touch with feedback'),
+      page('https://s/aaa-trip-template/', 'AAA Trip Template', 'Kananaskis, Canada 13 November 2020 Solo')
+    ]))
+    const reports = await scrapeSpectacularMountains(fetchText)
+    assert.deepEqual(reports.map(report => [report.title, report.sourceRegion]), [
+      ['Castle Rock', 'canada/ghost'],
+      ['Gaff Peak', 'bc-rockies-purcells'],
+      ['Puigmal', 'elsewhere']
+    ])
+  })
+})
+
+describe('siteLinks (Spectacular Mountains)', () => {
+  it('keeps links to the site\u2019s other pages, once each, without fragments', () => {
+    const html = '<a href="/gould-dome/">Gould Dome</a> <a href="https://s.com/mount-erris/#top">Erris</a>'
+      + ' <a href="/gould-dome/">again</a> <a href="https://s.com/funnel-peak/">itself</a>'
+      + ' <a href="https://s.com/">home</a> <a href="https://s.com/wp-content/uploads/a.jpg">photo</a>'
+      + ' <a href="https://peakbagger.com/x">elsewhere</a>'
+    assert.deepEqual(siteLinks(html, 'https://s.com/funnel-peak/'), ['https://s.com/gould-dome/', 'https://s.com/mount-erris/'])
+  })
+})
+
+describe('regionFromTags (Bill Kerr)', () => {
+  it('places a post by the one area its tags name, ignoring tags that are not places', () => {
+    assert.equal(regionFromTags(['alberta', 'ridge', 'Kananaskis', 'snow']), 'kananaskis-canmore')
+  })
+
+  it('reads the tags the shared matcher cannot take', () => {
+    assert.equal(regionFromTags(['Castle']), 'crowsnest-castle')
+  })
+
+  it('places nothing when the tags disagree', () => {
+    assert.equal(regionFromTags(['Banff', 'Kananaskis']), undefined)
+  })
+})
+
+describe('scrapeBillKerr', () => {
+  const post = (id: number, title: string, tags: number[]) => ({ link: `https://b/${id}`, title: { rendered: title }, tags })
+
+  it('cleans titles, places posts by their tags, and drops what is not an outing', async () => {
+    const fetchText = stubFetcher((url) => {
+      if (url.includes('/categories?')) return JSON.stringify([{ id: 1, name: 'scramble' }])
+      if (url.includes('/tags?')) return JSON.stringify([{ id: 5, name: 'Kananaskis' }, { id: 6, name: 'Castle' }])
+      return JSON.stringify([
+        post(1, 'Scramble Chester Mountain Sept 3, 2022', [5]),
+        post(2, 'Table Mountain in Castle area June 25, 2022', [6]),
+        post(3, 'Ski up to Wawa Sunshine Jan 2021', []),
+        post(4, 'Mount Sarrail Scamble Sept 1, 2018', [5]),
+        post(5, 'Baofeng UV-5R Tactical Folding Antenna Test March 20, 2020', [])
+      ])
+    })
+    const reports = await scrapeBillKerr(fetchText)
+    assert.deepEqual(reports.map(report => [report.title, report.sourceRegion]), [
+      ['Chester Mountain', 'kananaskis-canmore'],
+      ['Table Mountain', 'crowsnest-castle'],
+      ['Ski up to Wawa Sunshine', 'banff'],
+      ['Mount Sarrail', 'kananaskis-canmore']
+    ])
   })
 })
