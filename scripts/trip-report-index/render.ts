@@ -75,6 +75,7 @@ function describeInferred(signal: Exclude<Signal, { kind: 'stated' }>): string {
     case 'tick-list': return 'Adam Laycock\u2019s tick-lists'
     case 'sub-range': return `inferred from ${label(signal.sourceId)}\u2019s *${escapeText(signal.subRange)}*`
     case 'linked': return `${inferred} from ${signal.agreeing} of the ${signal.total} placed ${label(signal.sourceId)} report${signal.total === 1 ? '' : 's'} it links to`
+    case 'companion': return `${inferred} from ${signal.agreeing} of the ${signal.total} placed objective${signal.total === 1 ? '' : 's'} in the same ${label(signal.sourceId)} report`
     case 'trailhead': return `${inferred} from ${label(signal.sourceId)}\u2019s trailhead`
     case 'named-place': return `${inferred} from where the name is on the map`
   }
@@ -208,15 +209,18 @@ const EVIDENCE_NOTE = [
   'Icefields Parkway, so it is on both pages.',
   '',
   'A region marked *inferred* is not stated by any blog. It was worked out from where the',
-  'blogs place the objectives around it: those a report links to, those near its trailhead, or',
-  'those near where its name is on the map. Checked against objectives the blogs do place,',
-  'these are right about nine times in ten, so treat one as a pointer rather than a fact.',
+  'blogs place the objectives around it: those climbed in the same trip, those a report links',
+  'to, those near its trailhead, or those near where its name is on the map. Checked against',
+  'objectives the blogs do place, these are right about nine times in ten, so treat one as a',
+  'pointer rather than a fact.',
   'One marked *weakly inferred* rests on thinner or split evidence — a single linked report,',
   'a trailhead between two regions — and is only used where nothing else places the objective,',
   'so it may be listed under each region it could be in.',
   'Place-name positions are from the',
   '[Canadian Geographical Names Database](https://natural-resources.canada.ca/maps-tools-publications/maps/geographical-names-canada),',
-  'under the [Open Government Licence – Canada](https://open.canada.ca/en/open-government-licence-canada).'
+  'under the [Open Government Licence – Canada](https://open.canada.ca/en/open-government-licence-canada),',
+  'and south of the border from the USGS',
+  '[Geographic Names Information System](https://www.usgs.gov/tools/geographic-names-information-system-gnis).'
 ]
 
 /**

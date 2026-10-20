@@ -577,3 +577,84 @@ requires, placed after the Okanagan under "Beyond the Rockies".
 - AccuWeather refuses automated reads, so its links on the new cards were confirmed by
   hand. Cherryville has none, nor an IQAir link, which answered only with a bot check;
   ADR-006's rule is that an unverified link is worse than none.
+
+---
+
+## ADR-009 — Empty the catch-all page from evidence the sources already publish
+
+**Date:** 2026-10-19
+**Status:** Accepted — extends
+[ADR-007](#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)
+
+### Context
+
+After ADR-007, 317 objectives were still on the catch-all page. Almost none of them lacked
+evidence. They lacked evidence the script read:
+
+| Source | Unsorted | What it publishes that was not read |
+|---|---|---|
+| Bill Kerr | 92 | WordPress tags naming the area ("Kananaskis" on 125 posts); bare titles ("Brett", "Lady MacDonald") |
+| Spectacular Mountains | 89 | A locality line opening every trip ("Elkford, BC, Canada"), on the hundred pages its URL paths do not file |
+| Andrew Nugara | 88 | Other peaks in the same report ("Lineham Ridge and GR593982"); Montana peaks a Canadian gazetteer cannot find |
+| Sonny Bou | 26 | LOCATION cells naming places the shared keyword table did not know (Moyie, Nakusp, Smithers) |
+
+A fair share of the rest were not trips at all: an "About" page, a camel-caravan series,
+a radio antenna test, a surgery, photo essays.
+
+### Decision
+
+Read that evidence, in five changes, and curate the residue by hand:
+
+1. **Spectacular Mountains' locality line**, read from the page body the way Bob Spirko's is.
+   A page that does not open with a date is not a trip and is dropped.
+2. **Bill Kerr's tags**, as a stated region when they name exactly one area. Measured against
+   the regions other blogs give the same objectives, they agree 85 times in 86, and the miss
+   was a different mountain of the same name.
+3. **Names written without their generic** are listed in the review worksheet beside the one
+   objective that has it ("brett" → "mount brett"), for a human to add to `ALIASES`. 87 of
+   the first 109 candidates were confirmed; the rest are different features that share a
+   word — The Wedge and Wedge Mountain, Whitehorn the ski hill and Whitehorn Mountain.
+4. **A new inferred signal: the other peaks in the same report.** One report is one day out,
+   so its peaks are within a day's walk of each other. Measured leave-one-out on placed
+   objectives, the same-report peaks name the right region 648 times in 655 when they agree,
+   and 82 in 97 when they are split, which is used as a weak inference.
+5. **The USGS gazetteer for the American side of the extent**, adding names only where the
+   Canadian one has none.
+
+### Rationale
+
+- **Bare names stay a human decision.** ADR-005's argument against fuzzy matching applies
+  with more force to a dropped generic than to a typo: a quarter of the candidates were
+  different features. Surfacing them costs nothing; merging them unseen would put the wrong
+  beta under a peak.
+- **The same-report signal is the strongest of the inferred ones** (99%, against 91–94% for
+  the others in ADR-007), because it measures distance in what one person walked in a day
+  rather than in proximity on a map. A name that two mountains share is excluded on both
+  sides, since its region is as likely to be the other mountain's.
+- **American names fill gaps rather than join the index.** Indexed together, every name found
+  on both sides of the border is dropped as ambiguous, and border names repeat: Sumas
+  Mountain is in British Columbia and Washington, Pinnacle Mountain in Banff and Montana.
+  Both were placed correctly before and were not after. Filling gaps means no name resolves
+  differently than on Canadian data alone, while Glacier National Park's peaks — the only
+  region with no positions at all before this — can be found by name and serve as landmarks.
+- **Ice and sport climbs are out of scope**, alongside trips abroad and posts that are not
+  trips. The index is of hikes and scrambles; an icefall is not an objective a reader of
+  these pages is looking for.
+- **What remains is left unsorted on purpose.** Six objectives are on the catch-all page,
+  each one whose report does not say enough to place it with confidence. A guess on a
+  hiking site is worse than an honest "not yet sorted".
+
+### Consequences
+
+- The catch-all page went from 317 objectives to 6, with 77 more placed, 90 more dropped as
+  out of scope or not trips, and 82 duplicate entries merged by the new aliases.
+- Reading the evidence exposed three merges of two mountains under one name — Fisher Peak
+  (Kananaskis and Cranbrook), Mount Henry (Jasper and Glacier National Park), and the region
+  index pages Spectacular Mountains files beside its trips. The first two are separated in
+  `REPORT_OBJECTIVES`; the last are dropped by the adapter.
+- A test now fails if a `REGION_OVERRIDES` entry is keyed by a spelling an alias replaces.
+  Four were, after the aliases above, and had silently stopped applying.
+- **Watch for** a source the shared keyword table does not know. Sonny Bou's LOCATION
+  column was the largest single gap, and it was fixed by adding place names to
+  [areas.ts](../scripts/trip-report-index/areas.ts), where every source that reads free text
+  benefits — not by curating its objectives one at a time.

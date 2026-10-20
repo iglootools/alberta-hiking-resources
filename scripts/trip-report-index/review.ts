@@ -48,6 +48,7 @@ function signalText(signal: Claim['signal']): string {
   switch (signal.kind) {
     case 'stated': return signal.sourceId
     case 'linked': return `${signal.sourceId} links ${signal.agreeing}/${signal.total}`
+    case 'companion': return `${signal.sourceId} same report ${signal.agreeing}/${signal.total}`
     case 'sub-range': return `${signal.sourceId} sub-range ${signal.subRange}`
     case 'trailhead': return `${signal.sourceId} trailhead`
     default: return signal.kind
@@ -125,6 +126,47 @@ function nearMissSection(result: BuildResult): string[] {
   ]
 }
 
+/** The generic words a bare name may have dropped, as the forms to look for. */
+const GENERIC_FORMS: readonly ((bare: string) => string)[] = [
+  bare => `mount ${bare}`,
+  bare => `${bare} mountain`,
+  bare => `${bare} peak`
+]
+
+const GENERIC_WORD = /\b(?:mount|mountain|peak|ridge|hill|lake|pass|tower|butte|glacier|falls|creek|valley|dome|spire|needle|col)\b/
+
+/**
+ * Names written without their generic — Bill Kerr's "Brett" and "Lady
+ * MacDonald", Andrew Nugara's "Edith Cavell" — beside the one spelling that
+ * adds it back. Edit distance does not see these, the gap being a whole word,
+ * and an exact key cannot merge them.
+ *
+ * Only a name with exactly one such form is listed: "Cascade" is both Mount
+ * Cascade and Cascade Mountain, and choosing between them is not a spelling
+ * question. Like near misses, these are candidates for ALIASES, never acted on
+ * automatically.
+ */
+export function bareNameCandidates(keys: ReadonlySet<string>): [string, string][] {
+  return [...keys].sort().flatMap((key) => {
+    if (GENERIC_WORD.test(key) || /\d/.test(key)) return []
+    const forms = GENERIC_FORMS.map(form => form(key)).filter(form => keys.has(form))
+    return forms.length === 1 ? [[key, forms[0]!] as [string, string]] : []
+  })
+}
+
+function bareNameSection(result: BuildResult): string[] {
+  const candidates = bareNameCandidates(new Set(result.objectives.map(objective => objective.key)))
+  return [
+    `${candidates.length} names that may be another objective without its "Mount", "Mountain" or`,
+    '"Peak". Check each against the report before adding it to ALIASES:',
+    '',
+    '```ts',
+    ...candidates.map(([bare, full]) => `  '${bare}': '${full}',`),
+    '```',
+    ''
+  ]
+}
+
 /** `generatedOn` is supplied by the caller, so the worksheet is a pure function of its inputs. */
 export function writeReview(result: BuildResult, generatedOn: Date): string {
   return [
@@ -144,6 +186,9 @@ export function writeReview(result: BuildResult, generatedOn: Date): string {
     ...inferredOnlySection(result.objectives),
     '## Possible duplicate names',
     '',
-    ...nearMissSection(result)
+    ...nearMissSection(result),
+    '## Names without their generic',
+    '',
+    ...bareNameSection(result)
   ].join('\n')
 }

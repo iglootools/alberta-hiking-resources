@@ -31,18 +31,21 @@ export const AREA_KEYWORDS: readonly (readonly [RegExp, string])[] = [
   // Above the Okanagan, which "Shuswap" and the lakes north of Vernon used to
   // fall into before they had a region of their own. Lumby is here rather than
   // with Vernon: it is the road to Mabel Lake and, by Cherryville, the Monashees.
-  [/shuswap|monashee|salmon arm|sicamous|sorrento|blind bay|tappen|enderby|mara lake|mabel lake|celista|scotch creek|saint ives|\bst\.? ives|lumby|cherryville|sugar lake|three valley gap|craigellachie|malakwa|eagle pass|keefer lake/i, 'shuswap-monashees'],
-  [/okanagan|kelowna|penticton|osoyoos|kamloops|vernon|keremeos|cathedral park|falkland|pritchard|thompson valley|apex mountain|white lake grasslands|lac du bois/i, 'okanagan'],
-  [/nelson|kokanee|west kootenay|slocan|kaslo|new denver|rossland|creston|stagleap|kootenay pass|valhalla|whitewater ski|crawford bay|gray creek|gladstone provincial|grand forks/i, 'west-kootenay'],
+  [/shuswap|monashee|salmon arm|skimikin|sicamous|sorrento|blind bay|tappen|enderby|mara lake|mabel lake|celista|scotch creek|saint ives|\bst\.? ives|lumby|cherryville|sugar lake|three valley gap|craigellachie|malakwa|eagle pass|keefer lake/i, 'shuswap-monashees'],
+  [/okanagan|kelowna|penticton|beaverdell|osoyoos|kamloops|vernon|keremeos|cathedral park|falkland|pritchard|thompson valley|apex mountain|white lake grasslands|lac du bois/i, 'okanagan'],
+  [/nelson|kokanee|west kootenay|slocan|kaslo|new denver|nakusp|rossland|creston|stagleap|kootenay pass|valhalla|whitewater ski|crawford bay|gray creek|gladstone provincial|grand forks/i, 'west-kootenay'],
   [/banff|lake louise|moraine|sunshine|skoki|castle junction/i, 'banff'],
-  [/jasper|robson|hinton|brule|miette|valemount|coal branch|grande cache|willmore|queen elizabeth range/i, 'jasper-robson'],
+  [/jasper|robson|hinton|switzer provincial|brule|miette|valemount|coal branch|grande cache|willmore|queen elizabeth range/i, 'jasper-robson'],
   [/david thompson|abraham|nordegg|siffleur|white goat|\bcline\b|bighorn|upper clearwater|\bram\b(?!parts)|clearwater ranges|north saskatchewan river|panther/i, 'david-thompson'],
   [/crowsnest|castle (?:provincial|wildland|wilderness|mountain (?:ski|resort))|livingstone|whaleback|porcupine hills|beaver mines|pincher|kiska|wilson public land|bob creek|chain lakes|beauvais lake|blairmore|coleman|bellevue|allison creek|andy good|east castle|west castle|racehorse/i, 'crowsnest-castle'],
   [/ghost|ya\s*ha\s*tinda|waiparous|red deer river|sundre/i, 'ghost-front-ranges'],
-  [/kananaskis|canmore|exshaw|bragg creek|highwood|elbow|smith-dorrien|spray|sibbald|bow valley|seebe|longview|peter lougheed|don getty|mclean creek|cataract creek|sheep river|bluerock|willow creek|oh ranch|evan.?thomas/i, 'kananaskis-canmore'],
-  [/east kootenay|invermere|fernie|elkford|sparwood|cranbrook|kimberley|purcell|elk lakes|elk valley|bugaboo|fort steele|\belko\b|\bwasa\b|windermere|canal flats|top of the world|pedley pass|jumbo pass|island lake|fairmont|flathead|kootenays|harrison range|corbin|st\. ?mary.s alpine|meachen/i, 'bc-rockies-purcells'],
-  // Everywhere else these two range to: the US southwest, New Zealand, further afield.
-  [/new zealand|\bnz\b|\baus\b|australia|utah|arizona|nevada|california|colorado|washington|oregon|idaho|wyoming|zion|yukon|iceland|peru|nepal|guatemala|argentina|mexico/i, 'elsewhere']
+  [/kananaskis|canmore|exshaw|bragg creek|highwood|elbow|smith-dorrien|spray|sibbald|bow valley|seebe|longview|peter lou(?:g|t)heed|don getty|mclean creek|cataract creek|sheep river|bluerock|willow creek|oh ranch|evan.?thomas/i, 'kananaskis-canmore'],
+  [/east kootenay|invermere|fernie|elkford|sparwood|cranbrook|kimberley|purcell|elk lakes|elk valley|bugaboo|fort steele|\belko\b|\bwasa\b|windermere|canal flats|top of the world|pedley pass|jumbo pass|island lake|fairmou?nt|flathead|kootenays|harrison range|corbin|st\. ?mary.s alpine|meachen|moyie|yahk|wycliffe|marysville|jimsmith|elk provincial forest/i, 'bc-rockies-purcells'],
+  // Everywhere else the sources range to: the US southwest, New Zealand, further
+  // afield, and the parts of BC and Alberta beyond the taxonomy — the north
+  // coast, Haida Gwaii, Wells Gray, the prairie hills. Place names that are also
+  // words in a peak's name are matched with their province ("terrace, bc").
+  [/smithers|terrace,\s*bc|kitimat|prince rupert|haida gwaii|naikoon|moresby camp|tarundl|wells gray|cypress hills|hand hills|new zealand|\bnz\b|\baus\b|australia|utah|arizona|nevada|california|colorado|washington|oregon|idaho|wyoming|zion|yukon|iceland|peru|nepal|guatemala|argentina|mexico/i, 'elsewhere']
 ]
 
 /** The region a free-text locality names, or undefined if none is recognised. */

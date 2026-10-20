@@ -308,8 +308,11 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
   // Marks anything outside the Rockies with a country in its title.
   steepsheep: SELF_RESOLVED,
 
-  // Files every page under a region path: /canada/kananaskis/, /canada/ghost/.
+  // Files most pages under a region path: /canada/kananaskis/, /canada/ghost/.
+  // The rest are placed by the locality line each trip opens with, which the
+  // adapter resolves through the shared matcher, hence SELF_RESOLVED too.
   spectacularmountains: {
+    ...SELF_RESOLVED,
     'canada/kananaskis': 'kananaskis-canmore',
     // The Fairholme Range runs from Exshaw into Banff; Explor8ion files its
     // trips under Kananaskis, so they are kept together.
@@ -321,6 +324,14 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
     'canada/waterton': 'waterton',
     'canada/ram': 'david-thompson',
     'canada/kootenays': 'bc-rockies-purcells',
+    // Localities the shared matcher does not know, mapped where every page using
+    // one is filed in the same region by the site's own paths or by other blogs.
+    // "High Rock Range", "Continental Divide" and "Forestry Trunk Rd" straddle
+    // two regions each, and are left unmapped for the other signals to settle.
+    'locality:Castle': 'crowsnest-castle',
+    'locality:Dutch Creek Area': 'crowsnest-castle',
+    'locality:Fairholme Range': 'kananaskis-canmore',
+    'locality:Calgary Foothills': 'kananaskis-canmore',
     'international/switzerland': OUT_OF_SCOPE,
     'international/germany': OUT_OF_SCOPE,
     'international/saudi-arabia': OUT_OF_SCOPE,

@@ -63,6 +63,8 @@ export type Signal
     | { readonly kind: 'sub-range', readonly sourceId: string, readonly subRange: string }
     /** `agreeing` of the `total` placed reports this one links to are in the region. */
     | { readonly kind: 'linked', readonly sourceId: string, readonly agreeing: number, readonly total: number, readonly weak?: true }
+    /** `agreeing` of the `total` placed objectives that share a report with this one are in the region. */
+    | { readonly kind: 'companion', readonly sourceId: string, readonly agreeing: number, readonly total: number, readonly weak?: true }
     | { readonly kind: 'trailhead', readonly sourceId: string, readonly weak?: true }
     /** The objective's name, found on the map, among objectives placed in the region. */
     | { readonly kind: 'named-place', readonly weak?: true }

@@ -79,7 +79,7 @@ function byName(left: Objective, right: Objective): number {
 
 /** Strongest kind first; the stated kinds lead, and blogs rank among themselves as in REGION_PRIORITY. */
 const KIND_RANK: Readonly<Record<Signal['kind'], number>> = {
-  'curated': 0, 'stated': 1, 'tick-list': 2, 'sub-range': 3, 'linked': 4, 'trailhead': 5, 'named-place': 6
+  'curated': 0, 'stated': 1, 'tick-list': 2, 'sub-range': 3, 'companion': 4, 'linked': 5, 'trailhead': 6, 'named-place': 7
 }
 
 function claimRank(claim: Claim): [number, number] {
@@ -97,7 +97,7 @@ function byStrength(left: Claim, right: Claim): number {
 /**
  * One claim per region, signal kind and source. Several of one blog's reports
  * of the same objective — Nugara's "Middle Sister II" beside "Middle Sister" —
- * would otherwise say the same thing once each; their link votes are summed
+ * would otherwise say the same thing once each; their votes are summed
  * instead, so the page reads "6 of 7 linked reports" rather than "3 of 3" twice.
  */
 function mergeClaims(claims: readonly Claim[]): Claim[] {
@@ -107,7 +107,7 @@ function mergeClaims(claims: readonly Claim[]): Claim[] {
     const weak = 'weak' in claim.signal && claim.signal.weak ? 'weak' : ''
     const id = `${claim.regionId}|${claim.signal.kind}|${sourceId}|${weak}`
     const existing = merged.get(id)
-    if (existing?.signal.kind === 'linked' && claim.signal.kind === 'linked') {
+    if (existing && isVote(existing.signal) && isVote(claim.signal)) {
       merged.set(id, {
         regionId: claim.regionId,
         signal: { ...claim.signal, agreeing: existing.signal.agreeing + claim.signal.agreeing, total: existing.signal.total + claim.signal.total }
@@ -117,6 +117,13 @@ function mergeClaims(claims: readonly Claim[]): Claim[] {
     }
   }
   return [...merged.values()].sort(byStrength)
+}
+
+type Vote = Extract<Signal, { kind: 'linked' | 'companion' }>
+
+/** A signal that counts how many of its neighbours agree, and so sums across reports. */
+function isVote(signal: Signal): signal is Vote {
+  return signal.kind === 'linked' || signal.kind === 'companion'
 }
 
 /** What each report's own source states, mapped onto the taxonomy. */

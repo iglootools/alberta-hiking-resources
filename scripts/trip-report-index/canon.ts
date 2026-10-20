@@ -105,6 +105,9 @@ export function canonKey(title: string): string {
     .toLowerCase()
     .replace(/[‘’“”'"`]/g, '')
     .replace(/\bmt\.?\b/g, 'mount')
+    // "Prairie Mtn", "Gunnery Mtn": the abbreviation follows the name, so it
+    // stands for "Mountain" where "Mt." in front stands for "Mount".
+    .replace(/\bmtn\b/g, 'mountain')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/^the\s+/, '')
