@@ -115,6 +115,13 @@ the placed ones around them — see
 and [ADR-009](architecture-decision-record.md#adr-009--empty-the-catch-all-page-from-evidence-the-sources-already-publish).
 `--review-only` reports what would change without touching any page.
 
+The same run draws the region map the three section index pages show, from where the placed
+objectives are, and writes it as `app/assets/region-map.json` (the SVG map) and
+`public/region-map/regions.geojson` (the MapLibre map). Its land, lakes and borders are three
+Natural Earth files, read once and cached like everything else. The summary lists any region
+drawn too small to click easily — see
+[ADR-010](architecture-decision-record.md#adr-010--trial-two-region-map-renderers-side-by-side-svg-by-default).
+
 ### Annie Ouellet's YouTube channel needs an API key
 
 Six of the seven sources need nothing. The seventh, Annie Ouellet's channel, is read

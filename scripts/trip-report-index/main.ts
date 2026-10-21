@@ -9,11 +9,15 @@
  *
  *   --refresh      discard the HTTP cache and re-read every source
  *   --review-only  report what would change without writing any page
+ *
+ * Besides the pages, it draws the region map the section index pages show
+ * (region-map.ts), since the map's shapes come from the same placements.
  */
 import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { BuildResult } from './build.ts'
+import type { Gazetteer } from './gazetteer.ts'
 import type { Objective } from './types.ts'
 import { buildObjectives } from './build.ts'
 import { checkIndexLinks, checkMirroredSections } from './checks.ts'
@@ -23,6 +27,8 @@ import { readGazetteer } from './gazetteer.ts'
 import { readGuidebooks } from './guidebooks.ts'
 import { inferRegions } from './inference.ts'
 import { indent, shown } from './output.ts'
+import { readBasemap } from './basemap.ts'
+import { MAP_EXTENT, cellCount, dropIsolated, geoFeatures, mapPoints, projection, rasterize, svgRegion } from './region-map.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { isStated } from './types.ts'
 import { SOURCES } from './sources/index.ts'
@@ -43,6 +49,17 @@ const MIRRORED_SECTIONS = [
 ]
 const CACHE_DIR = join(REPO, 'node_modules', '.cache', 'trip-report-index')
 const REVIEW_PATH = join(REPO, 'trip-report-review.md')
+
+/**
+ * The SVG map's data is imported by its component, so it is bundled and
+ * prerendered with the page. The GeoJSON is only fetched by the MapLibre
+ * renderer, once a reader picks it, so it is a static file instead.
+ */
+const MAP_SVG_PATH = join(REPO, 'app', 'assets', 'region-map.json')
+const MAP_GEOJSON_PATH = join(REPO, 'public', 'region-map', 'regions.geojson')
+
+/** A region drawn in fewer cells than this is hard to find or click on the map, and is reported. */
+const SMALL_REGION_CELLS = 20
 
 /** `1.index.md` is written by hand; the script owns every other page here. */
 const INDEX_PAGE = '01.index.md'
@@ -129,7 +146,36 @@ async function finishPages(written: readonly string[]): Promise<void> {
   await checkMirroredSections(MIRRORED_SECTIONS, slugs)
 }
 
-function printSummary(result: BuildResult, reportCount: number, newlyUnsorted: readonly Objective[]): void {
+/**
+ * Draws the region map from the placements and writes both renderers' data.
+ * Returns the regions drawn too small to click easily, for the summary.
+ */
+async function writeRegionMap(result: BuildResult, gazetteer: Gazetteer, reviewOnly: boolean): Promise<string[]> {
+  const regionIds = REGIONS.map(region => region.id)
+  const grid = rasterize(dropIsolated(mapPoints(result.objectives, gazetteer)), regionIds)
+  const small = REGIONS.filter((_, index) => cellCount(grid, index) < SMALL_REGION_CELLS).map(region => region.id)
+  if (reviewOnly) return small
+
+  const project = projection()
+  const basemap = await readBasemap(createFetcher(CACHE_DIR), MAP_EXTENT, project)
+  const svg = {
+    width: project.width,
+    height: project.height,
+    regions: REGIONS.map((region, index) => ({ ...svgRegion(grid, index, region.id, region.title, project), group: region.group })),
+    ...basemap
+  }
+  const geojson = {
+    type: 'FeatureCollection',
+    features: REGIONS.flatMap((region, index) => geoFeatures(grid, index, region.id, region.title))
+  }
+  await mkdir(dirname(MAP_GEOJSON_PATH), { recursive: true })
+  await writeFile(MAP_SVG_PATH, `${JSON.stringify(svg)}\n`, 'utf8')
+  await writeFile(MAP_GEOJSON_PATH, `${JSON.stringify(geojson)}\n`, 'utf8')
+  console.log(indent(`region map  ${shown(MAP_SVG_PATH)}, ${shown(MAP_GEOJSON_PATH)}`))
+  return small
+}
+
+function printSummary(result: BuildResult, reportCount: number, newlyUnsorted: readonly Objective[], smallOnMap: readonly string[]): void {
   const listings = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
   const placed = result.objectives.length - result.unplaced.length
   const multiRegion = result.objectives.filter(objective => new Set(objective.claims.map(claim => claim.regionId)).size > 1).length
@@ -141,6 +187,11 @@ function printSummary(result: BuildResult, reportCount: number, newlyUnsorted: r
   if (newlyUnsorted.length > 0) {
     console.log(`\n${newlyUnsorted.length} new on the catch-all page:`)
     for (const objective of newlyUnsorted) console.log(indent(objective.name))
+  }
+  if (smallOnMap.length > 0) {
+    console.log(`\nDrawn in fewer than ${SMALL_REGION_CELLS} cells on the region map, mostly because their `
+      + 'objectives are shared with a neighbour:')
+    for (const regionId of smallOnMap) console.log(indent(regionId))
   }
 }
 
@@ -168,9 +219,10 @@ async function main(): Promise<void> {
   const newlyUnsorted = result.unplaced.filter(objective => !before.has(entryName(objective)))
   const written = await writeRegionPages(result, reviewOnly)
   if (!reviewOnly) await finishPages(written)
+  const smallOnMap = await writeRegionMap(result, gazetteer, reviewOnly)
 
   await writeFile(REVIEW_PATH, writeReview(result, new Date(), { newlyUnsorted }), 'utf8')
-  printSummary(result, reports.length, newlyUnsorted)
+  printSummary(result, reports.length, newlyUnsorted, smallOnMap)
 }
 
 /**
