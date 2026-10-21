@@ -48,9 +48,14 @@ still applies in full: the `iglootools` plugin is enabled in the committed
 
 ## Project-wide deviations
 
-The first four concern the shared 14-day `minimumReleaseAge` supply-chain measure and the
+The first three concern the shared 14-day `minimumReleaseAge` supply-chain measure and the
 dependency policy around it, defined in
-[dependency-automation.md](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md). The last concerns CI.
+[dependency-automation.md](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md).
+The last concerns CI.
+
+Holding a dependency inside the range the Nuxt stack supports — TypeScript below 6.1 — is not a
+deviation but a project decision, recorded as
+[ADR-012](architecture-decision-record.md#adr-012--follow-the-versions-the-nuxt-stack-supports).
 
 ### Renovate exempts some update types from `minimumReleaseAge`
 
@@ -61,16 +66,6 @@ Rationale and scope are in the `description` fields there. In short: those updat
 release timestamp, so the age check can never be satisfied and would leave the PR pending
 forever. This is structural rather than temporary — there is no condition that retires it — and
 it mirrors what `security:minimumReleaseAgeNpm` does for npm, applied to all datasources.
-
-### TypeScript is held below 6.1
-
-[renovate.json](../renovate.json) caps `typescript` at `<6.1` and the devDependency uses `~`
-rather than `^`, which is a deliberate deviation from keeping dependencies current.
-
-**Retires when** `typescript-eslint` widens its peer range: check with
-`npm view typescript-eslint peerDependencies`, then lift the bound and widen the version range
-together. The full reasoning, including why the bound tracks the peer range rather than just
-excluding the next major, is in the rule's `description`.
 
 ### esbuild is overridden past the range `fontless` asks for
 
