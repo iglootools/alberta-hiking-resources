@@ -144,6 +144,11 @@ stack itself is described in [architecture.md](architecture.md).
   import, alongside `@nuxtjs/mdc` above, and for the same class of reason —
   something other than our own `import` statements resolves it from the root.
 
+- `maplibre-gl` is a dependency for the interactive region map, and `@types/geojson` is
+  declared alongside it because `RegionMapLibre.vue` imports its types by name; it otherwise
+  arrives only through `maplibre-gl`. Both are on trial with the map (ADR-010) and go if the
+  SVG renderer is chosen.
+
 ## Other `nuxt.config.ts` tweaks
 
 - `vite.build.chunkSizeWarningLimit: 700` + `optimizeDeps.include` for the
@@ -169,6 +174,9 @@ stack itself is described in [architecture.md](architecture.md).
   `SafetyWarnings`, `HeroMountains`, `StarsBg`; added `pages/changelog.vue`, and
   `AlphabetJump`, a sticky A–Z strip `[...slug].vue` shows on pages whose headings are
   all letters — in practice the generated trip report indexes.
+  `RegionMap`, on the three section index pages, renders the region shapes the trip index
+  generates, as SVG or on MapLibre; see
+  [ADR-010](architecture-decision-record.md#adr-010--trial-two-region-map-renderers-side-by-side-svg-by-default).
   The template's `AppHeader/Footer/Logo`, `TemplateMenu`, `PageHeaderLinks`, and
   dynamic `[...slug].vue` routing are kept.
 - Added [architecture-decision-record.md](architecture-decision-record.md).
