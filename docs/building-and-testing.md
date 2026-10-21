@@ -220,9 +220,11 @@ See also the shared
 for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules the
 workflows here follow.
 
-## Github Config
+## GitHub Config
 
-One-time repository settings, none of which live in the repo:
+One-time repository settings, none of which live in the repo. Each is recorded as the command
+that applies it and the command that verifies it, so it can be re-applied rather than
+reconstructed from the UI.
 
 - **Enable Dependabot security updates.** These are *repository settings*, and
   [.github/dependabot.yml](../.github/dependabot.yml) cannot switch them on — that file only
@@ -251,8 +253,89 @@ One-time repository settings, none of which live in the repo:
     A `404` from the first is the disabled state, not a missing endpoint. Undo with the same two
     URLs and `-X DELETE`. Needs admin on the repository; the dependency graph is a prerequisite
     and is on by default for public repositories.
-- **Settings → Pages → Source** must be set to **GitHub Actions** — see
-  [releasing-and-publishing.md](releasing-and-publishing.md).
+- **GitHub Pages builds from GitHub Actions** (Settings → Pages → Source), which is what lets
+  [`publish.yml`](../.github/workflows/publish.yml) deploy the site — see
+  [releasing-and-publishing.md](releasing-and-publishing.md). Create the Pages site with that
+  source, or switch an existing one:
+
+    ```bash
+    gh api --method POST repos/iglootools/alberta-hiking-resources/pages -f build_type=workflow   # no Pages site yet
+    gh api --method PUT repos/iglootools/alberta-hiking-resources/pages -f build_type=workflow    # existing site
+    gh api repos/iglootools/alberta-hiking-resources/pages -q .build_type                         # expect workflow
+    ```
+
+- **Private vulnerability reporting is on**, so the channel the organization's
+  [security policy](https://github.com/iglootools/.github/blob/main/SECURITY.md) points reporters
+  at actually exists. It is off by default:
+
+    ```bash
+    gh api --method PUT repos/iglootools/alberta-hiking-resources/private-vulnerability-reporting
+    gh api repos/iglootools/alberta-hiking-resources/private-vulnerability-reporting -q .enabled   # expect true
+    ```
+
+- **Protect `main` and the release tags with rulesets.** Configured as the shared
+  [repository conventions](https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md#protect-the-default-branch-and-release-tags)
+  describe: `main` cannot be deleted or force-pushed, changes go through a pull request
+  merged with a merge commit, and the `ci` check must pass first; `v*` tags cannot be
+  deleted or moved, so a published version keeps pointing at the commit it was built from.
+
+  ```bash
+  gh api --method POST repos/iglootools/alberta-hiking-resources/rulesets --input - <<'JSON'
+  {
+    "name": "main",
+    "target": "branch",
+    "enforcement": "active",
+    "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+    "rules": [
+      { "type": "deletion" },
+      { "type": "non_fast_forward" },
+      { "type": "pull_request", "parameters": {
+          "required_approving_review_count": 0,
+          "dismiss_stale_reviews_on_push": false,
+          "require_code_owner_review": false,
+          "require_last_push_approval": false,
+          "required_review_thread_resolution": false,
+          "allowed_merge_methods": ["merge"] } },
+      { "type": "required_status_checks", "parameters": {
+          "strict_required_status_checks_policy": false,
+          "do_not_enforce_on_create": false,
+          "required_status_checks": [{ "context": "ci", "integration_id": 15368 }] } }
+    ]
+  }
+  JSON
+
+  gh api --method POST repos/iglootools/alberta-hiking-resources/rulesets --input - <<'JSON'
+  {
+    "name": "release tags",
+    "target": "tag",
+    "enforcement": "active",
+    "conditions": { "ref_name": { "include": ["refs/tags/v*"], "exclude": [] } },
+    "rules": [{ "type": "deletion" }, { "type": "update" }]
+  }
+  JSON
+  ```
+
+  To change an existing ruleset, `PUT` the same payload to
+  `repos/iglootools/alberta-hiking-resources/rulesets/<id>` (ids from `gh api repos/iglootools/alberta-hiking-resources/rulesets`).
+  Verify what GitHub actually enforces — an `active` ruleset with an empty `include` list
+  protects nothing and looks enabled all the same:
+
+  ```bash
+  gh api repos/iglootools/alberta-hiking-resources/rules/branches/main -q '[.[].type]'
+  # expect: ["deletion","non_fast_forward","pull_request","required_status_checks"]
+  ```
+
+  The tag ruleset has no equivalent endpoint, so read its `include` back instead:
+
+  ```bash
+  id=$(gh api repos/iglootools/alberta-hiking-resources/rulesets -q '.[] | select(.name == "release tags") | .id')
+  gh api "repos/iglootools/alberta-hiking-resources/rulesets/$id" -q .conditions.ref_name.include
+  # expect: ["refs/tags/v*"]
+  ```
+
+  `ci` must keep reporting on every pull request. It runs on every push (`on: push` in
+  `ci.yml`), which covers pull request branches; a `paths` or `branches` filter added there
+  would leave the pull requests it skips unmergeable.
 
 ## Testing notes
 
