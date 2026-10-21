@@ -74,6 +74,10 @@ export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
 export const ALIASES: Readonly<Record<string, string>> = {
   // Spelling variants of one peak.
   'mount hoffman': 'mount hoffmann',
+  'tallus hill': 'talus hill',
+  // Explor8ion's inversion without the comma, which displayName cannot undo.
+  'folk mount': 'mount folk',
+  'harrison mount': 'mount harrison',
   'belleview hill': 'bellevue hill',
   'blue hill lookout': 'blue hill fire lookout',
   'opal ridge north': 'opal ridge north peak',
@@ -656,11 +660,36 @@ export const REGION_OVERRIDES: Readonly<Record<string, string>> = {
   'santo tomas': 'out-of-scope',
   'tajamulco': 'out-of-scope',
   'yellowknife': 'out-of-scope',
-  // Not trips: photo essays, an exhibition, a lockdown diary.
+  // Not trips: photo essays, an exhibition, a lockdown diary, a concert.
   'a byte of history pop up museum 1': 'out-of-scope',
+  // Andrew Nugara's log entry for three Marillion concerts in Montreal. It
+  // links one Kananaskis report in passing, which was enough to file it there.
+  'marillion weekend in montreal': 'out-of-scope',
   'lethbridge landscapes': 'out-of-scope',
   'mountain landscapes': 'out-of-scope',
   'prairie landscapes': 'out-of-scope',
   'unexpected photo day': 'out-of-scope',
-  'urban mountains march to': 'out-of-scope'
+  'urban mountains march to': 'out-of-scope',
+
+  // --- From the placement audit, October 2026 ---
+  // Steven Song files everything on the BC side of the Divide under one
+  // "BC Rockies" heading, which is no longer read as a region. These are his
+  // peaks no other blog or position places.
+  'assiniboine pass': 'assiniboine',
+  'daly ne2': 'yoho',
+  'mount bryce center peak': 'icefields-parkway', // with Mount Bryce, on the Columbia Icefield
+  'mount irvine': 'icefields-parkway', // the Clemenceau Icefield; his report says so
+  // His "Selkirk Mountains" heading is unmapped for the same reason. The Dome is
+  // the Rogers Pass one, above the Asulkan valley.
+  'dome': 'rogers-pass-selkirks',
+  // The Goodsirs are in Yoho National Park. Adam Laycock's route pages say
+  // Banff for the two towers, and nothing else reports them.
+  'mount goodsir center peak': 'yoho',
+  'mount goodsir north tower': 'yoho',
+  'mount goodsir south tower': 'yoho',
+  // Bob Spirko's "BC" folder: the one report whose header names no place.
+  'west coast trail': 'vancouver-island',
+  // Near Houston, BC. Spirko's index links a misspelled URL that 404s, so
+  // its locality line, which says so, cannot be read.
+  'barrett hat': 'out-of-scope'
 }

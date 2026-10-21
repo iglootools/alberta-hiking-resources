@@ -82,6 +82,30 @@ function multiRegionSection(objectives: readonly Objective[]): string[] {
   ]
 }
 
+/**
+ * Names listed as more than one objective. A split is right for two mountains
+ * sharing a name, and wrong when a blog's region label is broader than it
+ * looks — Steven Song's "BC Rockies", which put Mount Robson 300 km from Mount
+ * Robson. The fix for a wrong one is in the label's REGION_MAP entry, or a
+ * REPORT_OBJECTIVES entry renaming the stray report's objective.
+ */
+function splitSection(objectives: readonly Objective[]): string[] {
+  const byKey = new Map<string, Objective[]>()
+  for (const objective of objectives) byKey.set(objective.key, [...(byKey.get(objective.key) ?? []), objective])
+  const split = [...byKey.values()].filter(group => group.length > 1)
+  if (split.length === 0) return ['No name is split into separate mountains.', '']
+  return [
+    `${split.length} names belong to more than one mountain: blogs file them in regions no`,
+    'border connects, or one blog files them in two. Each line is one mountain:',
+    '',
+    ...split.flatMap(group => [
+      `- **${group[0]!.name}**`,
+      ...group.map(objective => `  - ${regionsOf(objective).join(', ')} — ${sources(objective)}`)
+    ]),
+    ''
+  ]
+}
+
 function inferredOnlySection(objectives: readonly Objective[]): string[] {
   const inferred = objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated))
   if (inferred.length === 0) return ['No objective is placed by inference alone.', '']
@@ -239,6 +263,9 @@ export function writeReview(result: BuildResult, generatedOn: Date, { newlyUnsor
     '## Listed in more than one region',
     '',
     ...multiRegionSection(result.objectives),
+    '## Split into separate mountains',
+    '',
+    ...splitSection(result.objectives),
     '## Placed by inference alone',
     '',
     ...inferredOnlySection(result.objectives),

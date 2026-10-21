@@ -11,9 +11,10 @@
  * Region comes from the URL path. Path segments that describe the *kind* of
  * outing rather than where it is ("Hiking", "Snowshoe", "OtherScrambles") are
  * skipped, so `/Hiking/Kananaskis/CoxHill/CoxHill.html` yields "Kananaskis".
- * "NugaraScrambles" survives that filter but is intentionally absent from the
- * region map: it is a guidebook grouping spanning four regions, so those
- * objectives inherit a region from another source instead.
+ * "NugaraScrambles" and "BC" survive that filter but are intentionally absent
+ * from the region map — a guidebook grouping spanning four regions, and a
+ * folder running from Kootenay National Park to Smithers — so their reports
+ * are placed by their own locality line instead.
  */
 import type { Fetcher } from '../fetch.ts'
 import { fetchUnlessStatus } from '../fetch.ts'

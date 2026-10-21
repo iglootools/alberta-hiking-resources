@@ -17,7 +17,7 @@
 export const AREA_KEYWORDS: readonly (readonly [RegExp, string])[] = [
   [/waterton|akamina/i, 'waterton'],
   [/glacier national park,?\s*(?:mt|montana)\b|montana/i, 'glacier-montana'],
-  [/rogers pass|selkirk|revelstoke|glacier national park,?\s*bc|kicking horse|standard basin|gorman lake|\bgolden\b(?!\s+ears)/i, 'rogers-pass-selkirks'],
+  [/rogers pass|selkirk|revelstoke|glacier national park,?\s*b\.?c\b|kicking horse|standard basin|gorman lake|\bgolden\b(?!\s+ears)/i, 'rogers-pass-selkirks'],
   [/yoho|lake o.?hara|emerald lake|\bfield\b/i, 'yoho'],
   [/kootenay (?:national )?park|radium|vermilion pass|marble canyon/i, 'kootenay'],
   [/assiniboine/i, 'assiniboine'],
@@ -32,8 +32,8 @@ export const AREA_KEYWORDS: readonly (readonly [RegExp, string])[] = [
   // fall into before they had a region of their own. Lumby is here rather than
   // with Vernon: it is the road to Mabel Lake and, by Cherryville, the Monashees.
   [/shuswap|monashee|salmon arm|skimikin|sicamous|sorrento|blind bay|tappen|enderby|mara lake|mabel lake|celista|scotch creek|saint ives|\bst\.? ives|lumby|cherryville|sugar lake|three valley gap|craigellachie|malakwa|eagle pass|keefer lake/i, 'shuswap-monashees'],
-  [/okanagan|kelowna|penticton|beaverdell|osoyoos|kamloops|vernon|keremeos|cathedral park|falkland|pritchard|thompson valley|apex mountain|white lake grasslands|lac du bois/i, 'okanagan'],
-  [/nelson|kokanee|west kootenay|slocan|kaslo|new denver|nakusp|rossland|creston|stagleap|kootenay pass|valhalla|whitewater ski|crawford bay|gray creek|gladstone provincial|grand forks/i, 'west-kootenay'],
+  [/okanagan|kelowna|penticton|beaverdell|osoyoos|kamloops|vernon|keremeos|cathedral park|falkland|pritchard|thompson valley|apex mountain|white lake grasslands|lac du bois|buse lake/i, 'okanagan'],
+  [/nelson|kokanee|west kootenay|slocan|kaslo|new denver|nakusp|rossland|creston|stagleap|kootenay pass|valhalla|whitewater ski|crawford bay|gray creek|gladstone provincial|grand forks|castlegar|warfield/i, 'west-kootenay'],
   [/banff|lake louise|moraine|sunshine|skoki|castle junction/i, 'banff'],
   [/jasper|robson|hinton|switzer provincial|brule|miette|valemount|coal branch|grande cache|willmore|queen elizabeth range/i, 'jasper-robson'],
   [/david thompson|abraham|nordegg|siffleur|white goat|\bcline\b|bighorn|upper clearwater|\bram\b(?!parts)|clearwater ranges|north saskatchewan river|panther/i, 'david-thompson'],
@@ -45,7 +45,7 @@ export const AREA_KEYWORDS: readonly (readonly [RegExp, string])[] = [
   // afield, and the parts of BC and Alberta beyond the taxonomy — the north
   // coast, Haida Gwaii, Wells Gray, the prairie hills. Place names that are also
   // words in a peak's name are matched with their province ("terrace, bc").
-  [/smithers|terrace,\s*bc|kitimat|prince rupert|haida gwaii|naikoon|moresby camp|tarundl|wells gray|cypress hills|hand hills|new zealand|\bnz\b|\baus\b|australia|utah|arizona|nevada|california|colorado|washington|oregon|idaho|wyoming|zion|yukon|iceland|peru|nepal|guatemala|argentina|mexico/i, 'elsewhere']
+  [/smithers|terrace,\s*bc|houston,\s*b\.?c|babine|sugarbowl|kitimat|prince rupert|haida gwaii|naikoon|moresby camp|tarundl|wells gray|cypress hills|hand hills|new zealand|\bnz\b|\baus\b|australia|utah|arizona|nevada|california|colorado|washington|oregon|idaho|wyoming|zion|yukon|iceland|peru|nepal|guatemala|argentina|mexico/i, 'elsewhere']
 ]
 
 /** The region a free-text locality names, or undefined if none is recognised. */
