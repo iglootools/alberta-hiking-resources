@@ -21,6 +21,11 @@ This project follows the shared
 [docs/guidelines.md](docs/guidelines.md) records where it deviates from them, the rules it adds,
 and the checklists to run for specific kinds of change.
 
+Contributors follow the iglootools
+[code of conduct](https://github.com/iglootools/.github/blob/main/CODE_OF_CONDUCT.md); report
+vulnerabilities as the [security policy](https://github.com/iglootools/.github/blob/main/SECURITY.md)
+describes.
+
 ## Understanding the code
 
 - [docs/architecture.md](docs/architecture.md) — tech stack and project structure
