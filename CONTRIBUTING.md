@@ -7,8 +7,8 @@ in-site [contributing guide](https://www.alberta-hiking-resources.org/getting-st
 
 - [docs/setup-development-environment.md](docs/setup-development-environment.md) — Codespaces,
   dev containers, a local setup, and the iglootools Claude Code plugin
-- [docs/building-and-testing.md](docs/building-and-testing.md) — build, lint, typecheck, CI, and
-  dependency management
+- [docs/building-and-testing.md](docs/building-and-testing.md) — build, lint, typecheck, CI,
+  dependency management, and the GitHub settings the repository depends on
 - [docs/testing-notes.md](docs/testing-notes.md) — manual validation of the Open Graph image,
   sitemap, and `robots.txt`
 - [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md) — semantic-release and

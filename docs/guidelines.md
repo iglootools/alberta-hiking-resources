@@ -1,7 +1,7 @@
 # Project-Specific Guidelines
 
 For general coding and tooling guidelines, see the
-[common guidelines](https://github.com/iglootools/common). Those are defaults, not
+[common guidelines](https://github.com/iglootools/common/tree/main/guidelines). Those are defaults, not
 dogma: this project may deviate or add rules of its own, **provided the deviation and its
 reasoning are documented** — project-wide ones here, local ones in a comment at the point of
 deviation.
@@ -17,18 +17,24 @@ not here.
 
 ## Which shared guidelines apply
 
-`coding.md` applies and reaches every session on its own — the plugin's `SessionStart` hook
-emits it. `project-setup.md` and `ide.md` apply too, and are read by the `guidelines` skill when
-a change reaches the files each governs, so neither needs listing anywhere.
+[`coding/general.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md) applies and reaches every session on its own — the
+plugin's `SessionStart` hook emits it. The `project-setup/` files that govern what this
+repository has — [repository](https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md),
+[documentation](https://github.com/iglootools/common/blob/main/guidelines/project-setup/documentation.md),
+[workflows](https://github.com/iglootools/common/blob/main/guidelines/project-setup/workflows.md),
+[shared workflows](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md),
+[dependency automation](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md),
+[IDE](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md) and [Claude Code](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md) — apply too,
+and are read by the `guidelines` skill when a change reaches the files each governs.
 
-**`python.md` and `python-tooling.md` do not.** Nothing here is Python, which also puts two
-parts of `ide.md` out of scope rather than merely unmet:
+**The Python-specific ones do not.** Nothing here is Python, which also puts parts of `ide.md`
+and `claude-code.md` out of scope rather than merely unmet:
 
 | Shared section | Why it does not apply |
 |---|---|
-| `python-tooling.md`, in full | uv/hatchling/ruff have no counterpart here; the stack is pnpm + mise |
-| `ide.md` → Pyright environment resolution | no `.venv` and no `[tool.pyright]` to pin |
-| `ide.md` → Claude Code → Pyright LSP plugin | Python-specific. No LSP plugin is installed for this project |
+| [`coding/python.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/python.md), [`python-tooling.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md) and [`pypi-publishing.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/pypi-publishing.md), in full | uv/hatchling/ruff/PyPI have no counterpart here; the stack is pnpm + mise, and the site deploys to GitHub Pages. The hook already skips `python.md`, as there is no `pyproject.toml` |
+| [`ide.md` → Pyright environment resolution](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#pyright-environment-resolution) | no `.venv` and no `[tool.pyright]` to pin |
+| [`claude-code.md` → Pyright LSP plugin](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#pyright-lsp-plugin) | Python-specific. No LSP plugin is installed for this project |
 
 The last one leaves a real gap — an assistant here has no import graph to resolve symbols
 against. The `.mcp.json` servers cover the adjacent problem instead: they ground answers about
@@ -36,13 +42,15 @@ Nuxt and about this app's resolved config in current reality rather than trainin
 [setup-development-environment.md](setup-development-environment.md#ai-assistant-setup-mcp).
 Revisit if a Vue/TS LSP plugin becomes available at project scope.
 
-The `--scope project` rule from that same section still applies in full, should any plugin ever
-be added: install it into the repository's `.claude/settings.json` and commit that file.
+[Sharing the plugin set with the team](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#sharing-the-plugin-set-with-the-team)
+still applies in full: the `iglootools` plugin is enabled in the committed
+`.claude/settings.json`, and any plugin added later is installed with `--scope project` the same way.
 
 ## Project-wide deviations
 
 The first four concern the shared 14-day `minimumReleaseAge` supply-chain measure and the
-dependency policy around it, defined in `project-setup.md` → All Projects. The last concerns CI.
+dependency policy around it, defined in
+[dependency-automation.md](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md). The last concerns CI.
 
 ### Renovate exempts some update types from `minimumReleaseAge`
 
@@ -106,8 +114,8 @@ It is a genuine hole in the supply-chain measure, kept because it is currently u
 ### No link checker is set up
 
 The shared rule is
-[Call the shared link checker instead of copying it](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md#call-the-shared-link-checker-instead-of-copying-it)
-in `project-setup.md`. photree, nbkp and network-infra all call it on a weekly schedule. This
+[Call the shared link checker instead of copying it](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md#call-the-shared-link-checker-instead-of-copying-it).
+photree, nbkp and network-infra all call it on a weekly schedule. This
 project does not call it at all.
 
 The reason is where the links are. Of 759 link instances in tracked markdown, 693 are in
