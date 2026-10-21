@@ -45,7 +45,7 @@ export const REGIONS: readonly Region[] = [
   { group: 'The Mountain Parks', id: 'yoho', icon: 'i-lucide-trees', title: 'Yoho National Park', description: 'Trip reports and GPS traces by objective for Yoho National Park, including Field and Lake O’Hara.' },
   { group: 'The Mountain Parks', id: 'kootenay', icon: 'i-lucide-leaf', title: 'Kootenay National Park', description: 'Trip reports and GPS traces by objective for Kootenay National Park, along Highway 93 South.' },
   { group: 'The Mountain Parks', id: 'icefields-parkway', icon: 'i-lucide-snowflake', title: 'Icefields Parkway and the Columbia Icefield', description: 'Trip reports and GPS traces by objective along the Icefields Parkway, the Wapta, and the Columbia Icefield.' },
-  { group: 'The Mountain Parks', id: 'jasper-robson', icon: 'i-lucide-triangle', title: 'Jasper and Mount Robson', description: 'Trip reports and GPS traces by objective for Jasper National Park and Mount Robson Provincial Park.' },
+  { group: 'The Mountain Parks', id: 'jasper-robson', icon: 'i-lucide-triangle', title: 'Jasper and Mount Robson', description: 'Trip reports and GPS traces by objective for Jasper National Park, Mount Robson Provincial Park, and Grande Cache and the Willmore Wilderness north of them.' },
 
   { group: 'The South', id: 'crowsnest-castle', icon: 'i-lucide-milestone', title: 'Crowsnest Pass and the Castle', description: 'Trip reports and GPS traces by objective for the Crowsnest Pass, the Castle, and the Livingstone and Whaleback ranges.' },
   { group: 'The South', id: 'waterton', icon: 'i-lucide-sailboat', title: 'Waterton Lakes', description: 'Trip reports and GPS traces by objective for Waterton Lakes National Park and the Akamina Parkway.' },
@@ -67,6 +67,56 @@ export const REGIONS: readonly Region[] = [
 ]
 
 export const REGION_IDS: ReadonlySet<string> = new Set(REGIONS.map(region => region.id))
+
+/**
+ * Regions that share a boundary a trip can straddle: a peak on the line
+ * between them, or one reached from one and standing in the other. Listed one
+ * way and made symmetric below.
+ *
+ * It is what tells a boundary objective from two mountains with one name. Bow
+ * Peak filed under Banff by one blog and the Icefields Parkway by another is
+ * one peak on a boundary; Mount Bishop filed under Kananaskis and the Sea to
+ * Sky is two peaks 600 km apart. Likewise an inferred region far from the
+ * stated ones is evidence about a namesake — Helen Lake's position is on
+ * Vancouver Island, Golden Scrambles' Mount Allen is by Canal Flats while the
+ * gazetteer's is in Banff — not a boundary the objective straddles. See ADR-011.
+ *
+ * Drawn generously, since a missing edge splits one mountain in two: a range
+ * crossing two regions counts, and so does a pass road between them.
+ */
+const NEIGHBOURS: Readonly<Record<string, readonly string[]>> = {
+  'kananaskis-canmore': ['ghost-front-ranges', 'banff', 'assiniboine', 'bc-rockies-purcells', 'crowsnest-castle'],
+  'ghost-front-ranges': ['banff', 'david-thompson'],
+  'david-thompson': ['banff', 'icefields-parkway', 'jasper-robson'],
+  'banff': ['assiniboine', 'yoho', 'kootenay', 'icefields-parkway'],
+  'assiniboine': ['kootenay', 'bc-rockies-purcells'],
+  'yoho': ['kootenay', 'icefields-parkway', 'bc-rockies-purcells', 'rogers-pass-selkirks'],
+  'kootenay': ['bc-rockies-purcells'],
+  'icefields-parkway': ['jasper-robson'],
+  'jasper-robson': ['shuswap-monashees'],
+  'crowsnest-castle': ['waterton', 'bc-rockies-purcells'],
+  'waterton': ['glacier-montana', 'bc-rockies-purcells'],
+  'glacier-montana': ['bc-rockies-purcells'],
+  'bc-rockies-purcells': ['rogers-pass-selkirks', 'west-kootenay'],
+  'rogers-pass-selkirks': ['shuswap-monashees', 'west-kootenay'],
+  'sea-to-sky': ['fraser-valley', 'okanagan', 'vancouver-island'],
+  'fraser-valley': ['okanagan'],
+  'okanagan': ['shuswap-monashees', 'west-kootenay'],
+  'shuswap-monashees': ['west-kootenay']
+}
+
+const ADJACENT: ReadonlyMap<string, ReadonlySet<string>> = new Map(REGIONS.map(({ id }) => [id, new Set([
+  ...(NEIGHBOURS[id] ?? []),
+  ...Object.entries(NEIGHBOURS).filter(([, neighbours]) => neighbours.includes(id)).map(([other]) => other)
+])]))
+
+/** Whether two regions are one and the same or share a boundary. */
+export function areNeighbours(left: string, right: string): boolean {
+  return left === right || (ADJACENT.get(left)?.has(right) ?? false)
+}
+
+/** For a test: every region named in the adjacency table, so a typo cannot hide there. */
+export const NEIGHBOUR_IDS: ReadonlySet<string> = new Set(Object.entries(NEIGHBOURS).flat(2))
 
 /**
  * The catch-all page, for objectives no source places and no curation covers.
@@ -149,7 +199,10 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
     'ghost-wilderness-area': 'ghost-front-ranges',
     'ya-ha-tinda-ranch-area': 'ghost-front-ranges',
     'red-deer-river': 'ghost-front-ranges',
-    'rocky-mountain-foothills': 'ghost-front-ranges',
+    // "Rocky Mountain Foothills" is left unmapped: Explor8ion files foothills
+    // trips from the Sheep River to the Ghost under it, so it says which side
+    // of the mountains, not which region. Its trips are placed by their
+    // companions and positions instead.
     'don-getty-wildland': 'ghost-front-ranges',
     'eagle-snowshoe-conservation-reserve': 'ghost-front-ranges',
     'east-kootenay': 'bc-rockies-purcells',
@@ -200,10 +253,10 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
     BraggCreek: 'ghost-front-ranges',
     HikingParks: OUT_OF_SCOPE,
     Lookouts: OUT_OF_SCOPE,
-    // Bob Spirko's "BC" folder mixes Kootenay National Park with peaks as far
-    // north as Smithers. It is mapped at low confidence: any source above it in
-    // REGION_PRIORITY overrides, which is how Kootenay NP objectives land right.
-    BC: 'bc-rockies-purcells',
+    // Bob Spirko's "BC" folder runs from Kootenay National Park to Smithers, so
+    // it is left unmapped and its reports fall back on their own locality line.
+    // Mapping it to the BC Rockies outranked "Kootenay National Park, B.C." in
+    // the report itself, and is a large part of why Kootenay was a sliver.
     // US trips are filed by state. Only Montana is in scope, for Glacier.
     Montana: 'glacier-montana',
     Nevada: OUT_OF_SCOPE,
@@ -252,8 +305,12 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
     'david-thompson': 'david-thompson',
     'jasper': 'jasper-robson',
     'south-rockies': 'crowsnest-castle',
-    'bc-rockies': 'bc-rockies-purcells',
-    'selkirk-mountains': 'rogers-pass-selkirks',
+    // 'bc-rockies' is left unmapped: Steven Song files everything west of the
+    // Divide under it, Mount Robson and Whitehorn as well as the Elk Valley, so
+    // a fifth of it is in Jasper and Mount Robson rather than the BC Rockies.
+    // Its peaks are placed by position and by the other blogs instead.
+    // 'selkirk-mountains' is left unmapped too: it runs from Rogers Pass to the
+    // Valhallas, a third of it in the West Kootenay. See 'bc-rockies' above.
     'purcell-mountains': 'bc-rockies-purcells',
     'sea-to-sky': 'sea-to-sky',
     'pemberton-onwards': 'sea-to-sky',
@@ -381,22 +438,54 @@ export function mappedRegionOf(report: RawReport): string | undefined {
 }
 
 /**
- * Names shared by two different mountains, detected the same way near-miss
- * names are judged: by self-consistency within one source. If a single blog
- * files "Storm Mountain" under both Banff and Kananaskis, those are two peaks,
- * not one peak filed inconsistently — no blog lists the same summit twice in
- * different regions. Sources merely *disagreeing* with each other is a boundary
- * question, not a homonym, and is left merged.
+ * The stated regions of a name group, gathered into one group per mountain.
+ *
+ * Two regions are the same mountain's when they share a boundary and no single
+ * blog files the name under both. The second rule is the self-consistency test
+ * near-miss names are judged by: if one blog files "Storm Mountain" under Banff
+ * and Kananaskis, those are two peaks, since no blog lists one summit twice. The
+ * first catches what that test cannot, which is two blogs each filing their own
+ * mountain: Mount Bishop under Kananaskis by four, and under the Sea to Sky by
+ * Steven Song, whose Bishop is on the North Shore.
+ *
+ * Returned as sets of region ids; a name with one set is one mountain.
  */
-export function isHomonym(reports: readonly RawReport[]): boolean {
-  const perSource = new Map<string, Set<string>>()
+export function mountainsOf(reports: readonly RawReport[]): Set<string>[] {
+  const bySource = new Map<string, Set<string>>()
   for (const report of reports) {
     const mapped = mappedRegionOf(report)
     if (!mapped || mapped === OUT_OF_SCOPE) continue
-    if (!perSource.has(report.sourceId)) perSource.set(report.sourceId, new Set())
-    perSource.get(report.sourceId)!.add(mapped)
+    bySource.set(report.sourceId, new Set([...(bySource.get(report.sourceId) ?? []), mapped]))
   }
-  return [...perSource.values()].some(regions => regions.size > 1)
+  const filings = [...bySource.values()]
+  // Each blog's own regions start as one mountain apiece; a blog filing a name
+  // in two regions is two mountains, so its regions never share a group.
+  let groups = [...new Set(filings.flatMap(set => [...set]))].map(region => new Set([region]))
+
+  // Groups join, transitively, when a region of one borders a region of the
+  // other and no blog files the name in both. Listing a peak under three
+  // regions it straddles is better than splitting it three ways, so a chain of
+  // neighbours stays one mountain — Parker Ridge, where Banff, the Icefields
+  // Parkway and Jasper meet. What splits is a gap no border bridges, or a blog
+  // keeping two apart: Explor8ion files a Limestone Mountain under Kananaskis
+  // and another under David Thompson, and the Ghost between them can join one
+  // but not both.
+  const joinable = (left: Set<string>, right: Set<string>) =>
+    [...left].some(a => [...right].some(b => areNeighbours(a, b)))
+    && !filings.some(set => [...left].some(region => set.has(region)) && [...right].some(region => set.has(region)))
+
+  for (;;) {
+    const pair = groups.flatMap((left, index) => groups.slice(index + 1).map(right => [left, right] as const))
+      .find(([left, right]) => joinable(left, right))
+    if (!pair) return groups
+    const [left, right] = pair
+    groups = [...groups.filter(group => group !== left && group !== right), new Set([...left, ...right])]
+  }
+}
+
+/** Whether a name belongs to more than one mountain. See mountainsOf. */
+export function isHomonym(reports: readonly RawReport[]): boolean {
+  return mountainsOf(reports).length > 1
 }
 
 /**

@@ -156,7 +156,7 @@ a blog being unreachable delays a refresh rather than breaking a deploy.
 
 Each run also writes `trip-report-review.md` at the repo root (gitignored). It opens with the
 objectives that are new on the catch-all page since the version the run replaced — what a
-refresh brought in, to place first — then lists the objectives nothing could place, the ones listed in more than one region, the ones placed by inference
+refresh brought in, to place first — then lists the objectives nothing could place, the ones listed in more than one region, names split into separate mountains, the ones placed by inference
 alone (about one in ten of which is expected to be wrong), near-miss names that may be
 duplicates, and names written without their "Mount" or "Peak" beside the objective that has
 it. The last two are candidates for `ALIASES`, never merged automatically; a pair confirmed

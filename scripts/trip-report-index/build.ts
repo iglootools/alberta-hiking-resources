@@ -15,7 +15,7 @@ import { REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { displayName, objectiveKey } from './canon.ts'
 import { UnknownRegionError } from './errors.ts'
 import { NOTHING_INFERRED } from './inference.ts'
-import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, isHomonym, mappedRegionOf, strongestStatedRegion } from './regions.ts'
+import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, areNeighbours, mappedRegionOf, mountainsOf, strongestStatedRegion } from './regions.ts'
 import { SOURCE_ORDER } from './sources/index.ts'
 import { isStated } from './types.ts'
 
@@ -154,31 +154,53 @@ function statedClaims(reports: readonly RawReport[]): Claim[] {
 }
 
 /**
- * Splits a shared name back into one objective per mountain.
+ * Splits a shared name back into one objective per mountain (see mountainsOf).
  *
- * Reports go to the region their own source filed them under; the ones whose
- * source named no region stay with the winning partition, since there is
- * nothing better to go on. Both peaks keep the name — they are on different
- * pages, which is the disambiguation. Inferred claims are not applied to
- * either: a link vote or a position is evidence about a name, and this name
- * belongs to two places.
+ * Reports go to the mountain whose regions include the one their own source
+ * filed them under; the ones whose source named no region stay with the
+ * mountain holding `fallbackRegion`, since there is nothing better to go on.
+ * Reports their source files outside every region are dropped: they are about
+ * a third mountain, abroad. All the peaks keep the name — they are on
+ * different pages, which is the disambiguation. Inferred claims are not
+ * applied to any: a link vote or a position is evidence about a name, and this
+ * name belongs to several places.
  */
-function splitHomonym(group: readonly RawReport[], fallbackRegion: string | undefined): Map<string, RawReport[]> {
-  const partitions = new Map<string, RawReport[]>()
-  const unplaced: RawReport[] = []
-
+function splitHomonym(group: readonly RawReport[], mountains: readonly ReadonlySet<string>[], fallbackRegion: string | undefined): [ReadonlySet<string>, RawReport[]][] {
+  const partitions = mountains.map(regions => [regions, [] as RawReport[]] as [ReadonlySet<string>, RawReport[]])
+  const holding = (regionId: string | undefined) => partitions.find(([regions]) => regionId !== undefined && regions.has(regionId))
   for (const report of group) {
     const mapped = mappedRegionOf(report)
-    if (!mapped || mapped === OUT_OF_SCOPE) {
-      unplaced.push(report)
-      continue
-    }
-    if (!partitions.has(mapped)) partitions.set(mapped, [])
-    partitions.get(mapped)!.push(report)
+    if (mapped === OUT_OF_SCOPE) continue
+    holding(mapped ?? fallbackRegion)?.[1].push(report)
   }
-  if (fallbackRegion && partitions.has(fallbackRegion)) partitions.get(fallbackRegion)!.push(...unplaced)
   return partitions
 }
+
+/** Claim kinds that say where an objective is rather than infer it: a blog, a tick-list, a curator. */
+const isAnchor = (claim: Claim) => claim.signal.kind === 'curated' || claim.signal.kind === 'tick-list' || isStated(claim)
+
+/** A vote's agreeing share, for ranking weak claims; 1 for a signal that does not count. */
+const share = (claim: Claim) => isVote(claim.signal) ? claim.signal.agreeing / claim.signal.total : 1
+
+/**
+ * Drops claims for regions nowhere near where the objective is. Where blogs or
+ * a tick-list say where it is, an inferred region must be one of theirs or
+ * border one; where nothing does, the strongest inferred claim anchors it
+ * instead. A region far from the anchor is not a boundary the objective
+ * straddles but evidence about a namesake — Helen Lake's position is on
+ * Vancouver Island — or a link to a trip somewhere else entirely: Nugara
+ * compares a view with one he had in Kananaskis, and the vote counted it.
+ */
+function coherent(claims: readonly Claim[]): Claim[] {
+  const anchors = claims.filter(isAnchor)
+  const anchorRegions = anchors.length > 0
+    ? anchors.map(claim => claim.regionId)
+    : [...claims].sort((left, right) => share(right) - share(left) || byStrength(left, right)).slice(0, 1).map(claim => claim.regionId)
+  return claims.filter(claim => isAnchor(claim) || anchorRegions.some(regionId => areNeighbours(regionId, claim.regionId)))
+}
+
+/** Whether a report's own source files it outside every region. */
+const filedAbroad = (report: RawReport) => mappedRegionOf(report) === OUT_OF_SCOPE
 
 interface Context {
   readonly guidebooks?: GuidebookIndex
@@ -197,20 +219,20 @@ function claimsOf(key: string, group: readonly RawReport[], { guidebooks, inferr
   if (overridden) return [{ regionId: overridden, signal: { kind: 'curated' } }]
 
   const tickList = guidebooks?.regions.get(key)
-  return mergeClaims([
+  return coherent(mergeClaims([
     ...statedClaims(group),
     ...(tickList ? [{ regionId: tickList, signal: { kind: 'tick-list' } } satisfies Claim] : []),
     ...group.flatMap(report => inferred.byReport.get(report.url) ?? []),
     ...(inferred.byKey.get(key) ?? [])
-  ])
+  ]))
 }
 
 /** Thin or split inferred evidence, used only for an objective nothing else places. */
 function weakClaimsOf(key: string, group: readonly RawReport[], inferred: Inferred): Claim[] {
-  return mergeClaims([
+  return coherent(mergeClaims([
     ...group.flatMap(report => inferred.weak.byReport.get(report.url) ?? []),
     ...(inferred.weak.byKey.get(key) ?? [])
-  ])
+  ]))
 }
 
 /** Whether a position says the objective is outside every region: a trailhead abroad, a name in northern BC. */
@@ -248,24 +270,27 @@ function place(key: string, group: readonly RawReport[], context: Context): Obje
   if (REGION_OVERRIDES[key] === OUT_OF_SCOPE) return dropped(key, group, 'curated', [])
   const name = pickName(key, group)
 
-  if (isHomonym(group)) {
+  const mountains = mountainsOf(group)
+  if (mountains.length > 1) {
     const fallback = REGION_OVERRIDES[key] ?? strongestStatedRegion(group)
     // A tick-list entry is about one of the mountains, the one in its region:
     // Steven Song's Mount Murchison above Squamish is not the 11,000er.
     const tickRegion = context.guidebooks?.regions.get(key)
-    return [...splitHomonym(group, fallback)]
-      .filter(([regionId]) => REGION_IDS.has(regionId))
-      .map(([regionId, reports]) => objectiveOf(key, name, reports,
-        mergeClaims(statedClaims(reports).filter(claim => claim.regionId === regionId)),
-        !tickRegion || tickRegion === regionId ? context.guidebooks : undefined))
+    return splitHomonym(group, mountains, fallback)
+      .filter(([, reports]) => reports.length > 0)
+      .map(([regions, reports]) => objectiveOf(key, name, reports,
+        mergeClaims(statedClaims(reports)),
+        !tickRegion || regions.has(tickRegion) ? context.guidebooks : undefined))
   }
 
   const claims = claimsOf(key, group, context)
-  const filedElsewhere = group.filter(report => mappedRegionOf(report) === OUT_OF_SCOPE)
+  const filedElsewhere = group.filter(filedAbroad)
   if (filedElsewhere.length > 0 && !claims.some(isStated)) {
     return dropped(key, group, 'filed-elsewhere', [...new Set(filedElsewhere.map(report => report.sourceId))])
   }
-  if (claims.length > 0) return [objectiveOf(key, name, group, claims, context.guidebooks)]
+  // A report its own blog files abroad is about a namesake there — Bob
+  // Spirko's Sugarloaf Mountains in Arizona and California — not this one.
+  if (claims.length > 0) return [objectiveOf(key, name, group.filter(report => !filedAbroad(report)), claims, context.guidebooks)]
 
   // Nothing places it: settle for weak evidence, then for knowing it is outside
   // every region, before leaving it unsorted.

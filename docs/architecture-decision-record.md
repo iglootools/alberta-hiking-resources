@@ -737,3 +737,77 @@ It writes `app/assets/region-map.json` for the SVG map and
   `RegionMap.vue`, and — if the SVG map wins — `maplibre-gl`, `@types/geojson` and the GeoJSON
   output; if MapLibre wins, `basemap.ts` and the SVG output. If neither convinces, hand-drawn
   polygons were the alternative considered.
+
+---
+
+## ADR-011 — Tell a boundary peak from two namesakes by which regions border each other
+
+**Date:** 2026-10-21
+**Status:** Accepted — supersedes, in
+[ADR-005](#adr-005--generate-the-by-objective-trip-report-index-into-markdown-and-match-objective-names-exactly),
+the rule that only one blog filing a name in two regions splits it; and limits
+[ADR-007](#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)'s
+"every region a signal names" to regions near the objective
+
+### Context
+
+An audit researched 58 placements chosen at random, weighted towards the riskier kinds,
+against the reports themselves and outside sources (gazetteers, Bivouac, park pages). The
+main region was right for 54. The errors were mostly an extra, wrong region, and almost all
+had one of four causes:
+
+- **Two mountains merged under one name.** Mount Bishop is in the Elk Range and on the North
+  Shore; Victoria Peak in the Castle and on Vancouver Island. ADR-005 split a name only when
+  *one* blog filed it in two regions, so two blogs each filing their own Mount Bishop stayed
+  one objective, listed in both places.
+- **An inferred region about a namesake.** Helen Lake's gazetteer position is on Vancouver
+  Island; one of Anderson's Southeast Shoulder's three links goes to a coastal report; Nugara
+  links a Kananaskis trip to compare the view from Kindersley South.
+- **Blog labels broader than the region they were mapped to.** Steven Song's "BC Rockies"
+  is everything west of the Divide, Mount Robson included; his "Selkirk Mountains" runs to
+  the Valhallas; Bob Spirko's "BC" folder runs from Kootenay National Park to Smithers;
+  Explor8ion's "Rocky Mountain Foothills" was read as the Ghost and holds two Kananaskis trips.
+- **A non-trip:** a concert in Montreal, filed under Kananaskis from one link.
+
+Across the whole index, 83 objectives were listed in regions more than 200 km apart.
+
+### Decision
+
+Regions carry an **adjacency table** — which regions share a boundary a trip can straddle —
+in [regions.ts](../scripts/trip-report-index/regions.ts), and it decides two things:
+
+1. **Which stated regions are one mountain.** Regions join when they border each other and no
+   blog files the name in both, transitively, so a peak where three regions meet is listed in
+   all three. A gap no border bridges, or a blog keeping two regions apart, splits the name
+   into one objective per mountain, each with its own reports. A report its blog files abroad
+   is left off an in-scope objective.
+2. **Which inferred regions are kept.** An inferred region must be a stated region or border
+   one. Where nothing is stated, the strongest inferred claim anchors the objective instead.
+
+The broad labels are left **unmapped**, so their trips are placed by their own locality line
+(Spirko), by other blogs, or by position. What nothing places was researched and curated.
+Grande Cache and the Willmore Wilderness, which the area matcher already filed under Jasper,
+are now named in that region's description, since nothing else covers them.
+
+### Rationale
+
+- **Measured on the index as it stood**, 1,207 inferred regions on blog-placed objectives
+  agreed with a stated one, 25 added a neighbouring region and 24 a far one. The far ones are
+  what this drops, and every one checked was about a namesake or a mislabelled trip.
+- **It errs towards listing, not splitting.** Splitting needs positive evidence. An ambiguous
+  chain of neighbours stays one objective in several regions, which a reader can weigh; a peak
+  wrongly split in two hides half its reports.
+- **A hand-written table** rather than one derived from the map, because the map is drawn from
+  the placements this checks, and twenty regions' borders are short enough to review.
+
+### Consequences
+
+- The far-apart listings went from 83 to 3, all three chains of neighbouring regions. Names
+  split into separate mountains went from 39 to 81.
+- The review worksheet has a new **Split into separate mountains** section. A wrong split almost
+  always means a blog label broader than its mapping, so that is where to fix it.
+- The adjacency table is the new maintenance point: a region added to the taxonomy needs its
+  neighbours, and a test fails on a region with none.
+- **Not addressed:** blogs file Icefields Parkway trailheads as Banff, which is true by park
+  boundary but leaves this site's Icefields Parkway region missing for them (OXO/Puzzle Peak).
+  The two border each other, so a curated override is the fix for one that matters.
