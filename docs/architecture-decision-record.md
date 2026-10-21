@@ -811,3 +811,53 @@ are now named in that region's description, since nothing else covers them.
 - **Not addressed:** blogs file Icefields Parkway trailheads as Banff, which is true by park
   boundary but leaves this site's Icefields Parkway region missing for them (OXO/Puzzle Peak).
   The two border each other, so a curated override is the fix for one that matters.
+
+---
+
+## ADR-012 — Follow the versions the Nuxt stack supports
+
+**Date:** 2026-10-21
+**Status:** Accepted
+
+### Context
+
+The app is built on the Nuxt stack — Nuxt, Nuxt UI, Nuxt Content, and first-party modules such
+as [`@nuxt/eslint`](https://eslint.nuxt.com/) — and much of its toolchain arrives through it
+rather than being chosen directly. Those packages declare the ranges they support, and the
+ranges move on the stack's schedule, not ours. TypeScript is the current example:
+`typescript-eslint` reaches the project through `@nuxt/eslint` → `@nuxt/eslint-config`, declares
+a peer range of `>=4.8.4 <6.1.0`, and cannot be upgraded independently. Forcing TypeScript 7
+past it crashes ESLint.
+
+Keeping every dependency current, which the shared guidelines default to, would mean upgrading
+ahead of what the stack supports and then working around the breakage.
+
+### Decision
+
+Whatever the Nuxt stack provides, the project follows. A dependency the stack constrains is held
+inside the range the stack supports, and moves when the stack moves — not ahead of it.
+
+### Rationale
+
+- The stack is the reason the project is cheap to maintain: Nuxt's modules know the app's shape
+  (pages, auto-imports, content collections) and are tested together. Running ahead of them
+  trades that for a configuration nobody upstream tests.
+- The constraint is the stack's own declaration (a peer range, a dependency range), so it can
+  be read rather than guessed, and it lifts itself when upstream widens it.
+
+### Consequences
+
+- **TypeScript is held below 6.1.** [renovate.json](../renovate.json) caps `typescript` at
+  `<6.1`, tracking `typescript-eslint`'s peer range rather than merely excluding the next major,
+  and the devDependency is `~6.0.3` rather than `^6.0.3` so lock-file maintenance cannot resolve
+  6.1 inside a caret range. The rule's `description` carries the detail. Lift the bound and
+  widen the range together when the peer range widens:
+  `npm view typescript-eslint peerDependencies`.
+- A Renovate PR that the stack's ranges cannot satisfy is closed or held, not forced through with
+  an override.
+- **The exception is a security fix the stack cannot take yet.** `esbuild` is overridden past the
+  range `fontless` (via `@nuxt/fonts`) declares, because the advisory has no fix inside that
+  range and no newer `fontless` exists. It is a documented deviation in
+  [guidelines.md](guidelines.md#esbuild-is-overridden-past-the-range-fontless-asks-for), narrow,
+  and retires when `fontless` widens its range — the override is the exception that proves the
+  rule, not a precedent for upgrading ahead of the stack.
