@@ -22,6 +22,11 @@
       "allowedVersions": "<6.1"
     },
     {
+      "description": "Hold @nuxt/fonts inside the range @nuxt/ui depends on, which is `^0.14.0`. @nuxt/ui installs @nuxt/fonts itself, resolved from its own dependency, while our `modules` entry in nuxt.config.ts resolves the copy declared here; a newer major leaves two copies in the tree and both register as modules. The declaration is exact (`0.14.0`), so lockFileMaintenance cannot move it either. Lift the bound once @nuxt/ui widens its dependency: `npm view @nuxt/ui dependencies.@nuxt/fonts`.",
+      "matchPackageNames": ["@nuxt/fonts"],
+      "allowedVersions": "<0.15"
+    },
+    {
       "description": "Hold the mdast-util-to-markdown override in pnpm-workspace.yaml at 2.1.2: from 2.1.3 remark-mdc recurses forever stringifying bold and italic text, /llms-full.txt returns 500, and the build fails (nuxt-content/remark-mdc#161). Without this rule Renovate bumps the override in the grouped PR and, rewriting the YAML, deletes the comment that explains the hold. Remove this rule together with the override once remark-mdc ships a fix: `npm view remark-mdc version`.",
       "matchPackageNames": ["mdast-util-to-markdown"],
       "allowedVersions": "<2.1.3"
