@@ -177,8 +177,9 @@ stack itself is described in [architecture.md](architecture.md).
   `RegionMap`, on the three section index pages, renders the region shapes the trip index
   generates, as SVG or on MapLibre; see
   [ADR-010](architecture-decision-record.md#adr-010--trial-two-region-map-renderers-side-by-side-svg-by-default).
-  The template's `AppHeader/Footer/Logo`, `TemplateMenu`, `PageHeaderLinks`, and
-  dynamic `[...slug].vue` routing are kept.
+  The template's `AppHeader/Footer/Logo`, `PageHeaderLinks`, and dynamic `[...slug].vue`
+  routing are kept. Its `TemplateMenu`, a switcher between the Nuxt UI templates, is
+  removed: it has no place on this site.
 - Added [architecture-decision-record.md](architecture-decision-record.md).
 
 ## Visual identity
