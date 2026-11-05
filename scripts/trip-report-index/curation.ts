@@ -230,8 +230,8 @@ export const ALIASES: Readonly<Record<string, string>> = {
  * in Kananaskis and Wedge Mountain above Whistler.
  */
 export const DISTINCT_NAMES: readonly (readonly [string, string])[] = [
-  ['beehive', 'beehive mountain'],
-  ['big white', 'big white mountain'], // Spirko's is above Island Lake by Fernie; the other is the Okanagan ski hill // the Beehive above Lake Agnes; Beehive Mountain in the Highwood
+  ['beehive', 'beehive mountain'], // the Beehive above Lake Agnes; Beehive Mountain in the Highwood
+  ['big white', 'big white mountain'], // Spirko's is above Island Lake by Fernie; the other is the Okanagan ski hill
   ['carry', 'carry peak'],
   ['cirque', 'cirque peak'], // "Cirque & Chephren Lakes"
   ['cory', 'mount cory'], // "Cory & Edith Passes"

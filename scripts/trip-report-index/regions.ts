@@ -432,7 +432,6 @@ export const REGION_MAP: Readonly<Record<string, Readonly<Record<string, string>
   }
 }
 
-/** The region one report names, mapped onto our taxonomy. */
 export function mappedRegionOf(report: RawReport): string | undefined {
   return report.sourceRegion ? REGION_MAP[report.sourceId]?.[report.sourceRegion] : undefined
 }
@@ -483,7 +482,6 @@ export function mountainsOf(reports: readonly RawReport[]): Set<string>[] {
   }
 }
 
-/** Whether a name belongs to more than one mountain. See mountainsOf. */
 export function isHomonym(reports: readonly RawReport[]): boolean {
   return mountainsOf(reports).length > 1
 }

@@ -16,7 +16,8 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Page not found', fatal: true })
   }
 
-  // Add title and description to the top of the page if missing
+  // The title and description live in frontmatter, which the stringified body
+  // leaves out, so a page without its own h1 would arrive untitled.
   if (page.body.value[0]?.[0] !== 'h1') {
     page.body.value.unshift(['blockquote', {}, page.description])
     page.body.value.unshift(['h1', {}, page.title])

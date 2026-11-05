@@ -12,8 +12,8 @@
  * "Mount Kitchener" and "Mount Michener", both "Bow Peak" and "Owl Peak", both
  * "Mount Shark" and "Mount Shanks". Merging those would point a reader at beta
  * for the wrong mountain. Genuine spelling variants are curated by hand in
- * aliases.ts instead, and `nearMisses` exists to surface candidates for that
- * file rather than to act on them.
+ * curation.ts's ALIASES instead, and `nearMisses` exists to surface candidates
+ * for that file rather than to act on them.
  */
 import { ALIASES } from './curation.ts'
 

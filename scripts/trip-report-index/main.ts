@@ -61,7 +61,7 @@ const MAP_GEOJSON_PATH = join(REPO, 'public', 'region-map', 'regions.geojson')
 /** A region drawn in fewer cells than this is hard to find or click on the map, and is reported. */
 const SMALL_REGION_CELLS = 20
 
-/** `1.index.md` is written by hand; the script owns every other page here. */
+/** The index page is written by hand; the script owns every other page here. */
 const INDEX_PAGE = '01.index.md'
 
 async function scrapeAll(refresh: boolean) {
@@ -103,7 +103,6 @@ async function previouslyUnsorted(): Promise<Set<string>> {
   }
 }
 
-/** Removes region pages for regions that no longer exist. */
 async function pruneStalePages(keep: ReadonlySet<string>): Promise<string[]> {
   const existing = await readdir(PAGES_DIR)
   const stale = existing.filter(name =>

@@ -29,12 +29,6 @@ const MONTHS = 'January|February|March|April|May|June|July|August|September|Octo
 const STANDFIRST = new RegExp(`(?:${MONTHS})\\s+\\d{1,2},\\s*\\d{4},\\s*([A-Z][^]{0,48}?)\\s+(?:Summit|Gain|Distance|Elevation|Round)`)
 
 /**
- * The `where` field leads with a date; only what follows it is a place. Empty
- * parts are dropped after the date is removed, not before, so that a value
- * supplied with no date (`", Misty Range"`, from a trip page) parses the same
- * way as one from a region page (`"Aug 28, High Rock Range"`).
- */
-/**
  * The site marks its own favourites with `<span class="fav">★</span>` appended
  * inside the `where` paragraph. Flattening that to text turns "Bow Range" into
  * "Bow Range ★", so the marker is removed before the range is read. It is real
@@ -43,6 +37,12 @@ const STANDFIRST = new RegExp(`(?:${MONTHS})\\s+\\d{1,2},\\s*\\d{4},\\s*([A-Z][^
  */
 const FAVOURITE_MARK = /<span\s+class="fav"[^>]*>[\s\S]*?<\/span>/gi
 
+/**
+ * The `where` field leads with a date; only what follows it is a place. Empty
+ * parts are dropped after the date is removed, not before, so that a value
+ * supplied with no date (`", Misty Range"`, from a trip page) parses the same
+ * way as one from a region page (`"Aug 28, High Rock Range"`).
+ */
 function subRangeOf(where: string | undefined): string | undefined {
   const parts = (where ?? '').split(',').map(part => part.trim())
   const range = parts.slice(1).filter(Boolean).join(', ')
