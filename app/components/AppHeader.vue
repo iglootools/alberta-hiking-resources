@@ -38,7 +38,6 @@ const { header } = useAppConfig()
       v-else
       #left
     >
-      <!-- Added the class to align the logo and AHR -->
       <NuxtLink
         :to="header?.to || '/'"
         class="flex items-center gap-2"
@@ -46,8 +45,6 @@ const { header } = useAppConfig()
         <AppLogo class="w-auto h-6 shrink-0 text-primary" />
         Alberta Hiking Resources
       </NuxtLink>
-
-      <!-- <TemplateMenu /> -->
     </template>
 
     <template #right>

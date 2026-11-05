@@ -15,7 +15,6 @@ export interface Source {
   readonly home: string
 }
 
-/** One trip report, as scraped from a single source. */
 export interface RawReport {
   readonly sourceId: string
   /** The report's own title, shown when it differs from the objective name. */
@@ -80,7 +79,6 @@ export function isStated(claim: Claim): boolean {
   return STATED_KINDS.has(claim.signal.kind)
 }
 
-/** One objective with every report that covers it. */
 export interface Objective {
   readonly key: string
   readonly name: string

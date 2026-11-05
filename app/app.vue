@@ -26,7 +26,7 @@ useHead({
 useSeoMeta({
   titleTemplate: `%s - ${seo?.siteName}`,
   ogSiteName: seo?.siteName,
-  // Canonical absolute URL of the current page (og:url was otherwise missing)
+  // Nothing else emits og:url, so it is set explicitly here.
   ogUrl: () => `${config.public.siteUrl}${route.path}`,
   twitterCard: 'summary_large_image'
 })

@@ -8,9 +8,9 @@
  * directly under a category with no region folder, and the "NugaraScrambles"
  * ones below. That costs one request per such report, once, against the cache.
  *
- * Region comes from the URL path. Path segments that describe the *kind* of
- * outing rather than where it is ("Hiking", "Snowshoe", "OtherScrambles") are
- * skipped, so `/Hiking/Kananaskis/CoxHill/CoxHill.html` yields "Kananaskis".
+ * Path segments that describe the *kind* of outing rather than where it is
+ * ("Hiking", "Snowshoe", "OtherScrambles") are skipped, so
+ * `/Hiking/Kananaskis/CoxHill/CoxHill.html` yields "Kananaskis".
  * "NugaraScrambles" and "BC" survive that filter but are intentionally absent
  * from the region map — a guidebook grouping spanning four regions, and a
  * folder running from Kootenay National Park to Smithers — so their reports

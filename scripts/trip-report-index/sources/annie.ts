@@ -184,7 +184,7 @@ export async function readUploads(fetchText: Fetcher, key: string): Promise<{ ti
 /**
  * The API key, or a failure explaining how to get one. Exported as the source's
  * preflight so the run stops before scraping anything rather than after five
- * minutes of reading the other six sites. `env` is a parameter so a test can
+ * minutes of reading every other site. `env` is a parameter so a test can
  * supply one without touching the process.
  */
 export function requireApiKey(env: NodeJS.ProcessEnv = process.env): string {

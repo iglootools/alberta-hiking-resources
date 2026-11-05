@@ -2,7 +2,7 @@
  * Cached HTTP for the scrape.
  *
  * Responses are cached on disk so that re-runs while iterating on the parsers
- * do not re-hit six volunteer-run blogs. The cache is keyed by URL and never
+ * do not re-hit the volunteer-run blogs. The cache is keyed by URL and never
  * expires; `--refresh` clears it, which is what a real refresh run uses.
  */
 import { createHash } from 'node:crypto'
