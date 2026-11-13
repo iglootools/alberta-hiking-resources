@@ -17,8 +17,9 @@ not here.
 
 ## Which shared guidelines apply
 
-[`coding/general.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md) applies and reaches every session on its own — the
-plugin's `SessionStart` hook emits it. The `project-setup/` files that govern what this
+[`coding/general.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md) and
+[`coding/git.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/git.md) apply
+and reach every session on their own, because the plugin's `SessionStart` hook emits them. The `project-setup/` files that govern what this
 repository has — [repository](https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md),
 [documentation](https://github.com/iglootools/common/blob/main/guidelines/project-setup/documentation.md),
 [workflows](https://github.com/iglootools/common/blob/main/guidelines/project-setup/workflows.md),
