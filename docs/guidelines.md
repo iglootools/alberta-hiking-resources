@@ -17,19 +17,12 @@ not here.
 
 ## Which shared guidelines apply
 
-[`coding/general.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md) and
-[`coding/git.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/git.md) apply
-and reach every session on their own, because the plugin's `SessionStart` hook emits them. The `project-setup/` files that govern what this
-repository has — [repository](https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md),
-[documentation](https://github.com/iglootools/common/blob/main/guidelines/project-setup/documentation.md),
-[workflows](https://github.com/iglootools/common/blob/main/guidelines/project-setup/workflows.md),
-[shared workflows](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md),
-[dependency automation](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md),
-[IDE](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md) and [Claude Code](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md) — apply too,
-and are read by the `guidelines` skill when a change reaches the files each governs.
+All of them apply as written, except the Python-specific ones below. Which file is loaded into
+every session, and which is read only when a change reaches the files it governs, is listed in
+[common's README](https://github.com/iglootools/common#contents).
 
-**The Python-specific ones do not.** Nothing here is Python, which also puts parts of `ide.md`
-and `claude-code.md` out of scope rather than merely unmet:
+Nothing here is Python, which also puts parts of `ide.md` and `claude-code.md` out of scope
+rather than merely unmet:
 
 | Shared section | Why it does not apply |
 |---|---|
