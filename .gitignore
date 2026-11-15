@@ -43,3 +43,8 @@ logs
 # duplicates. Regenerated every run and meant to be worked through, not kept --
 # the decisions it leads to live in scripts/trip-report-index/curation.ts.
 /trip-report-review.md
+
+# Generated output of the iglootools plugin and tools, such as audit reports under
+# .iglootools/audits/. Never committed: see the .gitignore rule in
+# https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md
+.iglootools/
