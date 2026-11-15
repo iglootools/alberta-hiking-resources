@@ -62,9 +62,11 @@ mise run install
 # Put the pinned toolchain on PATH for interactive shells too, so `pnpm`, `node`
 # and `mise run <task>` work in the container's terminal.
 if [ -f "$HOME/.bashrc" ]; then
+  # shellcheck disable=SC2016  # written unexpanded, for the shell to run at startup
   echo 'eval "$(mise activate bash)"' >> "$HOME/.bashrc"
 fi
 
 if [ -f "$HOME/.zshrc" ]; then
+  # shellcheck disable=SC2016  # written unexpanded, for the shell to run at startup
   echo 'eval "$(mise activate zsh)"' >> "$HOME/.zshrc"
 fi
