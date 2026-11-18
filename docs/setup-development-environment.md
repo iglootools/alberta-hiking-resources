@@ -368,7 +368,7 @@ No manual configuration is needed — just:
 
 Verify with `/mcp` inside Claude Code — all three should show as connected.
 
-[CLAUDE.md](../CLAUDE.md) points Claude at these servers rather than at its training
+[AGENTS.md](../AGENTS.md) points agents at these servers rather than at their training
 data.
 
 The shared [guidelines](https://github.com/iglootools/common) arrive as a
