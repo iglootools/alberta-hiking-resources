@@ -21,10 +21,12 @@ Answer questions about them from the MCP servers in `.mcp.json`:
 
 ## Guidelines
 
-The shared iglootools guidelines govern every change. Claude Code gets them from the `iglootools`
-plugin; other agents read them at https://github.com/iglootools/common/tree/main/guidelines,
-starting from its README. Read [docs/guidelines.md](docs/guidelines.md) before any change: it
-records where this project deviates from them and its own rules.
+The shared iglootools guidelines govern every change. Claude Code loads them through the
+`iglootools` plugin. Other agents: read `coding/general.md` and `coding/git.md` before any change,
+and the `project-setup/` guideline whose trigger matches the files you are changing, using the
+tables in [iglootools/common's README](https://github.com/iglootools/common#contents). Read
+[docs/guidelines.md](docs/guidelines.md) before any change too: it records where this project
+deviates from them and its own rules.
 
 ## Where things are
 
