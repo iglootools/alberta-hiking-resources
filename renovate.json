@@ -1,53 +1,48 @@
 {
-  "description": [
-    "helpers:pinGitHubActionDigests keeps the digest pinning in .github/workflows self-enforcing. Every `uses:` there is pinned to a commit SHA with the tag kept in a trailing comment; without this preset a newly added action written as `@v1` would silently stay unpinned and the sweep would decay one workflow at a time. It ships in config:best-practices rather than config:recommended, so it has to be listed here.",
-    "minimumReleaseAgeBehaviour: timestamp-optional is what stops those digest pins from freezing. minimumReleaseAge applies to digest updates too, and when Renovate cannot date one it treats it as pending forever under the default timestamp-required — which is exactly the case for a ref that is not a version, such as pypa/gh-action-pypi-publish@release/v1. timestamp-optional keeps the 14-day delay wherever a release timestamp exists and lets the undatable updates through instead of stalling them indefinitely."
-  ],
-  "extends": [
-    "github>nuxt/renovate-config-nuxt",
-    "group:all",
-    "helpers:pinGitHubActionDigests"
-  ],
-  "minimumReleaseAge": "14 days",
-  "minimumReleaseAgeBehaviour": "timestamp-optional",
-  "packageRules": [
-    {
-      "description": "Replacement and pin updates carry no release timestamp, so the release-age check can never be satisfied and would leave renovate/stability-days pending forever. security:minimumReleaseAgeNpm exempts these for npm; we do the same for all datasources. lockFileMaintenance is exempted in its own config block below.",
-      "matchUpdateTypes": ["replacement", "pin"],
-      "minimumReleaseAge": null
+    "description": [
+        "The shared rules (digest pinning, the 14-day minimumReleaseAge with timestamp-optional, and the managers for the mise version in workflows and for versions named in mise.toml's [env]) come from the iglootools base preset, pinned to a release tag: see guidelines/project-setup/dependency-automation.md in iglootools/common. Grouping comes from Nuxt's preset and group:all; what is below is this project's own."
+    ],
+    "extends": [
+        "github>nuxt/renovate-config-nuxt",
+        "group:all",
+        "github>iglootools/common//renovate/base#v1.24.1"
+    ],
+    "packageRules": [
+        {
+            "description": "Replacement and pin updates carry no release timestamp, so the release-age check can never be satisfied and would leave renovate/stability-days pending forever. security:minimumReleaseAgeNpm exempts these for npm; we do the same for all datasources. lockFileMaintenance is exempted in its own config block below.",
+            "matchUpdateTypes": [
+                "replacement",
+                "pin"
+            ],
+            "minimumReleaseAge": null
+        },
+        {
+            "description": "Hold TypeScript inside typescript-eslint's peer range, which is `>=4.8.4 <6.1.0` (seven packages in pnpm-lock.yaml declare it). typescript-eslint reaches us transitively via @nuxt/eslint -> @nuxt/eslint-config, so we cannot bump it independently; forcing TS7 crashes eslint with \"Cannot read properties of undefined (reading 'Cjs')\". The bound is <6.1 rather than <7 so it tracks the peer range itself instead of merely excluding the next major -- TS 6.1 would violate the peer range too. This rule only constrains what renovate proposes, so the devDependency is `~6.0.3` rather than `^6.0.3`; otherwise lockFileMaintenance would resolve 6.1 inside the caret range and bypass this entirely. Lift the bound and widen the range together once typescript-eslint widens its peer: `npm view typescript-eslint peerDependencies`.",
+            "matchPackageNames": [
+                "typescript"
+            ],
+            "allowedVersions": "<6.1"
+        },
+        {
+            "description": "Hold @nuxt/fonts inside the range @nuxt/ui depends on, which is `^0.14.0`. @nuxt/ui installs @nuxt/fonts itself, resolved from its own dependency, while our `modules` entry in nuxt.config.ts resolves the copy declared here; a newer major leaves two copies in the tree and both register as modules. The declaration is exact (`0.14.0`), so lockFileMaintenance cannot move it either. Lift the bound once @nuxt/ui widens its dependency: `npm view @nuxt/ui dependencies.@nuxt/fonts`.",
+            "matchPackageNames": [
+                "@nuxt/fonts"
+            ],
+            "allowedVersions": "<0.15"
+        },
+        {
+            "description": "Hold the mdast-util-to-markdown override in pnpm-workspace.yaml at 2.1.2: from 2.1.3 remark-mdc recurses forever stringifying bold and italic text, /llms-full.txt returns 500, and the build fails (nuxt-content/remark-mdc#161). Without this rule Renovate bumps the override in the grouped PR and, rewriting the YAML, deletes the comment that explains the hold. Remove this rule together with the override once remark-mdc ships a fix: `npm view remark-mdc version`.",
+            "matchPackageNames": [
+                "mdast-util-to-markdown"
+            ],
+            "allowedVersions": "<2.1.3"
+        }
+    ],
+    "lockFileMaintenance": {
+        "enabled": true,
+        "minimumReleaseAge": null
     },
-    {
-      "description": "Hold TypeScript inside typescript-eslint's peer range, which is `>=4.8.4 <6.1.0` (seven packages in pnpm-lock.yaml declare it). typescript-eslint reaches us transitively via @nuxt/eslint -> @nuxt/eslint-config, so we cannot bump it independently; forcing TS7 crashes eslint with \"Cannot read properties of undefined (reading 'Cjs')\". The bound is <6.1 rather than <7 so it tracks the peer range itself instead of merely excluding the next major -- TS 6.1 would violate the peer range too. This rule only constrains what renovate proposes, so the devDependency is `~6.0.3` rather than `^6.0.3`; otherwise lockFileMaintenance would resolve 6.1 inside the caret range and bypass this entirely. Lift the bound and widen the range together once typescript-eslint widens its peer: `npm view typescript-eslint peerDependencies`.",
-      "matchPackageNames": ["typescript"],
-      "allowedVersions": "<6.1"
-    },
-    {
-      "description": "Hold @nuxt/fonts inside the range @nuxt/ui depends on, which is `^0.14.0`. @nuxt/ui installs @nuxt/fonts itself, resolved from its own dependency, while our `modules` entry in nuxt.config.ts resolves the copy declared here; a newer major leaves two copies in the tree and both register as modules. The declaration is exact (`0.14.0`), so lockFileMaintenance cannot move it either. Lift the bound once @nuxt/ui widens its dependency: `npm view @nuxt/ui dependencies.@nuxt/fonts`.",
-      "matchPackageNames": ["@nuxt/fonts"],
-      "allowedVersions": "<0.15"
-    },
-    {
-      "description": "Hold the mdast-util-to-markdown override in pnpm-workspace.yaml at 2.1.2: from 2.1.3 remark-mdc recurses forever stringifying bold and italic text, /llms-full.txt returns 500, and the build fails (nuxt-content/remark-mdc#161). Without this rule Renovate bumps the override in the grouped PR and, rewriting the YAML, deletes the comment that explains the hold. Remove this rule together with the override once remark-mdc ships a fix: `npm view remark-mdc version`.",
-      "matchPackageNames": ["mdast-util-to-markdown"],
-      "allowedVersions": "<2.1.3"
-    }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "jdx/mise-action's `version:` input pins the mise CLI that CI runs, so a workflow resolves tools with the same mise as local development instead of whatever released last night. Renovate's github-actions manager only updates `uses:` refs and reads no action inputs, so without this manager the pin would rot silently. The marker comment is what makes the match robust: keying off the `version:` line alone would also catch every other action's `version:` input. mise tags releases as `vYYYY.M.PATCH`; extractVersionTemplate drops the leading `v` to match the bare version the input expects.",
-      "managerFilePatterns": [
-        "/^\\.github/workflows/.+\\.ya?ml$/"
-      ],
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+version: (?<currentValue>\\S+)"
-      ],
-      "extractVersionTemplate": "^v?(?<version>.+)$"
-    }
-  ],
-  "lockFileMaintenance": {
-    "enabled": true,
-    "minimumReleaseAge": null
-  },
-  "postUpdateOptions": ["pnpmDedupe"]
+    "postUpdateOptions": [
+        "pnpmDedupe"
+    ]
 }
