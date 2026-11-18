@@ -374,10 +374,10 @@ data.
 The shared [guidelines](https://github.com/iglootools/common) arrive as a
 plugin, enabled for this repository in [.claude/settings.json](../.claude/settings.json). The
 project enabling it is not enough — follow
-[Install it per project](https://github.com/iglootools/common#install-it-per-project-not-per-user)
+[Install it per project](https://github.com/iglootools/common/blob/main/docs/installation.md#install-it-per-project-not-per-user)
 to install it once per machine, then
-[Updating one project](https://github.com/iglootools/common#updating-one-project) —
-or [every project at once](https://github.com/iglootools/common#updating-every-project)
+[Updating one project](https://github.com/iglootools/common/blob/main/docs/installation.md#updating-one-project) —
+or [every project at once](https://github.com/iglootools/common/blob/main/docs/installation.md#updating-every-project)
 — whenever a new version is released. The commands live there so they are corrected in one place,
 including why the install has to stay at project scope.
 
