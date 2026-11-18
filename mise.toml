@@ -2,6 +2,16 @@
 node = "26.13.0"
 pnpm = "12.17.0"
 shellcheck = "0.11.0"
+# Runs the shared iglootools commands through uvx (below).
+uv = "0.13.7"
+
+[env]
+# The shared iglootools commands (guidelines/project-setup/iglootools-cli.md in
+# iglootools/common), run through uvx since this project has no Python environment. The
+# comment is what lets Renovate keep the release current, through the shared base preset.
+# renovate: datasource=github-tags depName=iglootools/common
+IGLOOTOOLS_VERSION = "v1.24.1"
+IGLOOTOOLS = "uvx --from git+https://github.com/iglootools/common@{{ env.IGLOOTOOLS_VERSION }} iglootools"
 
 [tasks.install]
 description = "Install dependencies"
@@ -45,6 +55,10 @@ run = [
   { task = "test" },
   { task = "build" },
 ]
+
+[tasks.lint-shell]
+description = "Lint the tracked shell scripts with shellcheck"
+run = "$IGLOOTOOLS shell lint"
 
 [tasks.update]
 description = "Update all dependencies to latest versions"
