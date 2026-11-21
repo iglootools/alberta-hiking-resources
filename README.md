@@ -3,13 +3,15 @@
 ![License](https://img.shields.io/github/license/iglootools/alberta-hiking-resources)
 ![CI Status](https://github.com/iglootools/alberta-hiking-resources/actions/workflows/ci.yml/badge.svg?branch=main)
 
-Find your way in the jungle of FB and Meetup groups. Hiking Partners. Information. Ideas.
+Find your way in the jungle of FB and Meetup groups. Hiking Partners.
+Information. Ideas.
 
-A community resource hub for anyone hiking or scrambling in the Canadian Rockies —
-meetup groups, hiking & scrambling beta, weather & trail conditions, events,
+A community resource hub for anyone hiking or scrambling in the Canadian Rockies
+— meetup groups, hiking & scrambling beta, weather & trail conditions, events,
 outdoor gear, hike organizers, and an FAQ.
 
-🌐 **Live site:** [www.alberta-hiking-resources.org](https://www.alberta-hiking-resources.org)
+🌐 **Live site:**
+[www.alberta-hiking-resources.org](https://www.alberta-hiking-resources.org)
 
 The site is a [Nuxt](https://nuxt.com/) application built on the Nuxt UI Docs
 template, with content authored in Markdown and deployed to GitHub Pages.
@@ -31,8 +33,9 @@ For those, and for a local setup, see
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, guidelines, and the
-documentation of the code. To contribute content to the site itself, see the in-site
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, guidelines, and
+the documentation of the code. To contribute content to the site itself, see the
+in-site
 [contributing guide](https://www.alberta-hiking-resources.org/getting-started/contributing).
 
 ## License

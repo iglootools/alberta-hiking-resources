@@ -36,5 +36,6 @@ With the following parameters:
 ## Divergence from the template
 
 Recorded separately, in
-[divergence-from-the-template.md](divergence-from-the-template.md) — the licence, the SEO
-modules, the toolchain and dependency choices, and the `nuxt.config.ts` changes.
+[divergence-from-the-template.md](divergence-from-the-template.md) — the
+licence, the SEO modules, the toolchain and dependency choices, and the
+`nuxt.config.ts` changes.
