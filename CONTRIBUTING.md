@@ -7,22 +7,22 @@ itself, see the in-site
 ## Getting started
 
 - [docs/setup-development-environment.md](docs/setup-development-environment.md)
-  — Codespaces, dev containers, a local setup, and the iglootools Claude Code
-  plugin
-- [docs/building-and-testing.md](docs/building-and-testing.md) — build, lint,
-  typecheck, CI, dependency management, and the GitHub settings the repository
-  depends on
-- [docs/testing-notes.md](docs/testing-notes.md) — manual validation of the Open
-  Graph image, sitemap, and `robots.txt`
-- [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md) —
-  semantic-release and GitHub Pages deployment
+  — follow to set up Codespaces, a dev container or a local environment, and the
+  iglootools Claude Code plugin and MCP servers
+- [docs/building-and-testing.md](docs/building-and-testing.md) — follow to
+  build, lint and typecheck, and look up the checks CI runs, the dependency
+  management, and the GitHub settings the repository depends on
+- [docs/testing-notes.md](docs/testing-notes.md) — follow to check the Open
+  Graph image, sitemap and `robots.txt` by hand
+- [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md) — follow
+  to cut a release with semantic-release and deploy to GitHub Pages
 
 ## Guidelines
 
 This project follows the shared
 [iglootools guidelines](https://github.com/iglootools/common/tree/main/guidelines).
-[docs/guidelines.md](docs/guidelines.md) records where it deviates from them,
-the rules it adds, and the checklists to run for specific kinds of change.
+[docs/guidelines.md](docs/guidelines.md) records where it deviates from them and
+the rules it adds.
 
 Contributors follow the iglootools
 [code of conduct](https://github.com/iglootools/.github/blob/main/CODE_OF_CONDUCT.md);
@@ -32,9 +32,11 @@ describes.
 
 ## Understanding the code
 
-- [docs/architecture.md](docs/architecture.md) — tech stack and project
-  structure
+- [docs/architecture.md](docs/architecture.md) — understand the tech stack and
+  how the project is structured
 - [docs/divergence-from-the-template.md](docs/divergence-from-the-template.md) —
-  what this project changed from the Nuxt UI Docs template, and why
+  find out where this project departs from the Nuxt UI Docs template, and why,
+  before changing anything the template provides
 - [docs/architecture-decision-record.md](docs/architecture-decision-record.md) —
-  log of architectural decisions and the reasoning behind them
+  find out which architectural decisions were taken, and why, and append one
+  when taking a decision
