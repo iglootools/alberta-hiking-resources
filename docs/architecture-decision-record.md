@@ -204,7 +204,7 @@ Do not ship the redirects. A 404 is the answer for a page that no longer exists.
 
 ### Context
 
-The [trip reports page](../content/3.hiking-scrambling-beta/3.trip-reports/1.index.md) listed
+The [trip reports page](../content/3.hiking-scrambling-beta/3.trip-reports/01.index.md) listed
 half a dozen blogs and left the reader to search each one. The blogs between them publish
 roughly 2,700 trip reports covering about 1,650 distinct objectives, and the question a
 reader actually has — *who has written up this mountain?* — could only be answered by
