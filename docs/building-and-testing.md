@@ -9,6 +9,9 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run install`    | Install dependencies (frozen lockfile)   |
 | `mise run dev`        | Start the Nuxt dev server                |
 | `mise run lint`       | Lint with ESLint                         |
+| `mise run format`     | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
+| `mise run format-check` | Check they are formatted (dprint check) |
+| `mise run lint-markdown` | Lint the Markdown with rumdl (`content/` excluded) |
 | `mise run typecheck`  | Run the Nuxt type check                  |
 | `mise run test`       | Run the trip report index tests          |
 | `mise run build`      | Build the Nuxt application               |
@@ -25,8 +28,10 @@ The sections below cover the build, lint, and CI tasks in more detail; see
 ## Linting and type checking
 
 ```bash
-mise run lint        # eslint .
-mise run typecheck   # nuxt typecheck
+mise run lint          # eslint .
+mise run format-check  # dprint check: JSON, TOML and YAML
+mise run lint-markdown # rumdl check: the repository's Markdown, not the MDC pages
+mise run typecheck     # nuxt typecheck
 ```
 
 ## Tests
