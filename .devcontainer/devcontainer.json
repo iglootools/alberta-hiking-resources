@@ -7,7 +7,7 @@
   // browser tab, so there is no container for a devcontainer.json to describe
   // and no way to load the project's native addons. StackBlitz is the
   // no-account, instant path for previewing content edits; this is the one where
-  // `mise run ci` -- build, lint, typecheck -- actually runs.
+  // `mise run ci-preflight` -- lints, tests, build -- actually runs.
   "name": "Alberta Hiking Resources",
 
   // A plain Ubuntu base rather than a Node image, because mise installs Node and

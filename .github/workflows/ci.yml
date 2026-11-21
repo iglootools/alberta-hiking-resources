@@ -26,4 +26,4 @@ jobs:
           version: 2026.10.25
 
       - name: CI
-        run: mise run ci
+        run: mise run ci-preflight
