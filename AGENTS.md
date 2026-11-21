@@ -6,9 +6,10 @@ template and deployed to GitHub Pages. Tasks run through mise.
 
 ## Commands
 
-- `mise run ci`: everything CI runs (install, format check, lint, shell and
-  Markdown lint, typecheck, tests, build).
-- `mise run format` after editing JSON, TOML, YAML or Markdown.
+- `mise run preflight`: every lint (format check, ESLint, shell and Markdown
+  lint, typecheck) and the tests; `mise run ci-preflight` adds the install and
+  the build, as CI does.
+- `mise run fmt` after editing JSON, TOML, YAML or Markdown.
 - `mise run dev` serves the site locally; `mise tasks` lists the rest.
 
 ## Nuxt and Nuxt UI: ask the MCP servers, not your training data

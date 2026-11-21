@@ -30,7 +30,8 @@ itself is described in [architecture.md](architecture.md).
 ## Toolchain & dependency management (net-new)
 
 - [mise](https://mise.jdx.dev) (`mise.toml` + `mise.lock`) pins Node/pnpm and
-  acts as the task runner (`mise run ci/dev/build`), wrapping the npm scripts.
+  acts as the task runner (`mise run ci-preflight/dev/build`), wrapping the npm
+  scripts.
 - Renovate (`renovate.json`, grouped "all" updates, 14-day min age) +
   `renovate-mise-lock.yml` to keep the mise lock in sync.
 - `pnpm-workspace.yaml` with explicit `allowBuilds` (notably `better-sqlite3`,

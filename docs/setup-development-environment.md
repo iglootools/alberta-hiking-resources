@@ -16,8 +16,8 @@ that nobody has to rediscover it.
 
 A full Linux container defined by
 [.devcontainer/devcontainer.json](../.devcontainer/devcontainer.json), so every
-native dependency compiles and the whole `mise run ci` pipeline — build, lint,
-typecheck — runs exactly as it does locally and in CI.
+native dependency compiles and the whole `mise run ci-preflight` pipeline —
+lints, tests, build — runs exactly as it does locally and in CI.
 
 It installs mise and then defers to [mise.toml](../mise.toml) and
 [mise.lock](../mise.lock) for the Node and pnpm versions, so it resolves the
@@ -285,9 +285,9 @@ upstream already makes — and would stop tracking it if their recommendation
 changes.
 
 The exception worth knowing about is `native`, which uses Node's built-in
-`node:sqlite` and so needs no addon anywhere. A full `mise run ci` on the pinned
-Node 26 passes with it, `better-sqlite3` never loaded, which would let that
-dependency go along with the `build-essential` and `python3` that
+`node:sqlite` and so needs no addon anywhere. A full `mise run ci-preflight` on
+the pinned Node 26 passes with it, `better-sqlite3` never loaded, which would
+let that dependency go along with the `build-essential` and `python3` that
 [.devcontainer/setup.sh](../.devcontainer/setup.sh) installs to build it. It is
 not adopted because it would apply everywhere rather than only where it helps,
 and `node:sqlite` is still flagged experimental in Node. Worth revisiting once

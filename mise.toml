@@ -12,7 +12,7 @@ uv = "0.13.7"
 # iglootools/common), run through uvx since this project has no Python environment. The
 # comment is what lets Renovate keep the release current, through the shared base preset.
 # renovate: datasource=github-tags depName=iglootools/common
-IGLOOTOOLS_VERSION = "v1.29.1"
+IGLOOTOOLS_VERSION = "v1.30.0"
 IGLOOTOOLS = "uvx --from git+https://github.com/iglootools/common@{{ env.IGLOOTOOLS_VERSION }} iglootools"
 
 [tasks.install]
@@ -35,49 +35,85 @@ run = "pnpm preview"
 description = "Run nuxt prepare after install"
 run = "pnpm postinstall"
 
-[tasks.lint]
-description = "Lint with ESLint"
-run = "pnpm lint"
+# Task families (guidelines/project-setup/mise.md in iglootools/common, "Name tasks by
+# family"): a task that rewrites files is named for what it writes (fmt, build-trip-index),
+# anything that fails without writing is a lint-*, and preflight runs every lint and test before
+# a push.
 
-[tasks.typecheck]
-description = "Run Nuxt typecheck"
-run = "pnpm typecheck"
+[tasks.preflight]
+description = "Run every lint and the tests (what CI runs, before it builds)"
+run = [
+  { task = "lint" },
+  { task = "test" },
+]
+
+# Every test here is fast, so it differs from preflight in name only; it exists so that
+# `mise run preflight-quick` works the same in every project.
+[tasks.preflight-quick]
+description = "Run every lint and the tests (the same as preflight: every test here is fast)"
+run = [
+  { task = "lint" },
+  { task = "test" },
+]
+
+[tasks.ci-preflight]
+description = "Install, run every lint and test, then build (what the ci workflow runs)"
+run = [
+  { task = "install" },
+  { task = "preflight" },
+  { task = "build" },
+]
 
 [tasks.test]
 description = "Run the trip report index tests"
 run = "pnpm test"
 
-[tasks.ci]
-description = "Run CI pipeline"
+# Writers. dprint formats the JSON, TOML and YAML, rumdl the Markdown; ESLint's stylistic rules
+# own the code. See guidelines/project-setup/formatting.md in iglootools/common.
+[tasks.fmt]
+description = "Format the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; lint-fmt verifies only)"
 run = [
-  { task = "install" },
-  { task = "format-check" },
-  { task = "lint" },
+  { task = "fmt-dprint" },
+  { task = "fmt-rumdl" },
+]
+
+[tasks.fmt-dprint]
+description = "Format the JSON, TOML and YAML with dprint"
+run = "dprint fmt"
+
+[tasks.fmt-rumdl]
+description = "Format the Markdown with rumdl"
+run = "rumdl fmt ."
+
+# Lints: each fails without writing anything.
+[tasks.lint]
+description = "Run every lint"
+run = [
+  { task = "lint-fmt" },
+  { task = "lint-eslint" },
   { task = "lint-shell" },
   { task = "lint-markdown" },
-  { task = "typecheck" },
-  { task = "test" },
-  { task = "build" },
+  { task = "lint-types" },
 ]
 
-# dprint formats the JSON, TOML and YAML, rumdl the Markdown; ESLint formats the code as part of
-# `lint`. See guidelines/project-setup/formatting.md in iglootools/common.
-[tasks.format]
-description = "Format the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; see format-check to verify only)"
-run = [
-  "dprint fmt",
-  "rumdl fmt .",
-]
-
-# The formatters exit 0 whether or not they changed anything, so they cannot be the gate. rumdl's
-# check is lint-markdown, which reports what `rumdl fmt` would change along with what it cannot.
-[tasks.format-check]
-description = "Check that the JSON, TOML and YAML are formatted (fails instead of reformatting; fix with `mise run format`)"
+# The formatters exit 0 whether or not they changed anything, so they cannot be the gate. rumdl
+# has no lint-fmt-* of its own: lint-markdown reports what `rumdl fmt` would change along with
+# what it cannot fix.
+[tasks.lint-fmt]
+description = "Check that the JSON, TOML and YAML are formatted (fix with `mise run fmt-dprint`)"
 run = "dprint check"
 
+[tasks.lint-eslint]
+description = "Lint the code with ESLint, its stylistic rules included"
+run = "pnpm lint"
+
 [tasks.lint-markdown]
-description = "Lint the Markdown with rumdl (configured in .rumdl.toml; fix what it can with `mise run format`)"
+description = "Lint the Markdown with rumdl (configured in .rumdl.toml; fix what it can with `mise run fmt-rumdl`)"
 run = "rumdl check ."
+
+[tasks.lint-types]
+description = "Type-check with the Nuxt typecheck"
+run = "pnpm typecheck"
 
 [tasks.lint-shell]
 description = "Lint the tracked shell scripts with shellcheck"

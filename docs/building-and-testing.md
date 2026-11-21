@@ -8,16 +8,18 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | --------------------- | ---------------------------------------- |
 | `mise run install`    | Install dependencies (frozen lockfile)   |
 | `mise run dev`        | Start the Nuxt dev server                |
-| `mise run lint`       | Lint with ESLint                         |
-| `mise run format`     | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
-| `mise run format-check` | Check they are formatted (dprint check) |
+| `mise run preflight`  | Run every lint and the tests (`preflight-quick` is the same) |
+| `mise run lint`       | Run every lint below                     |
+| `mise run lint-eslint` | Lint the code with ESLint                |
+| `mise run fmt`        | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
+| `mise run lint-fmt`   | Check they are formatted (dprint check)  |
 | `mise run lint-markdown` | Lint the Markdown with rumdl (`content/` excluded) |
-| `mise run typecheck`  | Run the Nuxt type check                  |
+| `mise run lint-types` | Run the Nuxt type check                  |
 | `mise run test`       | Run the trip report index tests          |
 | `mise run build`      | Build the Nuxt application               |
 | `mise run build-pages`| Build for GitHub Pages deployment        |
 | `mise run preview`    | Preview the production build             |
-| `mise run ci`         | Run the full CI pipeline locally         |
+| `mise run ci-preflight` | Run the full CI pipeline locally       |
 | `mise run update`     | Update all dependencies to latest        |
 | `mise run build-trip-index` | Rebuild the by-objective trip report index |
 
@@ -28,10 +30,11 @@ The sections below cover the build, lint, and CI tasks in more detail; see
 ## Linting and type checking
 
 ```bash
-mise run lint          # eslint .
-mise run format-check  # dprint check: JSON, TOML and YAML
+mise run lint          # every lint below
+mise run lint-eslint   # eslint .
+mise run lint-fmt      # dprint check: JSON, TOML and YAML
 mise run lint-markdown # rumdl check: the repository's Markdown, not the MDC pages
-mise run typecheck     # nuxt typecheck
+mise run lint-types    # nuxt typecheck
 ```
 
 ## Tests
@@ -74,9 +77,9 @@ the Nitro output, so a plain `mise run build` is not what ships.
 
 ## CI pipeline
 
-`mise run ci` runs the same sequence as the
-[`ci.yml`](../.github/workflows/ci.yml) workflow: `install` → `lint` →
-`typecheck` → `test` → `build`.
+`mise run ci-preflight` runs the same sequence as the
+[`ci.yml`](../.github/workflows/ci.yml) workflow: `install` → `preflight`
+(every lint, then `test`) → `build`.
 
 ## Bundling icon sets
 
@@ -165,9 +168,9 @@ a smaller one.
 `DEBUG=1` adds a stack trace, for a fault in the script rather than in the
 configuration.
 
-It is deliberately **not** part of `mise run ci` or the build. The output is
-committed, so a blog being unreachable delays a refresh rather than breaking a
-deploy.
+It is deliberately **not** part of `mise run preflight` or the build. The output
+is committed, so a blog being unreachable delays a refresh rather than breaking
+a deploy.
 
 Each run also writes `trip-report-review.md` at the repo root (gitignored). It
 opens with the objectives that are new on the catch-all page since the version
