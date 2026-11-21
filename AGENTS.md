@@ -6,11 +6,14 @@ template and deployed to GitHub Pages. Tasks run through mise.
 
 ## Commands
 
-- `mise run preflight`: every lint (format check, ESLint, shell and Markdown
-  lint, typecheck) and the tests; `mise run ci-preflight` adds the install and
-  the build, as CI does.
+- `mise run preflight-quick`: every lint and the fast tests, before each
+  commit. Every test here is fast, so it is the same as `preflight`.
+- `mise run preflight`: every lint and test CI runs, every few commits and
+  before review. `mise run ci-preflight` adds the install and the build, as CI
+  does.
 - `mise run fmt` after editing JSON, TOML, YAML or Markdown.
-- `mise run dev` serves the site locally; `mise tasks` lists the rest.
+- `mise run dev` serves the site locally.
+- `mise tasks` lists the rest.
 
 ## Nuxt and Nuxt UI: ask the MCP servers, not your training data
 
@@ -27,29 +30,15 @@ model's cutoff. Answer questions about them from the MCP servers in `.mcp.json`:
 
 The shared iglootools guidelines govern every change. Claude Code loads them
 through the `iglootools` plugin. Other agents: read `coding/general.md` and
-`coding/git.md` before any change, and the `project-setup/` guideline whose
-trigger matches the files you are changing, using the tables in
-[iglootools/common's README](https://github.com/iglootools/common#contents).
-Read [docs/guidelines.md](docs/guidelines.md) before any change too: it records
-where this project deviates from them and its own rules.
+`coding/git.md` before any change, and the guideline whose trigger matches the
+files you are changing, using
+[iglootools/common's index](https://github.com/iglootools/common/blob/main/guidelines/README.md).
+Read [docs/guidelines.md](docs/guidelines.md) before any change too: it holds
+this project's deviations and its own rules, and links to the project's other
+guidelines files.
 
 ## Where things are
 
-Read a document when the task reaches it, not up front.
-[CONTRIBUTING.md](CONTRIBUTING.md) indexes all of them.
-
-- [docs/architecture.md](docs/architecture.md): the tech stack and project
-  structure.
-- [docs/divergence-from-the-template.md](docs/divergence-from-the-template.md):
-  where this app departs from the Nuxt UI Docs template, and why. Read before
-  changing anything the template provides.
-- [docs/architecture-decision-record.md](docs/architecture-decision-record.md):
-  the decisions taken and their reasoning. Append to it when making one.
-- [docs/building-and-testing.md](docs/building-and-testing.md): the mise tasks,
-  build, lint, typecheck and CI.
-- [docs/testing-notes.md](docs/testing-notes.md): checking the Open Graph image,
-  sitemap and `robots.txt` by hand.
-- [docs/setup-development-environment.md](docs/setup-development-environment.md):
-  setup, including the MCP servers.
-- [docs/releasing-and-publishing.md](docs/releasing-and-publishing.md):
-  semantic-release and the GitHub Pages deployment.
+[CONTRIBUTING.md](CONTRIBUTING.md) indexes every document, from setup to the
+architecture and the template divergence. Read a document when the task reaches
+it, not up front.

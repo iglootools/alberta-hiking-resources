@@ -21,7 +21,7 @@ and how closely to follow the upstream template belongs in
 All of them apply as written, except the Python-specific ones below. Which file
 is loaded into every session, and which is read only when a change reaches the
 files it governs, is listed in
-[common's README](https://github.com/iglootools/common#contents).
+[common's index](https://github.com/iglootools/common/blob/main/guidelines/README.md).
 
 Nothing here is Python, which also puts parts of `ide.md` and `claude-code.md`
 out of scope rather than merely unmet:
@@ -29,8 +29,8 @@ out of scope rather than merely unmet:
 | Shared section | Why it does not apply |
 |---|---|
 | [`coding/python.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/python.md), [`python-tooling.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md) and [`pypi-publishing.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/pypi-publishing.md), in full | uv/hatchling/ruff/PyPI have no counterpart here; the stack is pnpm + mise, and the site deploys to GitHub Pages. The hook already skips `python.md`, as there is no `pyproject.toml` |
-| [`ide.md` → Pyright environment resolution](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#pyright-environment-resolution) | no `.venv` and no `[tool.pyright]` to pin |
-| [`claude-code.md` → Pyright LSP plugin](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#pyright-lsp-plugin) | Python-specific. No LSP plugin is installed for this project |
+| [`ide.md` → Pin the venv for pyright in `[tool.pyright]`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#pin-the-venv-for-pyright-in-toolpyright) | no `.venv` and no `[tool.pyright]` to pin |
+| [`claude-code.md` → Install pyright-lsp at project scope in every Python project](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#install-pyright-lsp-at-project-scope-in-every-python-project) | Python-specific. No LSP plugin is installed for this project |
 
 The last one leaves a real gap — an assistant here has no import graph to
 resolve symbols against. The `.mcp.json` servers cover the adjacent problem
@@ -39,7 +39,7 @@ current reality rather than training data. See
 [setup-development-environment.md](setup-development-environment.md#ai-assistant-setup-mcp).
 Revisit if a Vue/TS LSP plugin becomes available at project scope.
 
-[Sharing the plugin set with the team](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#sharing-the-plugin-set-with-the-team)
+[Commit `.claude/settings.json` so the team gets the plugins](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#commit-claudesettingsjson-so-the-team-gets-the-plugins)
 still applies in full: the `iglootools` plugin is enabled in the committed
 `.claude/settings.json`, and any plugin added later is installed with
 `--scope project` the same way.
