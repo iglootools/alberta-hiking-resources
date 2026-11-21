@@ -973,7 +973,7 @@ moves — not ahead of it.
   overridden past the range `fontless` (via `@nuxt/fonts`) declares, because the
   advisory has no fix inside that range and no newer `fontless` exists. It is a
   documented deviation in
-  [guidelines.md](guidelines.md#esbuild-is-overridden-past-the-range-fontless-asks-for),
+  [guidelines.md](guidelines.md#override-esbuild-past-the-range-fontless-declares),
   narrow, and retires when `fontless` widens its range — the override is the
   exception that proves the rule, not a precedent for upgrading ahead of the
   stack.

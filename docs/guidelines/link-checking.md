@@ -1,14 +1,14 @@
 # Link Checking
 
 The measurements behind the link-checker exception in
-[docs/guidelines.md](../guidelines.md#no-link-checker-is-set-up).
+[docs/guidelines.md](../guidelines.md#do-not-call-the-shared-link-checker-until-the-docs-need-one).
 Read it before setting up a link checker here, or when re-evaluating that
 exception.
 
-The reason is where the links are. Of 759 link instances in tracked markdown,
-693 are in `content/` — per-trail links out to weather, air-quality, map and
-social sites — against 66 in `docs/` and `README.md` combined. Checking that
-population weekly would report on other people's websites, not on this
+The exception rests on where the links are. Of 759 link instances in tracked
+markdown, 693 are in `content/` — per-trail links out to weather, air-quality,
+map and social sites — against 66 in `docs/` and `README.md` combined. Checking
+that population weekly would report on other people's websites, not on this
 repository:
 
 | | |
@@ -26,7 +26,6 @@ they are what a re-evaluation should re-test:
   **zero 404s**. There is no present problem for a checker to have caught.
 - **Concurrency manufactures failures here.** Probing in parallel produced 73
   rate-limit failures; retried serially, 14 of them — including the only 404 in
-  the whole run — came back
-  200. lychee checks in parallel by default, so it would report failures that
-  are artifacts of its own request rate on top of the genuine exclusions
-  above.
+  the whole run — came back with a 200. lychee checks in parallel by default, so
+  it would report failures that are artifacts of its own request rate on top of
+  the genuine exclusions above.

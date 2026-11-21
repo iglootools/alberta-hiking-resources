@@ -1,149 +1,87 @@
-# Project-Specific Guidelines
+# Project Guidelines
 
-For general coding and tooling guidelines, see the
-[common guidelines](https://github.com/iglootools/common/tree/main/guidelines).
-Those are defaults, not dogma: this project may deviate or add rules of its own,
-**provided the deviation and its reasoning are documented** — project-wide ones
-here, local ones in a comment at the point of deviation.
+Where this project departs from the shared
+[iglootools guidelines](https://github.com/iglootools/common/blob/main/guidelines/README.md),
+and which of their sections do not apply. Read it before any change: it
+overrides the shared guidelines where the two conflict. Departures that apply at
+one place are comments there, as
+[Documented Exceptions](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md#documented-exceptions)
+describes, and are indexed below. Decisions about the stack are in the
+[architecture decision record](architecture-decision-record.md), and how far the
+app follows its upstream template in
+[divergence-from-the-template.md](divergence-from-the-template.md).
 
-Most of this project's deviations are local, and so live as comments where they
-apply. This file does not restate them; it indexes them, so there is one place
-to find them all, and holds the project-wide rules that have no single point of
-deviation.
+## Leave the Python guidelines out of scope
 
-Its scope is the shared guidelines. Decisions about Nuxt and the dependency tree
-belong in the [architecture decision record](architecture-decision-record.md),
-and how closely to follow the upstream template belongs in
-[divergence-from-the-template.md](divergence-from-the-template.md) — not here.
-
-## Which shared guidelines apply
-
-All of them apply as written, except the Python-specific ones below. Which file
-is loaded into every session, and which is read only when a change reaches the
-files it governs, is listed in
-[common's index](https://github.com/iglootools/common/blob/main/guidelines/README.md).
-
-Nothing here is Python, which also puts parts of `ide.md` and `claude-code.md`
-out of scope rather than merely unmet:
+Nothing here is Python, so these shared sections do not apply:
 
 | Shared section | Why it does not apply |
 |---|---|
-| [`coding/python.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/python.md), [`python-tooling.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md) and [`pypi-publishing.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/pypi-publishing.md), in full | uv/hatchling/ruff/PyPI have no counterpart here; the stack is pnpm + mise, and the site deploys to GitHub Pages. The hook already skips `python.md`, as there is no `pyproject.toml` |
-| [`ide.md` → Pin the venv for pyright in `[tool.pyright]`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#pin-the-venv-for-pyright-in-toolpyright) | no `.venv` and no `[tool.pyright]` to pin |
-| [`claude-code.md` → Install pyright-lsp at project scope in every Python project](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#install-pyright-lsp-at-project-scope-in-every-python-project) | Python-specific. No LSP plugin is installed for this project |
+| [`coding/python.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/python.md), [`python-tooling.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md) and [`pypi-publishing.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/pypi-publishing.md), in full | the stack is pnpm and mise, and the site deploys to GitHub Pages. The plugin already skips `python.md`, as there is no `pyproject.toml` |
+| [`ide.md` › Pin the venv for pyright in `[tool.pyright]`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#pin-the-venv-for-pyright-in-toolpyright) | no `.venv` and no `[tool.pyright]` to pin |
+| [`claude-code.md` › Install pyright-lsp at project scope in every Python project](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#install-pyright-lsp-at-project-scope-in-every-python-project) | Python-specific. No LSP plugin is installed for this project |
 
-The last one leaves a real gap — an assistant here has no import graph to
-resolve symbols against. The `.mcp.json` servers cover the adjacent problem
-instead: they ground answers about Nuxt and about this app's resolved config in
-current reality rather than training data. See
-[setup-development-environment.md](setup-development-environment.md#ai-assistant-setup-mcp).
-Revisit if a Vue/TS LSP plugin becomes available at project scope.
+**Why:** the last one leaves a real gap: an assistant here has no import graph
+to resolve symbols against. The `.mcp.json` servers ground answers about Nuxt
+and this app's resolved config instead, as
+[setup-development-environment.md](setup-development-environment.md#ai-assistant-setup-mcp)
+describes.
 
-[Commit `.claude/settings.json` so the team gets the plugins](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#commit-claudesettingsjson-so-the-team-gets-the-plugins)
-still applies in full: the `iglootools` plugin is enabled in the committed
-`.claude/settings.json`, and any plugin added later is installed with
-`--scope project` the same way.
+**Retires when** a Vue/TS LSP plugin becomes available at project scope.
 
-## Project-wide deviations
+## Deviations
 
-The first three concern the shared 14-day `minimumReleaseAge` supply-chain
-measure and the dependency policy around it, defined in
-[dependency-automation.md](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md).
-The last concerns CI.
+### Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`
 
-Holding a dependency inside the range the Nuxt stack supports — TypeScript below
-6.1 — is not a deviation but a project decision, recorded as
-[ADR-012](architecture-decision-record.md#adr-012--follow-the-versions-the-nuxt-stack-supports).
+[renovate.json](../renovate.json) lifts the 14-day hold of the shared
+[base preset](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md#extend-the-shared-renovate-presets)
+for these updates. Its `description` fields give the reason.
 
-### Renovate exempts some update types from `minimumReleaseAge`
+**Retires:** never. Those updates carry no release timestamp, so the hold could
+never be satisfied.
 
-The shared rule is a 14-day hold on every release. `replacement` and `pin`
-updates, and `lockFileMaintenance`, are exempt in
-[renovate.json](../renovate.json).
-
-Rationale and scope are in the `description` fields there. In short: those
-updates carry no release timestamp, so the age check can never be satisfied and
-would leave the PR pending forever. This is structural rather than temporary —
-there is no condition that retires it — and it mirrors what
-`security:minimumReleaseAgeNpm` does for npm, applied to all datasources.
-
-### esbuild is overridden past the range `fontless` asks for
+### Override `esbuild` past the range `fontless` declares
 
 [pnpm-workspace.yaml](../pnpm-workspace.yaml) forces `esbuild` to `^0.28.2` for
-the whole tree, overriding a range a dependency declared. That is normally the
-wrong tool — it silently contradicts what upstream said it supports — and it is
-used here because the alternative is a security update that cannot happen at
-all.
+the whole tree to clear GHSA-g7r4-m6w7-qqqr, which `fontless`'s range otherwise
+makes impossible. It is the one exception to
+[ADR-012](architecture-decision-record.md#adr-012--follow-the-versions-the-nuxt-stack-supports),
+and the comment on the block gives the reason and the check.
 
-[GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr) is
-fixed in 0.28.1. `fontless@0.2.1` — reached through `@nuxt/fonts`, and the
-newest release of it there is — declares `esbuild: ^0.27.0`, so the highest
-version resolvable was 0.27.7. Dependabot does not open a PR it cannot satisfy —
-it fails the run with `security_update_not_possible`, which is how this was
-noticed. Waiting was not an option either: there is no newer `fontless` to
-upgrade to.
+**Retires when** `fontless` widens its range to admit 0.28. Delete the block
+then, rather than keep a floor upstream is managing itself.
 
-The override is narrow in effect. Every other consumer — Vite 8, `unplugin`,
-`@unhead/bundler` — already accepts 0.28, and 0.28.2 was already in the tree for
-Vite, so this removes a second copy rather than introducing a version. The
-reasoning, and why 0.28.0's "breaking" label does not apply to the API
-`fontless` uses, are in the comment on the block itself.
+### Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start
 
-**Retires when** `fontless` widens its range: check with
-`npm view fontless dependencies.esbuild`, then delete the block, run
-`pnpm install`, and confirm `grep -c 'esbuild@0.27' pnpm-lock.yaml` reports
-none. Leaving it in place after that would pin a floor upstream is managing
-itself — the same reason `content.experimental.sqliteConnector` is left unset,
-which the comment at that setting in [nuxt.config.ts](../nuxt.config.ts)
-explains.
+[.stackblitzrc](../.stackblitzrc) boots via npm, which cannot read
+`pnpm-lock.yaml`, so it resolves fresh from the `package.json` ranges on every
+boot and bypasses the 14-day hold entirely.
 
-### StackBlitz bypasses the 14-day delay
+**Why:** the hole is tolerable only because nothing can start that way:
+StackBlitz cannot run this project, as
+[setup-development-environment.md](setup-development-environment.md#stackblitz-does-not-currently-work)
+records.
 
-[.stackblitzrc](../.stackblitzrc) boots via npm, and npm cannot read
-`pnpm-lock.yaml`, so it resolves fresh from `package.json` ranges on every boot
-— bypassing `minimumReleaseAge` entirely.
+**Retires when** StackBlitz becomes able to run the project. Close the hole
+*before* anyone relies on it, not after.
 
-This is tolerable only because **nothing can actually start that way**;
-StackBlitz cannot run this project at all, for reasons documented at length in
-[setup-development-environment.md](setup-development-environment.md#stackblitz-does-not-currently-work).
-It is a genuine hole in the supply-chain measure, kept because it is currently
-unreachable.
+### Do not call the shared link checker until the docs need one
 
-**Retires when** StackBlitz becomes able to run the project — at which point
-this must be solved *before* anyone relies on it, not after.
-
-### No link checker is set up
-
-The shared rule is
+This overrides
 [Call the shared link checker instead of copying it](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md#call-the-shared-link-checker-instead-of-copying-it).
-photree, nbkp and network-infra all call it on a weekly schedule. This
-project does not call it at all.
 
+**Why:** 693 of the 759 links in tracked Markdown are in `content/` and point at
+third-party consumer sites, many of which block any non-interactive client. A
+weekly check would report on other people's websites, not on this repository.
 The measurements are in [link-checking.md](guidelines/link-checking.md).
 
-**Retires when** the engineering docs are worth checking on their own, which is
-the cheap version of this and needs no decision about `content/`. The shared
-workflow takes a `paths` input, so a stub scoped to `docs/**` and `README.md`
-covers those 66 instances and ignores the 693. Do that as soon as anything in
-`docs/` starts linking outward more heavily. Checking `content/` stays off the
-table until its links stop being predominantly third-party consumer sites.
+**Retires when** anything in `docs/` starts linking outward more heavily: call
+the shared workflow then with its `paths` input scoped to `docs/**` and
+`README.md`. Checking `content/` stays off the table until its links stop being
+predominantly third-party consumer sites.
 
-## Rules of this project's own
+## Record the dead ends, with a retest
 
-### Write down the dead ends, with a retest
-
-Where an investigation concludes that something cannot work, record the finding
-*and* the command that would prove it has changed, plus the signal to watch. The
-[StackBlitz section](setup-development-environment.md#stackblitz-does-not-currently-work)
-and
-[Why CodeSandbox is not listed](setup-development-environment.md#why-codesandbox-is-not-listed)
-are the worked examples. This is the same principle as naming the condition that
-retires an exception: it makes the conclusion re-evaluatable instead of
-something the next person has to rediscover from scratch.
-
-This applies beyond this file —
-[ADR-003](architecture-decision-record.md#adr-003--let-the-dev-container-run-ahead-of-the-ci-runner)
-names what retires it, and the `@nuxtjs/mdc` declaration in
-[divergence-from-the-template.md](divergence-from-the-template.md#toolchain--dependency-management-net-new)
-named both what to watch in the meantime and what retired it — and was rewritten
-as an ordinary dependency when that condition was met.
+Where an investigation concludes that something cannot work, record it as
+[types.md › How-to guide](https://github.com/iglootools/common/blob/main/guidelines/documentation/types.md#get-a-reader-who-knows-the-goal-through-one-task)
+describes, under "Record the dead ends".
