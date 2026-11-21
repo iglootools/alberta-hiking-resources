@@ -1,0 +1,16 @@
+{
+  // Formats the JSON, TOML and YAML; ESLint formats the code and rumdl the Markdown. See
+  // guidelines/project-setup/formatting.md in iglootools/common.
+  "excludes": [
+    // Written by pnpm, which rewrites it in its own style on every install.
+    "pnpm-lock.yaml",
+    // Generated, minified data for the region map, not configuration.
+    "app/assets/region-map.json"
+  ],
+  "plugins": [
+    "npm:@dprint/json@0.26.0",
+    "npm:@dprint/toml@0.10.0",
+    "npm:dprint-plugin-yaml@0.6.0",
+    "npm:@dprint/dockerfile@0.8.0"
+  ]
+}

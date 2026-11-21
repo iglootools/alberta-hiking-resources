@@ -1,0 +1,20 @@
+# rumdl's defaults, with only what it takes to make them usable. The reasoning is in
+# guidelines/project-setup/formatting.md in iglootools/common.
+
+[MD013]
+# Off by default, which leaves every long line a warning only a hand edit can fix. On, `rumdl fmt`
+# rewraps prose to the default 80 columns.
+reflow = true
+# A code block cannot be rewrapped without changing what it shows: a command, a config file, a
+# log line.
+code-blocks = false
+# A heading cannot be wrapped either, and its text is its anchor: shortening one to fit breaks
+# every link to it.
+headings = false
+
+[global]
+# The site's pages are MDC (Nuxt Content's Markdown with components: ::card-group blocks, #slot
+# lines, YAML props), which rumdl reads as plain Markdown, so its fixes could break the pages,
+# such as adding a space after a #slot as if it were a heading. Only the repository's own
+# documents are checked. Revisit if rumdl gains an MDC flavor.
+exclude = ["content/"]
