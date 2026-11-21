@@ -305,9 +305,9 @@ re-applied rather than reconstructed from the UI.
   shared
   [repository conventions](https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md#protect-the-default-branch-and-release-tags)
   describe: `main` cannot be deleted or force-pushed, changes go through a pull
-  request merged with a merge commit, and the `ci` check must pass first; `v*`
-  tags cannot be deleted or moved, so a published version keeps pointing at the
-  commit it was built from.
+  request merged with a merge commit, and the `preflight` check must pass first;
+  `v*` tags cannot be deleted or moved, so a published version keeps pointing at
+  the commit it was built from.
 
   ```bash
   gh api --method POST repos/iglootools/alberta-hiking-resources/rulesets --input - <<'JSON'
@@ -329,7 +329,7 @@ re-applied rather than reconstructed from the UI.
       { "type": "required_status_checks", "parameters": {
           "strict_required_status_checks_policy": false,
           "do_not_enforce_on_create": false,
-          "required_status_checks": [{ "context": "ci", "integration_id": 15368 }] } }
+          "required_status_checks": [{ "context": "preflight", "integration_id": 15368 }] } }
     ]
   }
   JSON
@@ -365,10 +365,10 @@ re-applied rather than reconstructed from the UI.
   # expect: ["refs/tags/v*"]
   ```
 
-  `ci` must keep reporting on every pull request. It runs on every push
-  (`on: push` in `ci.yml`), which covers pull request branches; a `paths` or
-  `branches` filter added there would leave the pull requests it skips
-  unmergeable.
+  `preflight` (the job in `ci.yml` that runs `ci-preflight`) must keep reporting
+  on every pull request. It runs on every push (`on: push` in `ci.yml`), which
+  covers pull request branches; a `paths` or `branches` filter added there would
+  leave the pull requests it skips unmergeable.
 
 ## Testing notes
 
