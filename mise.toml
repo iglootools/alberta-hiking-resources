@@ -12,7 +12,7 @@ uv = "0.13.7"
 # iglootools/common), run through uvx since this project has no Python environment. The
 # comment is what lets Renovate keep the release current, through the shared base preset.
 # renovate: datasource=github-tags depName=iglootools/common
-IGLOOTOOLS_VERSION = "v1.30.0"
+IGLOOTOOLS_VERSION = "v1.30.1"
 IGLOOTOOLS = "uvx --from git+https://github.com/iglootools/common@{{ env.IGLOOTOOLS_VERSION }} iglootools"
 
 [tasks.install]
