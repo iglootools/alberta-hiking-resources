@@ -51,12 +51,33 @@ run = "pnpm test"
 description = "Run CI pipeline"
 run = [
   { task = "install" },
+  { task = "format-check" },
   { task = "lint" },
   { task = "lint-shell" },
+  { task = "lint-markdown" },
   { task = "typecheck" },
   { task = "test" },
   { task = "build" },
 ]
+
+# dprint formats the JSON, TOML and YAML, rumdl the Markdown; ESLint formats the code as part of
+# `lint`. See guidelines/project-setup/formatting.md in iglootools/common.
+[tasks.format]
+description = "Format the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; see format-check to verify only)"
+run = [
+  "dprint fmt",
+  "rumdl fmt .",
+]
+
+# The formatters exit 0 whether or not they changed anything, so they cannot be the gate. rumdl's
+# check is lint-markdown, which reports what `rumdl fmt` would change along with what it cannot.
+[tasks.format-check]
+description = "Check that the JSON, TOML and YAML are formatted (fails instead of reformatting; fix with `mise run format`)"
+run = "dprint check"
+
+[tasks.lint-markdown]
+description = "Lint the Markdown with rumdl (configured in .rumdl.toml; fix what it can with `mise run format`)"
+run = "rumdl check ."
 
 [tasks.lint-shell]
 description = "Lint the tracked shell scripts with shellcheck"
