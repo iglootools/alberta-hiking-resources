@@ -2,6 +2,8 @@
   // Formats the JSON, TOML and YAML; ESLint formats the code and rumdl the Markdown. See
   // guidelines/project-setup/formatting.md in iglootools/common.
   "excludes": [
+    // Dependency locks mise writes for npm tools (npm:renovate), in its own style.
+    ".mise/locks/",
     // Written by pnpm, which rewrites it in its own style on every install.
     "pnpm-lock.yaml",
     // Generated, minified data for the region map, not configuration.
