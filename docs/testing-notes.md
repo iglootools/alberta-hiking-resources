@@ -6,8 +6,8 @@ Manual checks for the SEO / social-preview surface area.
 
 Content pages use auto-generated OG images via `nuxt-og-image` and the Takumi
 renderer, using the **`Docs` community template**
-(`app/components/OgImage/Docs.takumi.vue`). The landing page uses a custom static
-image (`public/images/og.png`) for a more branded social preview.
+(`app/components/OgImage/Docs.takumi.vue`). The landing page uses a custom
+static image (`public/images/og.png`) for a more branded social preview.
 
 > **The `Docs` template is _ejected_, and must stay ejected.** nuxt-og-image v6
 > only ships community templates for dev — production builds fail with
@@ -26,14 +26,16 @@ image (`public/images/og.png`) for a more branded social preview.
 > pnpm lint --fix app/components/OgImage/Docs.takumi.vue
 > ```
 >
-> See the official [Community Templates guide](https://nuxtseo.com/docs/og-image/guides/community-templates).
+> See the official
+> [Community Templates guide](https://nuxtseo.com/docs/og-image/guides/community-templates).
 
 ### Regenerating the landing page OG image
 
 1. Start the dev server: `mise run dev`
 2. Open browser DevTools and set the viewport to 1200x630
 3. Navigate to `http://localhost:3000`
-4. Take a screenshot of the viewport (DevTools > Run command > "Capture screenshot")
+4. Take a screenshot of the viewport (DevTools > Run command > "Capture
+   screenshot")
 5. Save as `public/images/og.png`
 
 > **Keep a safe margin.** X (Twitter) crops the `summary_large_image` card
@@ -58,16 +60,17 @@ image (`public/images/og.png`) for a more branded social preview.
 
 ## Sitemap and robots.txt
 
-Validate with the [Nuxt SEO Sitemap Validation Tool](https://nuxtseo.com/tools/xml-sitemap-validator).
+Validate with the
+[Nuxt SEO Sitemap Validation Tool](https://nuxtseo.com/tools/xml-sitemap-validator).
 
 Sitemap:
 
-- http://localhost:3000/sitemap.xml (dev)
-- https://www.alberta-hiking-resources.org/sitemap.xml (prod)
+- <http://localhost:3000/sitemap.xml> (dev)
+- <https://www.alberta-hiking-resources.org/sitemap.xml> (prod)
 
 robots:
 
-- http://localhost:3000/robots.txt (disallows indexing in development)
-- http://localhost:3000/robots.txt?mockProductionEnv (allows indexing, for
+- <http://localhost:3000/robots.txt> (disallows indexing in development)
+- <http://localhost:3000/robots.txt?mockProductionEnv> (allows indexing, for
   testing the production version of `robots.txt` in development)
-- https://www.alberta-hiking-resources.org/robots.txt (prod)
+- <https://www.alberta-hiking-resources.org/robots.txt> (prod)

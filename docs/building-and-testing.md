@@ -9,6 +9,9 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run install`    | Install dependencies (frozen lockfile)   |
 | `mise run dev`        | Start the Nuxt dev server                |
 | `mise run lint`       | Lint with ESLint                         |
+| `mise run format`     | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
+| `mise run format-check` | Check they are formatted (dprint check) |
+| `mise run lint-markdown` | Lint the Markdown with rumdl (`content/` excluded) |
 | `mise run typecheck`  | Run the Nuxt type check                  |
 | `mise run test`       | Run the trip report index tests          |
 | `mise run build`      | Build the Nuxt application               |
@@ -25,8 +28,10 @@ The sections below cover the build, lint, and CI tasks in more detail; see
 ## Linting and type checking
 
 ```bash
-mise run lint        # eslint .
-mise run typecheck   # nuxt typecheck
+mise run lint          # eslint .
+mise run format-check  # dprint check: JSON, TOML and YAML
+mise run lint-markdown # rumdl check: the repository's Markdown, not the MDC pages
+mise run typecheck     # nuxt typecheck
 ```
 
 ## Tests
@@ -36,12 +41,13 @@ mise run test        # node --test 'scripts/**/*.test.ts'
 ```
 
 The tests cover the trip report index under
-[scripts/trip-report-index/test/](../scripts/trip-report-index/test/), and mostly its failure
-paths: a scrape that degrades quietly is the failure that matters there, and it is the one a
-normal run cannot show. They use Node's built-in runner, so they add no dependency, and they
-never touch the network. Every collaborator a test needs to replace — the HTTP client, the
-clock, the environment, the directories — is a parameter, so tests pass a stub in rather than
-patching a module, and assert on the fields of the typed errors in
+[scripts/trip-report-index/test/](../scripts/trip-report-index/test/), and
+mostly its failure paths: a scrape that degrades quietly is the failure that
+matters there, and it is the one a normal run cannot show. They use Node's
+built-in runner, so they add no dependency, and they never touch the network.
+Every collaborator a test needs to replace — the HTTP client, the clock, the
+environment, the directories — is a parameter, so tests pass a stub in rather
+than patching a module, and assert on the fields of the typed errors in
 [errors.ts](../scripts/trip-report-index/errors.ts) rather than on message text.
 
 The Nuxt app itself has no tests.
@@ -63,13 +69,14 @@ mise run preview
 `mise run build` is the ordinary Nuxt build. The deployed site is built by
 `mise run build-pages` (`nuxt build --preset github_pages`), which is what
 [`publish.yml`](../.github/workflows/publish.yml) runs — see
-[releasing-and-publishing.md](releasing-and-publishing.md). The preset changes the
-Nitro output, so a plain `mise run build` is not what ships.
+[releasing-and-publishing.md](releasing-and-publishing.md). The preset changes
+the Nitro output, so a plain `mise run build` is not what ships.
 
 ## CI pipeline
 
-`mise run ci` runs the same sequence as the [`ci.yml`](../.github/workflows/ci.yml)
-workflow: `install` → `lint` → `typecheck` → `test` → `build`.
+`mise run ci` runs the same sequence as the
+[`ci.yml`](../.github/workflows/ci.yml) workflow: `install` → `lint` →
+`typecheck` → `test` → `build`.
 
 ## Bundling icon sets
 
@@ -103,76 +110,88 @@ mise run build-trip-index              # re-read the sources and rewrite the pag
 mise run build-trip-index -- --refresh # discard the HTTP cache first
 ```
 
-Responses are cached under `node_modules/.cache/trip-report-index`, so iterating on a
-parser costs nothing; `--refresh` is what an actual content refresh uses. A full read is
-around 2,200 requests, throttled, and takes a quarter of an hour. Most are individual
-reports read only because their index gives no region: Bob Spirko's and Golden Scrambles'
-for a locality line, Andrew Nugara's for his links to neighbouring reports, and On-Top's
-for the trailhead's coordinates. Another 294 read the federal gazetteer, and 14 the USGS
-one for the American side of the border, whose place-name positions place objectives by
-the placed ones around them — see
+Responses are cached under `node_modules/.cache/trip-report-index`, so iterating
+on a parser costs nothing; `--refresh` is what an actual content refresh uses. A
+full read is around 2,200 requests, throttled, and takes a quarter of an hour.
+Most are individual reports read only because their index gives no region: Bob
+Spirko's and Golden Scrambles' for a locality line, Andrew Nugara's for his
+links to neighbouring reports, and On-Top's for the trailhead's coordinates.
+Another 294 read the federal gazetteer, and 14 the USGS one for the American
+side of the border, whose place-name positions place objectives by the placed
+ones around them — see
 [ADR-007](architecture-decision-record.md#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)
-and [ADR-009](architecture-decision-record.md#adr-009--empty-the-catch-all-page-from-evidence-the-sources-already-publish).
+and
+[ADR-009](architecture-decision-record.md#adr-009--empty-the-catch-all-page-from-evidence-the-sources-already-publish).
 `--review-only` reports what would change without touching any page.
 
-The same run draws the region map the three section index pages show, from where the placed
-objectives are, and writes it as `app/assets/region-map.json` (the SVG map) and
-`public/region-map/regions.geojson` (the MapLibre map). Its land, lakes and borders are three
-Natural Earth files, read once and cached like everything else. The summary lists any region
-drawn too small to click easily — see
+The same run draws the region map the three section index pages show, from where
+the placed objectives are, and writes it as `app/assets/region-map.json` (the
+SVG map) and `public/region-map/regions.geojson` (the MapLibre map). Its land,
+lakes and borders are three Natural Earth files, read once and cached like
+everything else. The summary lists any region drawn too small to click easily —
+see
 [ADR-010](architecture-decision-record.md#adr-010--trial-two-region-map-renderers-side-by-side-svg-by-default).
 
 ### Annie Ouellet's YouTube channel needs an API key
 
-Six of the seven sources need nothing. The seventh, Annie Ouellet's channel, is read
-through the **YouTube Data API v3**, and the task **fails** unless `YOUTUBE_API_KEY` is
-set:
+Six of the seven sources need nothing. The seventh, Annie Ouellet's channel, is
+read through the **YouTube Data API v3**, and the task **fails** unless
+`YOUTUBE_API_KEY` is set:
 
 ```bash
 export YOUTUBE_API_KEY=...      # in your shell profile, not in the repo
 mise run build-trip-index -- --refresh
 ```
 
-Create the key at [console.cloud.google.com](https://console.cloud.google.com/apis/credentials)
-— a project, *YouTube Data API v3* enabled, an API key, no billing. One run costs about 7
-of the 10,000 free daily quota units, so it is effectively free.
+Create the key at
+[console.cloud.google.com](https://console.cloud.google.com/apis/credentials) —
+a project, *YouTube Data API v3* enabled, an API key, no billing. One run costs
+about 7 of the 10,000 free daily quota units, so it is effectively free.
 
-It is not scraped, and should not be: YouTube's `robots.txt` disallows `/youtubei/`, which
-is what the channel page's own pagination calls, and `/feeds/videos.xml`, which rules out
-the RSS feed. Scraping the channel page is allowed but reaches only the newest 30 of some
-270 videos. The API is the sanctioned route and the only complete one.
+It is not scraped, and should not be: YouTube's `robots.txt` disallows
+`/youtubei/`, which is what the channel page's own pagination calls, and
+`/feeds/videos.xml`, which rules out the RSS feed. Scraping the channel page is
+allowed but reaches only the newest 30 of some 270 videos. The API is the
+sanctioned route and the only complete one.
 
-The failure is deliberate, and it is a precondition rather than an error partway through:
-every source's preflight runs before the first request, so a missing key stops the run in
-the first second, having written nothing and fetched nothing. Carrying on without it would
-be worse than stopping — the other sources would scrape, every region page would be
-rewritten, and Annie's videos would quietly disappear from every one of them. A missing key
-is a broken refresh, not a smaller one.
+The failure is deliberate, and it is a precondition rather than an error partway
+through: every source's preflight runs before the first request, so a missing
+key stops the run in the first second, having written nothing and fetched
+nothing. Carrying on without it would be worse than stopping — the other sources
+would scrape, every region page would be rewritten, and Annie's videos would
+quietly disappear from every one of them. A missing key is a broken refresh, not
+a smaller one.
 
-`DEBUG=1` adds a stack trace, for a fault in the script rather than in the configuration.
+`DEBUG=1` adds a stack trace, for a fault in the script rather than in the
+configuration.
 
-It is deliberately **not** part of `mise run ci` or the build. The output is committed, so
-a blog being unreachable delays a refresh rather than breaking a deploy.
+It is deliberately **not** part of `mise run ci` or the build. The output is
+committed, so a blog being unreachable delays a refresh rather than breaking a
+deploy.
 
-Each run also writes `trip-report-review.md` at the repo root (gitignored). It opens with the
-objectives that are new on the catch-all page since the version the run replaced — what a
-refresh brought in, to place first — then lists the objectives nothing could place, the ones listed in more than one region, names split into separate mountains, the ones placed by inference
-alone (about one in ten of which is expected to be wrong), near-miss names that may be
-duplicates, and names written without their "Mount" or "Peak" beside the objective that has
-it. The last two are candidates for `ALIASES`, never merged automatically; a pair confirmed
-to be two places goes in `DISTINCT_NAMES` instead, so it is not offered again. It ends with
-every name dropped as out of scope and why, to catch a peak excluded by mistake. Work through it and record the decisions in
-[scripts/trip-report-index/curation.ts](../scripts/trip-report-index/curation.ts) — that
-file, and the blogs themselves, are the only correct places to fix a wrong entry. Editing a
-generated `.md` is pointless; the next run overwrites it.
+Each run also writes `trip-report-review.md` at the repo root (gitignored). It
+opens with the objectives that are new on the catch-all page since the version
+the run replaced — what a refresh brought in, to place first — then lists the
+objectives nothing could place, the ones listed in more than one region, names
+split into separate mountains, the ones placed by inference alone (about one in
+ten of which is expected to be wrong), near-miss names that may be duplicates,
+and names written without their "Mount" or "Peak" beside the objective that has
+it. The last two are candidates for `ALIASES`, never merged automatically; a
+pair confirmed to be two places goes in `DISTINCT_NAMES` instead, so it is not
+offered again. It ends with every name dropped as out of scope and why, to catch
+a peak excluded by mistake. Work through it and record the decisions in
+[scripts/trip-report-index/curation.ts](../scripts/trip-report-index/curation.ts)
+— that file, and the blogs themselves, are the only correct places to fix a
+wrong entry. Editing a generated `.md` is pointless; the next run overwrites it.
 
-If a source is redesigned, its adapter will usually return far fewer reports than before and
-the run fails with the count it expected. Fix the adapter rather than lowering the minimum
-in [sources/index.ts](../scripts/trip-report-index/sources/index.ts); that guard is what
-keeps a broken parser from silently emptying a region page.
+If a source is redesigned, its adapter will usually return far fewer reports
+than before and the run fails with the count it expected. Fix the adapter rather
+than lowering the minimum in
+[sources/index.ts](../scripts/trip-report-index/sources/index.ts); that guard is
+what keeps a broken parser from silently emptying a region page.
 
-The reasoning behind generating Markdown, and behind matching objective names exactly rather
-than fuzzily, is in
+The reasoning behind generating Markdown, and behind matching objective names
+exactly rather than fuzzily, is in
 [ADR-005](architecture-decision-record.md#adr-005--generate-the-by-objective-trip-report-index-into-markdown-and-match-objective-names-exactly).
 
 ## Dependency management
@@ -180,8 +199,9 @@ than fuzzily, is in
 [Renovate](https://github.com/apps/renovate/installations/select_target) keeps
 dependencies up to date. The GitHub app is installed on the repository; its
 behavior is configured in [renovate.json](../renovate.json) (grouped "all"
-updates, 14-day minimum age). The [`renovate-mise-lock.yml`](../.github/workflows/renovate-mise-lock.yml)
-workflow keeps the mise lock in sync with Renovate's updates.
+updates, 14-day minimum age). The
+[`renovate-mise-lock.yml`](../.github/workflows/renovate-mise-lock.yml) workflow
+keeps the mise lock in sync with Renovate's updates.
 
 Grouping and the 14-day `minimumReleaseAge` come from the shared
 [dependency automation guidelines](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md),
@@ -190,47 +210,50 @@ where the reasoning is written up.
 ### Renovate and Dependabot are split by job, not by ecosystem
 
 The 14-day delay is a supply-chain measure and it works by *waiting*. Waiting is
-exactly the wrong response to a published advisory, where the fix is already known.
-So the two tools run at opposite latencies over the same ecosystems:
+exactly the wrong response to a published advisory, where the fix is already
+known. So the two tools run at opposite latencies over the same ecosystems:
 
 | Tool | Handles | Latency |
 |---|---|---|
 | Renovate ([renovate.json](../renovate.json)) | routine version updates, grouped into one PR | delayed 14 days |
 | Dependabot ([dependabot.yml](../.github/dependabot.yml)) | security updates only | immediate |
 
-`open-pull-requests-limit: 0` is what implements the split: it switches off Dependabot's
-*version* updates, and security PRs are exempt from that limit. Letting both tools
-propose versions would mean duplicate PRs, half of which ignore the 14-day delay.
+`open-pull-requests-limit: 0` is what implements the split: it switches off
+Dependabot's *version* updates, and security PRs are exempt from that limit.
+Letting both tools propose versions would mean duplicate PRs, half of which
+ignore the 14-day delay.
 
-**The config file is only half the setup.** Dependabot security updates are *repository
-settings*, and `dependabot.yml` cannot switch them on — a repo with the file committed
-and those settings off looks configured while watching nothing. They are enabled here;
-see [Github Config](#github-config) below for the commands and how to verify.
+**The config file is only half the setup.** Dependabot security updates are
+*repository settings*, and `dependabot.yml` cannot switch them on — a repo with
+the file committed and those settings off looks configured while watching
+nothing. They are enabled here; see [Github Config](#github-config) below for
+the commands and how to verify.
 
 Two traps worth knowing, both silent. `target-branch` must stay out of
-`dependabot.yml` — pointing it at a non-default branch disables security updates for
-that ecosystem. And `package-ecosystem` must match what the lockfile actually is:
-`npm` is the correct value for pnpm (there is no `pnpm` value), and a mismatch does not
-error, it just finds nothing and reports green.
+`dependabot.yml` — pointing it at a non-default branch disables security updates
+for that ecosystem. And `package-ecosystem` must match what the lockfile
+actually is: `npm` is the correct value for pnpm (there is no `pnpm` value), and
+a mismatch does not error, it just finds nothing and reports green.
 
 ### Further reading
 
 See also the shared
 [GitHub Workflows guidelines](https://github.com/iglootools/common/blob/main/guidelines/project-setup/workflows.md)
-for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules the
-workflows here follow.
+for the `workflow_dispatch`, lockable-mise-backend, and `timeout-minutes` rules
+the workflows here follow.
 
 ## GitHub Config
 
-One-time repository settings, none of which live in the repo. Each is recorded as the command
-that applies it and the command that verifies it, so it can be re-applied rather than
-reconstructed from the UI.
+One-time repository settings, none of which live in the repo. Each is recorded
+as the command that applies it and the command that verifies it, so it can be
+re-applied rather than reconstructed from the UI.
 
 - **Enable Dependabot security updates.** These are *repository settings*, and
-  [.github/dependabot.yml](../.github/dependabot.yml) cannot switch them on — that file only
-  shapes the resulting PRs and restricts Dependabot to the security half
-  (`open-pull-requests-limit: 0`, because Renovate owns routine version updates and delays them
-  14 days; see [Dependency management](#dependency-management) above). A repo with the file
+  [.github/dependabot.yml](../.github/dependabot.yml) cannot switch them on —
+  that file only shapes the resulting PRs and restricts Dependabot to the
+  security half (`open-pull-requests-limit: 0`, because Renovate owns routine
+  version updates and delays them 14 days; see
+  [Dependency management](#dependency-management) above). A repo with the file
   committed and these settings off looks configured while watching nothing:
 
     ```bash
@@ -238,25 +261,27 @@ reconstructed from the UI.
     gh api -X PUT repos/iglootools/alberta-hiking-resources/automated-security-fixes
     ```
 
-    Both are required, and they are separate switches: `vulnerability-alerts` is what notices a
-    vulnerable dependency, `automated-security-fixes` is what opens the fix PR. Alerts alone
-    give a Security tab entry and no PR — the easy state to land in by accident, since alerts
-    are the more discoverable of the two.
+  Both are required, and they are separate switches: `vulnerability-alerts` is
+  what notices a vulnerable dependency, `automated-security-fixes` is what opens
+  the fix PR. Alerts alone give a Security tab entry and no PR — the easy state
+  to land in by accident, since alerts are the more discoverable of the two.
 
-    Each `PUT` returns `204 No Content` and prints nothing, so verify rather than assume:
+  Each `PUT` returns `204 No Content` and prints nothing, so verify rather than
+  assume:
 
     ```bash
     gh api repos/iglootools/alberta-hiking-resources/vulnerability-alerts -i | head -1   # expect HTTP/2.0 204
     gh api repos/iglootools/alberta-hiking-resources/automated-security-fixes            # expect "enabled": true
     ```
 
-    A `404` from the first is the disabled state, not a missing endpoint. Undo with the same two
-    URLs and `-X DELETE`. Needs admin on the repository; the dependency graph is a prerequisite
-    and is on by default for public repositories.
-- **GitHub Pages builds from GitHub Actions** (Settings → Pages → Source), which is what lets
-  [`publish.yml`](../.github/workflows/publish.yml) deploy the site — see
-  [releasing-and-publishing.md](releasing-and-publishing.md). Create the Pages site with that
-  source, or switch an existing one:
+  A `404` from the first is the disabled state, not a missing endpoint. Undo
+  with the same two URLs and `-X DELETE`. Needs admin on the repository; the
+  dependency graph is a prerequisite and is on by default for public
+  repositories.
+- **GitHub Pages builds from GitHub Actions** (Settings → Pages → Source), which
+  is what lets [`publish.yml`](../.github/workflows/publish.yml) deploy the site
+  — see [releasing-and-publishing.md](releasing-and-publishing.md). Create the
+  Pages site with that source, or switch an existing one:
 
     ```bash
     gh api --method POST repos/iglootools/alberta-hiking-resources/pages -f build_type=workflow   # no Pages site yet
@@ -265,19 +290,21 @@ reconstructed from the UI.
     ```
 
 - **Private vulnerability reporting is on**, so the channel the organization's
-  [security policy](https://github.com/iglootools/.github/blob/main/SECURITY.md) points reporters
-  at actually exists. It is off by default:
+  [security policy](https://github.com/iglootools/.github/blob/main/SECURITY.md)
+  points reporters at actually exists. It is off by default:
 
     ```bash
     gh api --method PUT repos/iglootools/alberta-hiking-resources/private-vulnerability-reporting
     gh api repos/iglootools/alberta-hiking-resources/private-vulnerability-reporting -q .enabled   # expect true
     ```
 
-- **Protect `main` and the release tags with rulesets.** Configured as the shared
+- **Protect `main` and the release tags with rulesets.** Configured as the
+  shared
   [repository conventions](https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md#protect-the-default-branch-and-release-tags)
-  describe: `main` cannot be deleted or force-pushed, changes go through a pull request
-  merged with a merge commit, and the `ci` check must pass first; `v*` tags cannot be
-  deleted or moved, so a published version keeps pointing at the commit it was built from.
+  describe: `main` cannot be deleted or force-pushed, changes go through a pull
+  request merged with a merge commit, and the `ci` check must pass first; `v*`
+  tags cannot be deleted or moved, so a published version keeps pointing at the
+  commit it was built from.
 
   ```bash
   gh api --method POST repos/iglootools/alberta-hiking-resources/rulesets --input - <<'JSON'
@@ -316,8 +343,9 @@ reconstructed from the UI.
   ```
 
   To change an existing ruleset, `PUT` the same payload to
-  `repos/iglootools/alberta-hiking-resources/rulesets/<id>` (ids from `gh api repos/iglootools/alberta-hiking-resources/rulesets`).
-  Verify what GitHub actually enforces — an `active` ruleset with an empty `include` list
+  `repos/iglootools/alberta-hiking-resources/rulesets/<id>` (ids from
+  `gh api repos/iglootools/alberta-hiking-resources/rulesets`). Verify what
+  GitHub actually enforces — an `active` ruleset with an empty `include` list
   protects nothing and looks enabled all the same:
 
   ```bash
@@ -325,7 +353,8 @@ reconstructed from the UI.
   # expect: ["deletion","non_fast_forward","pull_request","required_status_checks"]
   ```
 
-  The tag ruleset has no equivalent endpoint, so read its `include` back instead:
+  The tag ruleset has no equivalent endpoint, so read its `include` back
+  instead:
 
   ```bash
   id=$(gh api repos/iglootools/alberta-hiking-resources/rulesets -q '.[] | select(.name == "release tags") | .id')
@@ -333,9 +362,10 @@ reconstructed from the UI.
   # expect: ["refs/tags/v*"]
   ```
 
-  `ci` must keep reporting on every pull request. It runs on every push (`on: push` in
-  `ci.yml`), which covers pull request branches; a `paths` or `branches` filter added there
-  would leave the pull requests it skips unmergeable.
+  `ci` must keep reporting on every pull request. It runs on every push
+  (`on: push` in `ci.yml`), which covers pull request branches; a `paths` or
+  `branches` filter added there would leave the pull requests it skips
+  unmergeable.
 
 ## Testing notes
 

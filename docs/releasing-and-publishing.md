@@ -9,27 +9,30 @@ A release is **started by hand**, and everything after that is automatic:
 
 1. [`release.yml`](../.github/workflows/release.yml) is dispatched manually
    (`gh workflow run release.yml`). It runs
-   [semantic-release](https://github.com/semantic-release/semantic-release), configured in
-   [.releaserc.json](../.releaserc.json) with `branches: ["main"]`, which analyses the commits
-   and creates a version tag.
-2. [`publish.yml`](../.github/workflows/publish.yml) then runs `mise run build-pages`
-   (`nuxt build --preset github_pages`) and deploys the result to GitHub Pages.
+   [semantic-release](https://github.com/semantic-release/semantic-release),
+   configured in [.releaserc.json](../.releaserc.json) with
+   `branches: ["main"]`, which analyses the commits and creates a version tag.
+2. [`publish.yml`](../.github/workflows/publish.yml) then runs
+   `mise run build-pages` (`nuxt build --preset github_pages`) and deploys the
+   result to GitHub Pages.
 
-**The push trigger is deliberately commented out** in `release.yml`, so merging to `main` does
-*not* cut a release on its own. Uncomment the `push: branches: [main]` block to make releases
-automatic.
+**The push trigger is deliberately commented out** in `release.yml`, so merging
+to `main` does *not* cut a release on its own. Uncomment the
+`push: branches: [main]` block to make releases automatic.
 
-What links step 1 to step 2 is worth knowing, because the obvious reading is wrong. `publish.yml`
-does listen for `push: tags: ['v*']`, but a tag created by a workflow using `GITHUB_TOKEN` does
-not trigger other workflows — so that path never fires for an automated release. The one that
-actually fires is `workflow_run` on **release** completing. The tag trigger is what covers a tag
+What links step 1 to step 2 is worth knowing, because the obvious reading is
+wrong. `publish.yml` does listen for `push: tags: ['v*']`, but a tag created by
+a workflow using `GITHUB_TOKEN` does not trigger other workflows — so that path
+never fires for an automated release. The one that actually fires is
+`workflow_run` on **release** completing. The tag trigger is what covers a tag
 pushed by hand.
 
 ## GitHub configuration
 
-GitHub Pages has to be the deployment target for `publish.yml` to deploy anywhere: its source
-must be **GitHub Actions**. That setting, and every other repository setting this project depends
-on, is recorded with the commands that apply and verify it under
+GitHub Pages has to be the deployment target for `publish.yml` to deploy
+anywhere: its source must be **GitHub Actions**. That setting, and every other
+repository setting this project depends on, is recorded with the commands that
+apply and verify it under
 [GitHub Config](building-and-testing.md#github-config).
 
 ## Running them by hand
@@ -50,5 +53,6 @@ gh run list --workflow publish.yml
 
 ## Further reading
 
-- Nuxt [deployment documentation](https://nuxt.com/docs/getting-started/deployment)
+- Nuxt
+  [deployment documentation](https://nuxt.com/docs/getting-started/deployment)
 - Nuxt [GitHub Pages integration](https://nuxt.com/deploy/github-pages)

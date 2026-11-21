@@ -3,7 +3,7 @@ name: publish
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   # Tags created by a workflow using GITHUB_TOKEN do not trigger other workflows,
   # so we use workflow_run to publish after the release workflow creates a tag.
   workflow_run:

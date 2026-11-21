@@ -3,6 +3,8 @@
     "nuxt.mdc",
     "Vue.volar",
     "dbaeumer.vscode-eslint",
-    "hverlin.mise-vscode"
+    "hverlin.mise-vscode",
+    "dprint.dprint",
+    "rvben.rumdl"
   ]
 }
