@@ -57,7 +57,7 @@ run = [
 ]
 
 [tasks.ci-preflight]
-description = "Install, run every lint and test, then build (what the ci workflow runs)"
+description = "Install, run every lint and test, then build (what the preflight workflow runs)"
 run = [
   { task = "install" },
   { task = "preflight" },

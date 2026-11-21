@@ -1,4 +1,4 @@
-name: ci
+name: preflight
 
 on: push
 
