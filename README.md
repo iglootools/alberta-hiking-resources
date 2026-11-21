@@ -1,7 +1,7 @@
 # Alberta Hiking Resources
 
 ![License](https://img.shields.io/github/license/iglootools/alberta-hiking-resources)
-![CI Status](https://github.com/iglootools/alberta-hiking-resources/actions/workflows/ci.yml/badge.svg?branch=main)
+![CI Status](https://github.com/iglootools/alberta-hiking-resources/actions/workflows/preflight.yml/badge.svg?branch=main)
 
 Find your way in the jungle of FB and Meetup groups. Hiking Partners.
 Information. Ideas.

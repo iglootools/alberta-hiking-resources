@@ -8,7 +8,7 @@ on:
   repository_dispatch:
 
 concurrency:
-  # Deliberately unlike ci.yml: this workflow mutates state outside the repository and is
+  # Deliberately unlike preflight.yml: this workflow mutates state outside the repository and is
   # neither idempotent nor reversible, so it must never be cancelled part-way through. A
   # second run queues behind the one in flight instead of killing it.
   #

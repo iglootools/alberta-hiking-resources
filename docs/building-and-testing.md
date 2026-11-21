@@ -78,8 +78,8 @@ the Nitro output, so a plain `mise run build` is not what ships.
 ## CI pipeline
 
 `mise run ci-preflight` runs the same sequence as the
-[`ci.yml`](../.github/workflows/ci.yml) workflow: `install` → `preflight`
-(every lint, then `test`) → `build`.
+[`preflight.yml`](../.github/workflows/preflight.yml) workflow: `install` →
+`preflight` (every lint, then `test`) → `build`.
 
 ## Bundling icon sets
 
@@ -365,10 +365,10 @@ re-applied rather than reconstructed from the UI.
   # expect: ["refs/tags/v*"]
   ```
 
-  `preflight` (the job in `ci.yml` that runs `ci-preflight`) must keep reporting
-  on every pull request. It runs on every push (`on: push` in `ci.yml`), which
-  covers pull request branches; a `paths` or `branches` filter added there would
-  leave the pull requests it skips unmergeable.
+  `preflight` (the job in `preflight.yml` that runs `ci-preflight`) must keep
+  reporting on every pull request. It runs on every push (`on: push` in
+  `preflight.yml`), which covers pull request branches; a `paths` or `branches`
+  filter added there would leave the pull requests it skips unmergeable.
 
 ## Testing notes
 
