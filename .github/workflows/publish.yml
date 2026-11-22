@@ -11,9 +11,15 @@ on:
     types:
       - completed
   # Can be re-triggered manually if needed using:
-  # gh workflow run publish.yml --ref <tag>
+  # gh workflow run publish.yml -f tag=<tag>
+  # (not --ref <tag>: the github-pages environment accepts only main)
   # gh run list --workflow publish.yml
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to deploy, such as v1.2.0. Defaults to the v* tag on the dispatched commit.
+        type: string
+        required: false
   repository_dispatch:
 
 concurrency:
@@ -43,22 +49,56 @@ jobs:
           fetch-tags: true
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      # Build the release tag, never whatever the branch head has become: a manual re-run
+      # from main after a newer merge would otherwise deploy that commit under the release's
+      # name. A `release` run also completes successfully when it released nothing (a dry run,
+      # a run dispatched on another branch), and only a commit carrying a v* tag was released.
+      # See "Build what a release triggers from its tag" in
+      # guidelines/project-setup/workflows.md in iglootools/common.
+      - name: Check out the release tag
+        id: release
+        env:
+          EVENT: ${{ github.event_name }}
+          REQUESTED: ${{ inputs.tag || github.event.client_payload.tag }}
+        run: |
+          if [ -n "$REQUESTED" ]; then
+            tag=$REQUESTED
+          elif ! tag=$(git describe --exact-match --tags --match 'v*' HEAD 2>/dev/null); then
+            if [ "$EVENT" = workflow_run ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::$(git rev-parse --short HEAD) carries no v* tag, so the release run did not release. Nothing to deploy."
+              exit 0
+            fi
+            echo "::error::$(git rev-parse --short HEAD) carries no v* tag. Dispatch with -f tag=vX.Y.Z, or --ref vX.Y.Z."
+            exit 1
+          fi
+          if [[ ! $tag =~ ^v[0-9] ]] || ! git rev-parse -q --verify "refs/tags/$tag^{commit}" >/dev/null; then
+            echo "::error::$tag is not a release tag of this repository."
+            exit 1
+          fi
+          git checkout -q --detach "refs/tags/$tag"
+          echo "Deploying $tag ($(git rev-parse --short HEAD))"
+
       - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5
+        if: steps.release.outputs.skip != 'true'
         with:
           # renovate: datasource=github-releases depName=jdx/mise
           version: 2026.11.12
 
       - run: mise run build-pages
+        if: steps.release.outputs.skip != 'true'
 
       # The old deploy.sh used `gh-pages --dotfiles --nojekyll -d .output/public` to push to a gh-pages branch.
       # --nojekyll created a .nojekyll file so GitHub Pages wouldn't ignore _nuxt/ directories,
       # and --dotfiles ensured .nojekyll itself was included.
       # With actions/deploy-pages, Jekyll is bypassed entirely, so neither flag is needed.
       - name: Upload Pages artifact
+        if: steps.release.outputs.skip != 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: .output/public
 
       - name: Deploy to GitHub Pages
+        if: steps.release.outputs.skip != 'true'
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
