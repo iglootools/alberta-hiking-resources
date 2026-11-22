@@ -101,6 +101,7 @@ run = [
   { task = "lint-markdown" },
   { task = "lint-types" },
   { task = "lint-renovate" },
+  { task = "lint-common-pins" },
 ]
 
 # The formatters exit 0 whether or not they changed anything, so they cannot be the gate. rumdl
@@ -125,6 +126,12 @@ run = "pnpm typecheck"
 [tasks.lint-shell]
 description = "Lint the tracked shell scripts with shellcheck"
 run = "$IGLOOTOOLS shell lint"
+
+# Every pin on iglootools/common names the same release, and `iglootools common adopt` would
+# move each one (guidelines/project-setup/iglootools-cli.md in iglootools/common).
+[tasks.lint-common-pins]
+description = "Check that every pin on iglootools/common agrees (fix with `iglootools common adopt`)"
+run = "$IGLOOTOOLS common check-pins"
 
 [tasks.update]
 description = "Update all dependencies to latest versions"

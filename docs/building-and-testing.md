@@ -15,6 +15,7 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run lint-fmt`   | Check they are formatted (dprint check)  |
 | `mise run lint-markdown` | Lint the Markdown with rumdl (`content/` excluded) |
 | `mise run lint-renovate` | Validate `renovate.json` with Renovate's validator, strictly |
+| `mise run lint-common-pins` | Check that every pin on iglootools/common agrees |
 | `mise run renovate-dry-run` | List the updates Renovate would propose, writing nothing (needs `gh auth`) |
 | `mise run lint-types` | Run the Nuxt type check                  |
 | `mise run test`       | Run the trip report index tests          |
