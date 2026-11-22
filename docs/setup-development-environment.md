@@ -10,6 +10,25 @@ that nobody has to rediscover it.
 | [Local](#local-setup) | Your own machine | Install mise | Everything |
 | [StackBlitz](#stackblitz-does-not-currently-work) | Node compiled to WebAssembly, in a browser tab | — | **Nothing — blocked** |
 
+<!-- toc -->
+**On this page**
+
+- [Dev container (Codespaces, local Docker)](#dev-container-codespaces-local-docker)
+  - [Why CodeSandbox is not listed](#why-codesandbox-is-not-listed)
+- [Local setup](#local-setup)
+  - [Prerequisites](#prerequisites)
+  - [Install and run](#install-and-run)
+  - [Environment variables](#environment-variables)
+- [StackBlitz (does not currently work)](#stackblitz-does-not-currently-work)
+- [Editor setup](#editor-setup)
+  - [VS Code](#vs-code)
+- [AI assistant setup (MCP)](#ai-assistant-setup-mcp)
+  - [Available servers](#available-servers)
+  - [Claude Code](#claude-code)
+  - [VS Code (native / Copilot)](#vs-code-native--copilot)
+- [Next steps](#next-steps)
+<!-- tocstop -->
+
 ## Dev container (Codespaces, local Docker)
 
 **[Open in GitHub Codespaces →](https://codespaces.new/iglootools/alberta-hiking-resources)**

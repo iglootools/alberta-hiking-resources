@@ -11,6 +11,17 @@ a diff. Decisions that are not about the template belong in
 [architecture-decision-record.md](architecture-decision-record.md); the stack
 itself is described in [architecture.md](architecture.md).
 
+<!-- toc -->
+**On this page**
+
+- [SEO / discoverability stack (added modules)](#seo--discoverability-stack-added-modules)
+- [Toolchain & dependency management (net-new)](#toolchain--dependency-management-net-new)
+- [Other `nuxt.config.ts` tweaks](#other-nuxtconfigts-tweaks)
+- [Content, components & docs](#content-components--docs)
+- [Visual identity](#visual-identity)
+- [Licence: CC BY-SA 4.0, not the template's MIT or the org's Apache 2.0](#licence-cc-by-sa-40-not-the-templates-mit-or-the-orgs-apache-20)
+<!-- tocstop -->
+
 ## SEO / discoverability stack (added modules)
 
 - Added `@nuxtjs/sitemap`, `@nuxtjs/robots`, and `@nuxt/fonts` to

@@ -11,6 +11,18 @@ describes, and are indexed below. Decisions about the stack are in the
 app follows its upstream template in
 [divergence-from-the-template.md](divergence-from-the-template.md).
 
+<!-- toc -->
+**On this page**
+
+- [Leave the Python guidelines out of scope](#leave-the-python-guidelines-out-of-scope)
+- [Deviations](#deviations)
+  - [Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`](#exempt-replacement-pin-and-lock-file-maintenance-updates-from-minimumreleaseage)
+  - [Override `esbuild` past the range `fontless` declares](#override-esbuild-past-the-range-fontless-declares)
+  - [Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start](#tolerate-stackblitz-bypassing-minimumreleaseage-while-it-cannot-start)
+  - [Do not call the shared link checker until the docs need one](#do-not-call-the-shared-link-checker-until-the-docs-need-one)
+- [Record the dead ends, with a retest](#record-the-dead-ends-with-a-retest)
+<!-- tocstop -->
+
 ## Leave the Python guidelines out of scope
 
 Nothing here is Python, so these shared sections do not apply:

@@ -1,5 +1,23 @@
 # Building and Testing
 
+<!-- toc -->
+**On this page**
+
+- [Task reference](#task-reference)
+- [Linting and type checking](#linting-and-type-checking)
+- [Tests](#tests)
+- [Building](#building)
+- [CI pipeline](#ci-pipeline)
+- [Bundling icon sets](#bundling-icon-sets)
+- [Rebuilding the trip report index](#rebuilding-the-trip-report-index)
+  - [Annie Ouellet's YouTube channel needs an API key](#annie-ouellets-youtube-channel-needs-an-api-key)
+- [Dependency management](#dependency-management)
+  - [Renovate and Dependabot are split by job, not by ecosystem](#renovate-and-dependabot-are-split-by-job-not-by-ecosystem)
+  - [Further reading](#further-reading)
+- [GitHub Config](#github-config)
+- [Testing notes](#testing-notes)
+<!-- tocstop -->
+
 ## Task reference
 
 The `mise` tasks wrap the underlying `pnpm` scripts:
