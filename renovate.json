@@ -5,7 +5,7 @@
   "extends": [
     "github>nuxt/renovate-config-nuxt",
     "group:all",
-    "github>iglootools/common//renovate/base#v1.34.0"
+    "github>iglootools/common//renovate/base#v1.34.1"
   ],
   "packageRules": [
     {
