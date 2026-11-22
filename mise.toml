@@ -102,6 +102,7 @@ run = [
   { task = "lint-types" },
   { task = "lint-renovate" },
   { task = "lint-common-pins" },
+  { task = "lint-toc" },
 ]
 
 # The formatters exit 0 whether or not they changed anything, so they cannot be the gate. rumdl
@@ -126,6 +127,17 @@ run = "pnpm typecheck"
 [tasks.lint-shell]
 description = "Lint the tracked shell scripts with shellcheck"
 run = "$IGLOOTOOLS shell lint"
+
+# Every Markdown document longer than two screens carries a generated table of contents
+# (guidelines/documentation/layout.md in iglootools/common). The site's pages under content/
+# go without one: app/pages/[...slug].vue renders its own.
+[tasks.toc]
+description = "Add and regenerate the tables of contents in the Markdown docs"
+run = "$IGLOOTOOLS docs toc --exclude 'content/**'"
+
+[tasks.lint-toc]
+description = "Check that every Markdown document has an up-to-date table of contents (fix with `mise run toc`)"
+run = "$IGLOOTOOLS docs toc --check --exclude 'content/**'"
 
 # Every pin on iglootools/common names the same release, and `iglootools common adopt` would
 # move each one (guidelines/project-setup/iglootools-cli.md in iglootools/common).
