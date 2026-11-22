@@ -5,7 +5,7 @@ Where this project departs from the shared
 and which of their sections do not apply. Read it before any change: it
 overrides the shared guidelines where the two conflict. Departures that apply at
 one place are comments there, as
-[Documented Exceptions](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md#documented-exceptions)
+[Documented Exceptions](https://github.com/iglootools/common/blob/main/guidelines/applying-the-guidelines.md#documented-exceptions)
 describes, and are indexed below. Decisions about the stack are in the
 [architecture decision record](architecture-decision-record.md), and how far the
 app follows its upstream template in
