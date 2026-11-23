@@ -19,7 +19,6 @@ app follows its upstream template in
   - [Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`](#exempt-replacement-pin-and-lock-file-maintenance-updates-from-minimumreleaseage)
   - [Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start](#tolerate-stackblitz-bypassing-minimumreleaseage-while-it-cannot-start)
   - [Do not call the shared link checker until the docs need one](#do-not-call-the-shared-link-checker-until-the-docs-need-one)
-- [Record the dead ends, with a retest](#record-the-dead-ends-with-a-retest)
 <!-- tocstop -->
 
 ## Leave the Python guidelines out of scope
@@ -79,9 +78,3 @@ The measurements are in [link-checking.md](guidelines/link-checking.md).
 the shared workflow then with its `paths` input scoped to `docs/**` and
 `README.md`. Checking `content/` stays off the table until its links stop being
 predominantly third-party consumer sites.
-
-## Record the dead ends, with a retest
-
-Where an investigation concludes that something cannot work, record it as
-[types.md › How-to guide](https://github.com/iglootools/common/blob/main/guidelines/documentation/types.md#get-a-reader-who-knows-the-goal-through-one-task)
-describes, under "Record the dead ends".
