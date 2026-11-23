@@ -1036,9 +1036,8 @@ moves — not ahead of it.
   forced through with an override.
 - **The exception is a security fix the stack cannot take yet.** `esbuild` is
   overridden past the range `fontless` (via `@nuxt/fonts`) declares, because the
-  advisory has no fix inside that range and no newer `fontless` exists. It is a
-  documented deviation in
-  [guidelines.md](guidelines.md#override-esbuild-past-the-range-fontless-declares),
-  narrow, and retires when `fontless` widens its range — the override is the
-  exception that proves the rule, not a precedent for upgrading ahead of the
-  stack.
+  advisory has no fix inside that range and no newer `fontless` exists. The
+  comment on the override in [pnpm-workspace.yaml](../pnpm-workspace.yaml)
+  gives the reason and the check. It is narrow, and retires when `fontless`
+  widens its range — the override is the exception that proves the rule, not a
+  precedent for upgrading ahead of the stack.

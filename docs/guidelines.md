@@ -17,7 +17,6 @@ app follows its upstream template in
 - [Leave the Python guidelines out of scope](#leave-the-python-guidelines-out-of-scope)
 - [Deviations](#deviations)
   - [Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`](#exempt-replacement-pin-and-lock-file-maintenance-updates-from-minimumreleaseage)
-  - [Override `esbuild` past the range `fontless` declares](#override-esbuild-past-the-range-fontless-declares)
   - [Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start](#tolerate-stackblitz-bypassing-minimumreleaseage-while-it-cannot-start)
   - [Do not call the shared link checker until the docs need one](#do-not-call-the-shared-link-checker-until-the-docs-need-one)
 - [Record the dead ends, with a retest](#record-the-dead-ends-with-a-retest)
@@ -51,17 +50,6 @@ for these updates. Its `description` fields give the reason.
 
 **Retires:** never. Those updates carry no release timestamp, so the hold could
 never be satisfied.
-
-### Override `esbuild` past the range `fontless` declares
-
-[pnpm-workspace.yaml](../pnpm-workspace.yaml) forces `esbuild` to `^0.28.2` for
-the whole tree to clear GHSA-g7r4-m6w7-qqqr, which `fontless`'s range otherwise
-makes impossible. It is the one exception to
-[ADR-012](architecture-decision-record.md#adr-012--follow-the-versions-the-nuxt-stack-supports),
-and the comment on the block gives the reason and the check.
-
-**Retires when** `fontless` widens its range to admit 0.28. Delete the block
-then, rather than keep a floor upstream is managing itself.
 
 ### Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start
 
