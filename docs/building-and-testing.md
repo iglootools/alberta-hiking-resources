@@ -30,7 +30,7 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run lint`       | Run every lint below                     |
 | `mise run lint-eslint` | Lint the code with ESLint                |
 | `mise run fmt`        | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
-| `mise run lint-fmt`   | Check they are formatted (dprint check)  |
+| `mise run lint-fmt`   | Check they are formatted (runs `lint-fmt-dprint`) |
 | `mise run lint-markdown` | Lint the Markdown with rumdl (`content/` excluded) |
 | `mise run lint-renovate` | Validate `renovate.json` with Renovate's validator, strictly |
 | `mise run lint-common-pins` | Check that every pin on iglootools/common agrees |
@@ -53,7 +53,7 @@ The sections below cover the build, lint, and CI tasks in more detail; see
 ```bash
 mise run lint          # every lint below
 mise run lint-eslint   # eslint .
-mise run lint-fmt      # dprint check: JSON, TOML and YAML
+mise run lint-fmt      # every lint-fmt-*: dprint check on the JSON, TOML and YAML
 mise run lint-markdown # rumdl check: the repository's Markdown, not the MDC pages
 mise run lint-types    # nuxt typecheck
 ```

@@ -126,7 +126,13 @@ run = [
 # has no lint-fmt-* of its own: lint-markdown reports what `rumdl fmt` would change along with
 # what it cannot fix.
 [tasks.lint-fmt]
-description = "Check that the JSON, TOML and YAML are formatted (fix with `mise run fmt-dprint`)"
+description = "Check that the JSON, TOML and YAML are formatted (fix with `mise run fmt`)"
+run = [
+  { task = "lint-fmt-dprint" },
+]
+
+[tasks.lint-fmt-dprint]
+description = "Check that the JSON, TOML and YAML are formatted with dprint (fix with `mise run fmt-dprint`)"
 run = "dprint check"
 
 [tasks.lint-eslint]
