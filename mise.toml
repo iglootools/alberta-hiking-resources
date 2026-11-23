@@ -62,19 +62,17 @@ run = "pnpm postinstall"
 # a push.
 
 [tasks.preflight]
-description = "Run every lint and the tests (what CI runs, before it builds)"
+description = "Run every lint and the tests in parallel (what CI runs, before it builds)"
 run = [
-  { task = "lint" },
-  { task = "test" },
+  { tasks = ["lint", "test"] },
 ]
 
 # Every test here is fast, so it differs from preflight in name only; it exists so that
 # `mise run preflight-quick` works the same in every project.
 [tasks.preflight-quick]
-description = "Run every lint and the tests (the same as preflight: every test here is fast)"
+description = "Run every lint and the tests in parallel (the same as preflight: every test here is fast)"
 run = [
-  { task = "lint" },
-  { task = "test" },
+  { tasks = ["lint", "test"] },
 ]
 
 [tasks.ci-preflight]
