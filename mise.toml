@@ -24,6 +24,9 @@ UV_PYTHON_DOWNLOADS = "never"
 UV_PYTHON_PREFERENCE = "only-system"
 
 [settings]
+# Record every tool in mise.lock (guidelines/project-setup/mise.md in iglootools/common,
+# "Check `mise.lock` in a scratch copy").
+lockfile = true
 # [deps.uv] is experimental; set here so a fresh clone behaves as CI does.
 experimental = true
 # [deps.uv] creates .venv; mise only sources it.
@@ -115,6 +118,7 @@ run = [
   { task = "lint-renovate" },
   { task = "lint-common-pins" },
   { task = "lint-toc" },
+  { task = "lint-lock-mise" },
   { task = "lint-lock-uv" },
 ]
 
@@ -176,6 +180,10 @@ run = "pnpm build:trip-index"
 [tasks.lint-renovate]
 description = "Validate the Renovate config with Renovate's validator, strictly"
 run = "renovate-config-validator --strict"
+
+[tasks.lint-lock-mise]
+description = "Check that mise.lock is up to date with mise.toml"
+run = "uv run --no-sync iglootools mise lock-check"
 
 [tasks.lint-lock-uv]
 description = "Check that uv.lock is up to date with pyproject.toml"
