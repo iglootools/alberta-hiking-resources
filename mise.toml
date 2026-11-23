@@ -5,10 +5,9 @@ node = "26.13.0"
 pnpm = "12.17.0"
 rumdl = "0.3.4"
 # Renovate, for lint-renovate and renovate-dry-run (guidelines/project-setup/dependency-automation.md
-# in iglootools/common, which explains both options). trust_policy_excludes exempts one reviewed
-# release, published by hand without provenance; allow_builds lets re2 build its native module,
-# so the validator checks regexes with RE2, the engine Renovate runs.
-# Drop the exclusion once Renovate no longer resolves to @yarnpkg/libzip@3.2.2; reviewed in
+# in iglootools/common, "Validate and preview the config with Renovate itself").
+# trust_policy_excludes exempts one release published by hand without provenance. Drop the
+# exclusion once Renovate no longer resolves to @yarnpkg/libzip@3.2.2; reviewed in
 # iglootools/common's mise.toml.
 "npm:renovate" = { version = "44.239.1", trust_policy_excludes = ["@yarnpkg/libzip@3.2.2"], allow_builds = ["re2"] }
 shellcheck = "0.11.0"
@@ -19,8 +18,8 @@ python = "3.15.2"
 uv = "0.13.7"
 
 [env]
-# uv builds .venv on the interpreter mise installed, never a system one of the same version
-# (guidelines/project-setup/python-tooling.md in iglootools/common, "Mise and uv").
+# guidelines/project-setup/python-tooling.md in iglootools/common, "Pin uv to mise's interpreter
+# by absolute path".
 UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
 UV_PYTHON_DOWNLOADS = "never"
 UV_PYTHON_PREFERENCE = "only-system"
@@ -29,12 +28,11 @@ UV_PYTHON_PREFERENCE = "only-system"
 # Record every tool in mise.lock (guidelines/project-setup/mise.md in iglootools/common,
 # "Check `mise.lock` in a scratch copy").
 lockfile = true
-# [deps.uv] is experimental; set here so a fresh clone behaves as CI does.
+# experimental, uv_venv_auto and [deps.uv]: guidelines/project-setup/python-tooling.md in
+# iglootools/common, "Let `[deps.uv]` install the environment, and mise only source it".
 experimental = true
-# [deps.uv] creates .venv; mise only sources it.
 python.uv_venv_auto = "source"
 
-# Runs `uv sync` before `mise run` when uv.lock or pyproject.toml changed, or .venv is missing.
 [deps.uv]
 auto = true
 
@@ -54,10 +52,7 @@ run = "pnpm dev"
 description = "Preview the Nuxt production build"
 run = "pnpm preview"
 
-# Task families (guidelines/project-setup/mise.md in iglootools/common, "Name tasks by
-# family"): a task that rewrites files is named for what it writes (fmt, build-trip-index),
-# anything that fails without writing is a lint-*, and preflight runs every lint and test before
-# a push.
+# Tasks are named by family (guidelines/project-setup/mise.md in iglootools/common).
 
 # The site's build is itself a check: a broken page fails the prerender, so preflight builds
 # (guidelines/project-setup/mise.md in iglootools/common, "Give each workflow job one `ci-*`
@@ -87,8 +82,8 @@ run = [
 description = "Run the trip report index tests"
 run = "pnpm test"
 
-# Writers. dprint formats the JSON, TOML and YAML, rumdl the Markdown; ESLint's stylistic rules
-# own the code. See guidelines/project-setup/formatting.md in iglootools/common.
+# Writers (guidelines/project-setup/formatting.md in iglootools/common). ESLint's stylistic rules
+# own the code.
 [tasks.fmt]
 description = "Format the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; lint-fmt verifies only)"
 run = [
@@ -120,9 +115,8 @@ run = [
   { task = "lint-lock-uv" },
 ]
 
-# The formatters exit 0 whether or not they changed anything, so they cannot be the gate. rumdl
-# has no lint-fmt-* of its own: lint-markdown reports what `rumdl fmt` would change along with
-# what it cannot fix.
+# guidelines/project-setup/formatting.md in iglootools/common, "Gate formatting with `lint-fmt`
+# and `lint-markdown`".
 [tasks.lint-fmt]
 description = "Check that the JSON, TOML and YAML are formatted (fix with `mise run fmt`)"
 run = [
@@ -149,9 +143,8 @@ run = "pnpm typecheck"
 description = "Lint the tracked shell scripts with shellcheck"
 run = "uv run --no-sync iglootools shell lint"
 
-# Every Markdown document longer than two screens carries a generated table of contents
-# (guidelines/documentation/layout.md in iglootools/common). The site's pages under content/
-# go without one: app/pages/[...slug].vue renders its own.
+# Tables of contents (guidelines/documentation/layout.md in iglootools/common). The site's pages
+# under content/ go without one: app/pages/[...slug].vue renders its own.
 [tasks.toc]
 description = "Add and regenerate the tables of contents in the Markdown docs"
 run = "uv run --no-sync iglootools docs toc --exclude 'content/**'"
@@ -160,8 +153,7 @@ run = "uv run --no-sync iglootools docs toc --exclude 'content/**'"
 description = "Check that every Markdown document has an up-to-date table of contents (fix with `mise run toc`)"
 run = "uv run --no-sync iglootools docs toc --check --exclude 'content/**'"
 
-# Every pin on iglootools/common names the same release, and `iglootools common adopt` would
-# move each one (guidelines/project-setup/iglootools-cli.md in iglootools/common).
+# guidelines/project-setup/iglootools-cli.md in iglootools/common.
 [tasks.lint-common-pins]
 description = "Check that every pin on iglootools/common agrees (fix with `iglootools common adopt`)"
 run = "uv run --no-sync iglootools common check-pins"
@@ -175,8 +167,8 @@ run = "pnpm build:pages"
 description = "Rebuild the by-objective trip report index from the source blogs"
 run = "pnpm build:trip-index"
 
-# --strict fails on a config Renovate would migrate, which a plain run reports only as a
-# warning. With no argument it validates renovate.json as repository config.
+# guidelines/project-setup/dependency-automation.md in iglootools/common, "Validate and preview
+# the config with Renovate itself".
 [tasks.lint-renovate]
 description = "Validate the Renovate config with Renovate's validator, strictly"
 run = "renovate-config-validator --strict"
