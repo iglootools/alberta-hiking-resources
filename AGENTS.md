@@ -14,6 +14,10 @@ template and deployed to GitHub Pages. Tasks run through mise.
 - `mise run fmt` after editing any file.
 - `mise run dev` serves the site locally.
 - `mise tasks` lists the rest.
+- An agent has no mise-activated shell, so run a mise task when one does the
+  job, `uv run --no-sync <tool>` for a tool in the project's environment, and
+  `mise exec -- <tool>` for one mise installs
+  ([why](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md#invoke-tools-through-uv-run---no-sync-tool-in-mise-tasks-not-bare)).
 
 ## Nuxt and Nuxt UI: ask the MCP servers, not your training data
 
