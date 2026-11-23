@@ -52,10 +52,6 @@ run = "pnpm dev"
 description = "Preview the Nuxt production build"
 run = "pnpm preview"
 
-[tasks.postinstall]
-description = "Run nuxt prepare after install"
-run = "pnpm postinstall"
-
 # Task families (guidelines/project-setup/mise.md in iglootools/common, "Name tasks by
 # family"): a task that rewrites files is named for what it writes (fmt, build-trip-index),
 # anything that fails without writing is a lint-*, and preflight runs every lint and test before
@@ -167,10 +163,6 @@ run = "uv run --no-sync iglootools docs toc --check --exclude 'content/**'"
 [tasks.lint-common-pins]
 description = "Check that every pin on iglootools/common agrees (fix with `iglootools common adopt`)"
 run = "uv run --no-sync iglootools common check-pins"
-
-[tasks.update]
-description = "Update all dependencies to latest versions"
-run = "pnpm update --latest"
 
 [tasks.build-pages]
 description = "Build the Nuxt application for GitHub Pages deployment"

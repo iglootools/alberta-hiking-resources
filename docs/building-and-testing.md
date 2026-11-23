@@ -41,7 +41,6 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | `mise run build-pages`| Build for GitHub Pages deployment        |
 | `mise run preview`    | Preview the production build             |
 | `mise run ci-preflight` | Run the full CI pipeline locally       |
-| `mise run update`     | Update all dependencies to latest        |
 | `mise run build-trip-index` | Rebuild the by-objective trip report index |
 
 The sections below cover the build, lint, and CI tasks in more detail; see
