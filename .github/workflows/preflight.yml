@@ -10,6 +10,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && format('main-{0}', github.event.workflow_run.head_sha || github.sha) || github.ref }}
   cancel-in-progress: true
 
+env:
+  # Fail on a stale uv.lock instead of silently re-resolving on the runner.
+  UV_LOCKED: 1
+
 jobs:
   preflight:
     runs-on: ubuntu-latest

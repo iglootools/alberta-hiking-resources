@@ -1,0 +1,17 @@
+# Not a Python project: this file only installs the shared iglootools commands, which the
+# mise tasks and the iglootools/common workflows run as `uv run --no-sync iglootools`. uv.lock
+# pins them and everything they depend on. See guidelines/project-setup/iglootools-cli.md in
+# iglootools/common, and its ADR-004.
+[project]
+name = "alberta-hiking-resources"
+version = "0"
+requires-python = ">=3.15,<3.16"
+
+[dependency-groups]
+dev = [
+  "iglootools @ git+https://github.com/iglootools/common@v1.41.0",
+]
+
+# A virtual project: uv installs the dependency group, and builds nothing from this one.
+[tool.uv]
+package = false

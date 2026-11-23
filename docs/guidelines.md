@@ -29,8 +29,8 @@ Nothing here is Python, so these shared sections do not apply:
 
 | Shared section | Why it does not apply |
 |---|---|
-| [`coding/python.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/python.md), [`python-tooling.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md) and [`pypi-publishing.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/pypi-publishing.md), in full | the stack is pnpm and mise, and the site deploys to GitHub Pages. The plugin already skips `python.md`, as there is no `pyproject.toml` |
-| [`ide.md` › Pin the venv for pyright in `[tool.pyright]`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#pin-the-venv-for-pyright-in-toolpyright) | no `.venv` and no `[tool.pyright]` to pin |
+| [`coding/python.md`](https://github.com/iglootools/common/blob/main/guidelines/coding/python.md) and [`pypi-publishing.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/pypi-publishing.md) in full, and [`python-tooling.md`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md) apart from Mise and uv | the stack is pnpm and mise, and the site deploys to GitHub Pages. `pyproject.toml` only installs the iglootools command, and the plugin skips `python.md`, as no `.py` file is tracked |
+| [`ide.md` › Pin the venv for pyright in `[tool.pyright]`](https://github.com/iglootools/common/blob/main/guidelines/project-setup/ide.md#pin-the-venv-for-pyright-in-toolpyright) | `.venv` holds only the iglootools command, and there is no `[tool.pyright]` to pin |
 | [`claude-code.md` › Install pyright-lsp at project scope in every Python project](https://github.com/iglootools/common/blob/main/guidelines/project-setup/claude-code.md#install-pyright-lsp-at-project-scope-in-every-python-project) | Python-specific. No LSP plugin is installed for this project |
 
 **Why:** the last one leaves a real gap: an assistant here has no import graph

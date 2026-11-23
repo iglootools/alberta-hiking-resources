@@ -1,6 +1,6 @@
 {
   "description": [
-    "The shared rules (digest pinning, the 14-day minimumReleaseAge with timestamp-optional, and the managers for the mise version in workflows and for versions named in mise.toml's [env]) come from the iglootools base preset, pinned to a release tag: see guidelines/project-setup/dependency-automation.md in iglootools/common. Grouping comes from Nuxt's preset and group:all; what is below is this project's own."
+    "The shared rules (digest pinning, the 14-day minimumReleaseAge with timestamp-optional, and the managers for the mise version in workflows and for the iglootools command in pyproject.toml) come from the iglootools base preset, pinned to a release tag: see guidelines/project-setup/dependency-automation.md in iglootools/common. Grouping comes from Nuxt's preset and group:all; what is below is this project's own."
   ],
   "extends": [
     "github>nuxt/renovate-config-nuxt",
