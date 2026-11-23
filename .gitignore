@@ -48,3 +48,6 @@ logs
 # .iglootools/audits/. Never committed: see the .gitignore rule in
 # https://github.com/iglootools/common/blob/main/guidelines/project-setup/repository.md
 .iglootools/
+
+# The environment uv builds for the iglootools commands (pyproject.toml).
+.venv/

@@ -10,16 +10,28 @@ rumdl = "0.3.4"
 # so the validator checks regexes with RE2, the engine Renovate runs.
 "npm:renovate" = { version = "44.239.1", trust_policy_excludes = ["@yarnpkg/libzip@3.2.2"], allow_builds = ["re2"] }
 shellcheck = "0.11.0"
-# Runs the shared iglootools commands through uvx (below).
+# python and uv run the shared iglootools commands, a dev dependency in pyproject.toml
+# (guidelines/project-setup/iglootools-cli.md in iglootools/common). This is not a Python
+# project: nothing else here uses them.
+python = "3.15.2"
 uv = "0.13.7"
 
 [env]
-# The shared iglootools commands (guidelines/project-setup/iglootools-cli.md in
-# iglootools/common), run through uvx since this project has no Python environment. The
-# comment is what lets Renovate keep the release current, through the shared base preset.
-# renovate: datasource=github-tags depName=iglootools/common
-IGLOOTOOLS_VERSION = "v1.41.0"
-IGLOOTOOLS = "uvx --from git+https://github.com/iglootools/common@{{ env.IGLOOTOOLS_VERSION }} iglootools"
+# uv builds .venv on the interpreter mise installed, never a system one of the same version
+# (guidelines/project-setup/python-tooling.md in iglootools/common, "Mise and uv").
+UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
+UV_PYTHON_DOWNLOADS = "never"
+UV_PYTHON_PREFERENCE = "only-system"
+
+[settings]
+# [deps.uv] is experimental; set here so a fresh clone behaves as CI does.
+experimental = true
+# [deps.uv] creates .venv; mise only sources it.
+python.uv_venv_auto = "source"
+
+# Runs `uv sync` before `mise run` when uv.lock or pyproject.toml changed, or .venv is missing.
+[deps.uv]
+auto = true
 
 [tasks.install]
 description = "Install dependencies"
@@ -103,6 +115,7 @@ run = [
   { task = "lint-renovate" },
   { task = "lint-common-pins" },
   { task = "lint-toc" },
+  { task = "lint-lock-uv" },
 ]
 
 # The formatters exit 0 whether or not they changed anything, so they cannot be the gate. rumdl
@@ -126,24 +139,24 @@ run = "pnpm typecheck"
 
 [tasks.lint-shell]
 description = "Lint the tracked shell scripts with shellcheck"
-run = "$IGLOOTOOLS shell lint"
+run = "uv run --no-sync iglootools shell lint"
 
 # Every Markdown document longer than two screens carries a generated table of contents
 # (guidelines/documentation/layout.md in iglootools/common). The site's pages under content/
 # go without one: app/pages/[...slug].vue renders its own.
 [tasks.toc]
 description = "Add and regenerate the tables of contents in the Markdown docs"
-run = "$IGLOOTOOLS docs toc --exclude 'content/**'"
+run = "uv run --no-sync iglootools docs toc --exclude 'content/**'"
 
 [tasks.lint-toc]
 description = "Check that every Markdown document has an up-to-date table of contents (fix with `mise run toc`)"
-run = "$IGLOOTOOLS docs toc --check --exclude 'content/**'"
+run = "uv run --no-sync iglootools docs toc --check --exclude 'content/**'"
 
 # Every pin on iglootools/common names the same release, and `iglootools common adopt` would
 # move each one (guidelines/project-setup/iglootools-cli.md in iglootools/common).
 [tasks.lint-common-pins]
 description = "Check that every pin on iglootools/common agrees (fix with `iglootools common adopt`)"
-run = "$IGLOOTOOLS common check-pins"
+run = "uv run --no-sync iglootools common check-pins"
 
 [tasks.update]
 description = "Update all dependencies to latest versions"
@@ -163,3 +176,7 @@ run = "pnpm build:trip-index"
 [tasks.lint-renovate]
 description = "Validate the Renovate config with Renovate's validator, strictly"
 run = "renovate-config-validator --strict"
+
+[tasks.lint-lock-uv]
+description = "Check that uv.lock is up to date with pyproject.toml"
+run = "uv lock --check"
