@@ -11,7 +11,7 @@ template and deployed to GitHub Pages. Tasks run through mise.
 - `mise run preflight`: every lint and test CI runs, and the build, every few
   commits and before review. `mise run ci-preflight` adds the install, as CI
   does.
-- `mise run fmt` after editing JSON, TOML, YAML or Markdown.
+- `mise run fmt` after editing any file.
 - `mise run dev` serves the site locally.
 - `mise tasks` lists the rest.
 
