@@ -7,9 +7,9 @@ template and deployed to GitHub Pages. Tasks run through mise.
 ## Commands
 
 - `mise run preflight-quick`: every lint and the fast tests, before each
-  commit. Every test here is fast, so it is the same as `preflight`.
-- `mise run preflight`: every lint and test CI runs, every few commits and
-  before review. `mise run ci-preflight` adds the install and the build, as CI
+  commit.
+- `mise run preflight`: every lint and test CI runs, and the build, every few
+  commits and before review. `mise run ci-preflight` adds the install, as CI
   does.
 - `mise run fmt` after editing JSON, TOML, YAML or Markdown.
 - `mise run dev` serves the site locally.

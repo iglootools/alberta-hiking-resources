@@ -61,26 +61,28 @@ run = "pnpm postinstall"
 # anything that fails without writing is a lint-*, and preflight runs every lint and test before
 # a push.
 
+# The site's build is itself a check: a broken page fails the prerender, so preflight builds
+# (guidelines/project-setup/mise.md in iglootools/common, "Give each workflow job one `ci-*`
+# task"). It runs after the lints, since `nuxt typecheck` and `nuxt build` both write .nuxt/.
 [tasks.preflight]
-description = "Run every lint and the tests in parallel (what CI runs, before it builds)"
+description = "Run every lint and the tests in parallel, then build the site (what CI runs)"
 run = [
   { tasks = ["lint", "test"] },
+  { task = "build" },
 ]
 
-# Every test here is fast, so it differs from preflight in name only; it exists so that
-# `mise run preflight-quick` works the same in every project.
+# Every test here is fast, so preflight-quick leaves out only the build.
 [tasks.preflight-quick]
-description = "Run every lint and the tests in parallel (the same as preflight: every test here is fast)"
+description = "Run every lint and the tests in parallel (preflight without the build)"
 run = [
   { tasks = ["lint", "test"] },
 ]
 
 [tasks.ci-preflight]
-description = "Install, run every lint and test, then build (what the preflight workflow runs)"
+description = "Install, then run preflight (what the preflight workflow runs)"
 run = [
   { task = "install" },
   { task = "preflight" },
-  { task = "build" },
 ]
 
 [tasks.test]

@@ -26,7 +26,7 @@ The `mise` tasks wrap the underlying `pnpm` scripts:
 | --------------------- | ---------------------------------------- |
 | `mise run install`    | Install dependencies (frozen lockfile)   |
 | `mise run dev`        | Start the Nuxt dev server                |
-| `mise run preflight`  | Run every lint and the tests (`preflight-quick` is the same) |
+| `mise run preflight`  | Run every lint and the tests, then build (`preflight-quick` leaves out the build) |
 | `mise run lint`       | Run every lint below                     |
 | `mise run lint-eslint` | Lint the code with ESLint                |
 | `mise run fmt`        | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
@@ -100,7 +100,8 @@ the Nitro output, so a plain `mise run build` is not what ships.
 
 `mise run ci-preflight` runs the same sequence as the
 [`preflight.yml`](../.github/workflows/preflight.yml) workflow: `install` →
-`preflight` (every lint, then `test`) → `build`.
+`preflight` (every lint and `test` in parallel, then `build`). The build is in
+`preflight` because it is itself a check: a broken page fails the prerender.
 
 ## Bundling icon sets
 
