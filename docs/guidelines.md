@@ -38,12 +38,21 @@ describes, until a Vue/TS LSP plugin becomes available at project scope.
 
 ### Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`
 
-[renovate.json](../renovate.json) lifts the 14-day hold of the shared
-[base preset](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md#extend-the-shared-renovate-presets)
-for these updates. Its `description` fields give the reason.
+Overrides
+[dependency-automation.md › Extend the shared Renovate presets](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md#extend-the-shared-renovate-presets):
+[renovate.json](../renovate.json) lifts the base preset's 14-day hold for these
+updates.
 
-**Retires:** never. Those updates carry no release timestamp, so the hold could
-never be satisfied.
+**Why:** they carry no release timestamp. The base preset's
+`minimumReleaseAgeBehaviour: "timestamp-optional"` is documented to let such
+updates through, which would make the exemption redundant, but nobody has yet
+seen on the Dependency Dashboard that it does for these three. Until then the
+exemption keeps an undated update from waiting on a hold it can never satisfy.
+
+**Retires when** the preset alone is seen to suffice: remove the packageRule and
+the `lockFileMaintenance` override, and check on the Dependency Dashboard that
+the next lock-file maintenance update is not held for `renovate/stability-days`.
+Restore them if it is.
 
 ### Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start
 
