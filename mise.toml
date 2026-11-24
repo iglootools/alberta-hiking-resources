@@ -1,8 +1,8 @@
 [tools]
 dprint = "0.64.3"
 jq = "1.8.2"
-node = "26.13.0"
-pnpm = "12.17.0"
+node = "26.13.1"
+pnpm = "12.19.0"
 rumdl = "0.3.4"
 # Renovate, for lint-renovate and renovate-dry-run (guidelines/project-setup/dependency-automation.md
 # in iglootools/common, "Validate and preview the config with Renovate itself").
