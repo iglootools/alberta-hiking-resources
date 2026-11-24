@@ -9,7 +9,7 @@
   ],
   "packageRules": [
     {
-      "description": "Replacement and pin updates carry no release timestamp, so the release-age check can never be satisfied and would leave renovate/stability-days pending forever. security:minimumReleaseAgeNpm exempts these for npm; we do the same for all datasources. lockFileMaintenance is exempted in its own config block below.",
+      "description": "Replacement and pin updates (and lockFileMaintenance, exempted in its own block below) carry no release timestamp. The base preset's minimumReleaseAgeBehaviour timestamp-optional is documented to let such updates through, but that is not yet confirmed on the Dependency Dashboard, so this keeps them from waiting on a hold they can never satisfy. Delete this rule and the lockFileMaintenance override once the Dashboard shows these updates are not held without them (docs/guidelines.md).",
       "matchUpdateTypes": [
         "replacement",
         "pin"

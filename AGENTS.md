@@ -7,13 +7,17 @@ template and deployed to GitHub Pages. Tasks run through mise.
 ## Commands
 
 - `mise run preflight-quick`: every lint and the fast tests, before each
-  commit. Every test here is fast, so it is the same as `preflight`.
-- `mise run preflight`: every lint and test CI runs, every few commits and
-  before review. `mise run ci-preflight` adds the install and the build, as CI
+  commit.
+- `mise run preflight`: every lint and test CI runs, and the build, every few
+  commits and before review. `mise run ci-preflight` adds the install, as CI
   does.
-- `mise run fmt` after editing JSON, TOML, YAML or Markdown.
+- `mise run fmt` after editing any file.
 - `mise run dev` serves the site locally.
 - `mise tasks` lists the rest.
+- An agent has no mise-activated shell, so run a mise task when one does the
+  job, `uv run --no-sync <tool>` for a tool in the project's environment, and
+  `mise exec -- <tool>` for one mise installs
+  ([why](https://github.com/iglootools/common/blob/main/guidelines/project-setup/python-tooling.md#invoke-tools-through-uv-run---no-sync-tool-in-mise-tasks-not-bare)).
 
 ## Nuxt and Nuxt UI: ask the MCP servers, not your training data
 
@@ -34,7 +38,7 @@ through the `iglootools` plugin. Other agents: read `coding/general.md` and
 files you are changing, using
 [iglootools/common's index](https://github.com/iglootools/common/blob/main/guidelines/README.md).
 Read [docs/guidelines.md](docs/guidelines.md) before any change too: it holds
-this project's deviations and its own rules, and links to the project's other
+this project's exceptions and its own rules, and links to the project's other
 guidelines files.
 
 ## Where things are
