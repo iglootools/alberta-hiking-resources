@@ -31,5 +31,9 @@
   "[jsonc]": { "editor.defaultFormatter": "dprint.dprint", "editor.formatOnSave": true },
   "[toml]": { "editor.defaultFormatter": "dprint.dprint", "editor.formatOnSave": true },
   "[yaml]": { "editor.defaultFormatter": "dprint.dprint", "editor.formatOnSave": true },
-  "[markdown]": { "editor.defaultFormatter": "rvben.rumdl", "editor.formatOnSave": true }
+  "[markdown]": {
+    "editor.defaultFormatter": "rvben.rumdl",
+    "editor.formatOnSave": true
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
 }
