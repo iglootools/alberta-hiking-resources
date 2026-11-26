@@ -197,6 +197,13 @@ itself is described in [architecture.md](architecture.md).
   comes with it and is upstream's: `@nuxt/devtools` 4.2.1 depends on
   `@vitejs/devtools` ^0.8.3, while the `vite-plugin-vue-devtools` 9 rc it also
   depends on still asks for ^0.7.6.
+- `experimental.staticRoutes: true` (Nuxt 4.7) builds the server's route matcher
+  once, not per request. Nothing here adds routes at runtime, which the option
+  forbids. With no server in production, it only shortens the prerender; the
+  prerendered files were otherwise identical when it was adopted.
+  `experimental.early404: false` sits beside it because the root catch-all page
+  makes `early404` impossible here, and Nuxt would otherwise warn
+  (`NUXT_B4019`).
 - `ui.eslint` is the template's, with `RegionMapSvg`'s scoped-style classes
   added to its `ignore` list beside `StarsBg`'s.
 - `llms.sections` rewritten from the 2 demo sections to the 8 real sections;

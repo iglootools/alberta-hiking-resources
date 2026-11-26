@@ -111,7 +111,20 @@ export default defineNuxtConfig({
   },
 
   experimental: {
-    asyncContext: true
+    asyncContext: true,
+
+    // Builds the server's route matcher once instead of once per request.
+    // Safe because no code adds routes at runtime: with it on,
+    // router.addRoute/removeRoute/clearRoutes throw, and a route has to come
+    // from the `pages:extend` hook instead. Here it only shortens the
+    // prerender, since the deployed site has no server.
+    staticRoutes: true,
+
+    // staticRoutes would turn this on, but the root catch-all page
+    // ([...slug].vue) matches every path, so there is never a path to 404
+    // early on; Nuxt disables it anyway and warns (NUXT_B4019). Off explicitly
+    // to record that and silence the warning.
+    early404: false
   },
 
   // Matches the upstream docs template. This opts into the Nuxt/Nitro defaults
