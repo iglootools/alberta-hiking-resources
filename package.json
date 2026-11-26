@@ -34,6 +34,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@nuxt/devtools": "^4.2.1",
     "@nuxt/eslint": "^1.17.0",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/github": "^12.0.10",

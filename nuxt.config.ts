@@ -41,6 +41,12 @@ export default defineNuxtConfig({
       : [])
   ],
 
+  // Since Nuxt 4.7, nuxt no longer depends on @nuxt/devtools: it ships
+  // @nuxt/devtools-onboard, which loads whichever DevTools the app installs.
+  // So @nuxt/devtools is in devDependencies, on v4: no floating Nuxt button any
+  // more, but a Nuxt entry in the Vite DevTools dock, which Shift+Option+D shows
+  // and hides. The dock stays Unauthorized until the browser enters the code
+  // `mise run dev` prints (docs/setup-development-environment.md).
   devtools: {
     enabled: true,
 

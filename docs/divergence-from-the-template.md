@@ -191,7 +191,12 @@ itself is described in [architecture.md](architecture.md).
 - `devtools.timeline.enabled: true` turns on the DevTools Timeline tab, which
   records composable calls and route changes while `mise run dev` runs. It began
   as an experiment (`851bc647`) and is kept because it improves the dev tooling
-  and has no effect on the built site.
+  and has no effect on the built site. Since Nuxt 4.7, `nuxt` no longer
+  installs DevTools, so `@nuxt/devtools` is a devDependency, on v4 (Vite
+  DevTools based, so it needs Vite 8, which Nuxt 4.5+ ships). One peer warning
+  comes with it and is upstream's: `@nuxt/devtools` 4.2.1 depends on
+  `@vitejs/devtools` ^0.8.3, while the `vite-plugin-vue-devtools` 9 rc it also
+  depends on still asks for ^0.7.6.
 - `ui.eslint` is the template's, with `RegionMapSvg`'s scoped-style classes
   added to its `ignore` list beside `StarsBg`'s.
 - `llms.sections` rewritten from the 2 demo sections to the 8 real sections;
