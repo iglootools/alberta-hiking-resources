@@ -148,11 +148,9 @@ itself is described in [architecture.md](architecture.md).
 
   **Revisit if** a later `minimark` serialises `rel` properly or omits it, or if
   the noise is worth dropping in our route instead: deleting `rel` from link
-  props before `stringify` in
-  [server/routes/raw/\[...slug\].md.get.ts](../server/routes/raw/[...slug].md.get.ts)
-  would keep 1.0's structure without it. **Retires when** `@nuxt/content` and
-  the template move to `minimark` 1.x, at which point this is no longer a
-  divergence.
+  props before `stringify` in `server/routes/raw/[...slug].md.get.ts` would keep
+  1.0's structure without it. **Retires when** `@nuxt/content` and the template
+  move to `minimark` 1.x, at which point this is no longer a divergence.
 - `@types/node` is declared, though nothing imports it by name. The trip report
   index scripts (see
   [ADR-005](architecture-decision-record.md#adr-005--generate-the-by-objective-trip-report-index-into-markdown-and-match-objective-names-exactly))
