@@ -228,10 +228,13 @@ itself is described in [architecture.md](architecture.md).
   `[...slug].vue` routing are kept. Its `TemplateMenu`, a switcher between the
   Nuxt UI templates, is removed: it has no place on this site.
 - The content-page OG image is nuxt-og-image's `Docs` community template,
-  ejected to `app/components/OgImage/Docs.takumi.vue` (`869a42ec`), not the
-  template's own component of that name. The template's draws the Nuxt logo in
-  Nuxt green and prints `ui.nuxt.com`; the community one takes the site name and
-  colours as props, which `[...slug].vue` passes.
+  ejected (`869a42ec`) and renamed to
+  `app/components/OgImage/ContentPage.takumi.vue`, not the template's own
+  component of that name. The template's draws the Nuxt logo in Nuxt green and
+  prints `ui.nuxt.com`; the community one takes the site name and colours as
+  props, which `[...slug].vue` passes. The rename keeps it from sharing a name
+  with the community original, which nuxt-og-image registers in dev; see
+  [testing-notes.md](testing-notes.md#open-graph-images).
 - Added [architecture-decision-record.md](architecture-decision-record.md).
 - Small code-level differences, such as the MCP tools logging the error they
   swallow, the header's tooltips or the search entry for `/changelog`, are

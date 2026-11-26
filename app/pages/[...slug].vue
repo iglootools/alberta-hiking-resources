@@ -37,7 +37,10 @@ useSeoMeta({
 
 const headline = computed(() => findPageHeadline(navigation?.value, page.value?.path))
 
-defineOgImage('Docs', {
+// ContentPage is nuxt-og-image's `Docs` community template, ejected and
+// renamed so it does not share a name with the community original, which
+// nuxt-og-image registers in dev (docs/testing-notes.md).
+defineOgImage('ContentPage', {
   title,
   description,
   site: seo.siteName,
