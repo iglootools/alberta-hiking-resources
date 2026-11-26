@@ -41,6 +41,12 @@ export default defineNuxtConfig({
       : [])
   ],
 
+  // Since Nuxt 4.7, nuxt no longer depends on @nuxt/devtools: it ships
+  // @nuxt/devtools-onboard, which loads whichever DevTools the app installs.
+  // So @nuxt/devtools is in devDependencies, on v4: no floating Nuxt button any
+  // more, but a Nuxt entry in the Vite DevTools dock, which Shift+Option+D shows
+  // and hides. The dock stays Unauthorized until the browser enters the code
+  // `mise run dev` prints (docs/setup-development-environment.md).
   devtools: {
     enabled: true,
 
@@ -105,7 +111,20 @@ export default defineNuxtConfig({
   },
 
   experimental: {
-    asyncContext: true
+    asyncContext: true,
+
+    // Builds the server's route matcher once instead of once per request.
+    // Safe because no code adds routes at runtime: with it on,
+    // router.addRoute/removeRoute/clearRoutes throw, and a route has to come
+    // from the `pages:extend` hook instead. Here it only shortens the
+    // prerender, since the deployed site has no server.
+    staticRoutes: true,
+
+    // staticRoutes would turn this on, but the root catch-all page
+    // ([...slug].vue) matches every path, so there is never a path to 404
+    // early on; Nuxt disables it anyway and warns (NUXT_B4019). Off explicitly
+    // to record that and silence the warning.
+    early404: false
   },
 
   // Matches the upstream docs template. This opts into the Nuxt/Nitro defaults
@@ -146,6 +165,14 @@ export default defineNuxtConfig({
         '@vueuse/core'
       ]
     }
+  },
+
+  typescript: {
+    // Type-checks in the dev server only, showing errors in the page's
+    // problems badge and the DevTools Problems panel. Not at build time: CI
+    // already runs `nuxt typecheck` separately (mise run lint-types), so `true`
+    // would check twice.
+    typeCheck: 'dev'
   },
 
   eslint: {

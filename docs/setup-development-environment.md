@@ -100,6 +100,12 @@ pnpm versions ([mise.toml](../mise.toml)) and acts as the task runner.
 
    The site is served at `http://localhost:3000`.
 
+   Nuxt DevTools (v4) is an entry in the Vite DevTools dock at the edge of the
+   page, which Shift+Option+D (Shift+Alt+D) shows and hides. The first time,
+   the dock shows an **Unauthorized** badge: click it and enter the 6-digit
+   code `mise run dev` prints in the terminal. This is once per browser and
+   project; until then, the Nuxt entry does not open.
+
 ### Environment variables
 
 One task needs a credential; nothing else here does, and neither the dev server

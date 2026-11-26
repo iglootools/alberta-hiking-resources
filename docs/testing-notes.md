@@ -2,19 +2,36 @@
 
 Manual checks for the SEO / social-preview surface area.
 
+<!-- toc -->
+**On this page**
+
+- [Open Graph images](#open-graph-images)
+  - [Regenerating the landing page OG image](#regenerating-the-landing-page-og-image)
+  - [Validating OG image rendering](#validating-og-image-rendering)
+- [Sitemap and robots.txt](#sitemap-and-robotstxt)
+<!-- tocstop -->
+
 ## Open Graph images
 
 Content pages use auto-generated OG images via `nuxt-og-image` and the Takumi
-renderer, using the **`Docs` community template**
-(`app/components/OgImage/Docs.takumi.vue`). The landing page uses a custom
-static image (`public/images/og.png`) for a more branded social preview.
+renderer, using the **`Docs` community template**, ejected and renamed to
+`ContentPage` (`app/components/OgImage/ContentPage.takumi.vue`). The landing
+page uses a custom static image (`public/images/og.png`) for a more branded
+social preview.
 
 > **The `Docs` template is _ejected_, and must stay ejected.** nuxt-og-image v6
 > only ships community templates for dev — production builds fail with
 > _"Community template … must be ejected before production use"_ unless a local
-> copy exists. `Docs.takumi.vue` is that ejected copy (created with
+> copy exists. `ContentPage.takumi.vue` is that ejected copy (created with
 > `npx nuxt-og-image eject Docs`); we pass `title`/`description`/`site` plus the
 > brand-green `primaryColor`/`primaryTextColor` from `[...slug].vue`.
+>
+> **It is renamed so it does not clash with the original.** In dev,
+> nuxt-og-image also registers its community templates, and it gives a
+> component its bare name (`'Docs'`) only when no other component shares it. An
+> ejected copy left as `Docs` therefore loses the name in dev, and the dev type
+> checker (`typescript.typeCheck: 'dev'`) rejects `defineOgImage('Docs')`, while
+> `nuxt typecheck` and builds, which do not register community templates, pass.
 >
 > The ejected file is a **point-in-time snapshot** — it does not update when
 > `nuxt-og-image` is upgraded. After a notable upgrade, re-eject to pick up
@@ -22,8 +39,9 @@ static image (`public/images/og.png`) for a more branded social preview.
 > at the call site, so only ESLint formatting differs from stock):
 >
 > ```bash
-> npx nuxt-og-image eject Docs   # overwrites app/components/OgImage/Docs.takumi.vue
-> pnpm lint --fix app/components/OgImage/Docs.takumi.vue
+> npx nuxt-og-image eject Docs   # writes app/components/OgImage/Docs.takumi.vue
+> mv app/components/OgImage/Docs.takumi.vue app/components/OgImage/ContentPage.takumi.vue
+> pnpm lint --fix app/components/OgImage/ContentPage.takumi.vue
 > ```
 >
 > See the official

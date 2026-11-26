@@ -191,7 +191,23 @@ itself is described in [architecture.md](architecture.md).
 - `devtools.timeline.enabled: true` turns on the DevTools Timeline tab, which
   records composable calls and route changes while `mise run dev` runs. It began
   as an experiment (`851bc647`) and is kept because it improves the dev tooling
-  and has no effect on the built site.
+  and has no effect on the built site. Since Nuxt 4.7, `nuxt` no longer
+  installs DevTools, so `@nuxt/devtools` is a devDependency, on v4 (Vite
+  DevTools based, so it needs Vite 8, which Nuxt 4.5+ ships). One peer warning
+  comes with it and is upstream's: `@nuxt/devtools` 4.2.1 depends on
+  `@vitejs/devtools` ^0.8.3, while the `vite-plugin-vue-devtools` 9 rc it also
+  depends on still asks for ^0.7.6.
+- `experimental.staticRoutes: true` (Nuxt 4.7) builds the server's route matcher
+  once, not per request. Nothing here adds routes at runtime, which the option
+  forbids. With no server in production, it only shortens the prerender; the
+  prerendered files were otherwise identical when it was adopted.
+  `experimental.early404: false` sits beside it because the root catch-all page
+  makes `early404` impossible here, and Nuxt would otherwise warn
+  (`NUXT_B4019`).
+- `typescript.typeCheck: 'dev'` (Nuxt 4.7) type-checks in the dev server only,
+  showing errors in the page's problems badge. CI's `nuxt typecheck` stays the
+  gate, so checking at build time too would only repeat it. It depends on the
+  OG image component's rename (below).
 - `ui.eslint` is the template's, with `RegionMapSvg`'s scoped-style classes
   added to its `ignore` list beside `StarsBg`'s.
 - `llms.sections` rewritten from the 2 demo sections to the 8 real sections;
@@ -223,10 +239,13 @@ itself is described in [architecture.md](architecture.md).
   `[...slug].vue` routing are kept. Its `TemplateMenu`, a switcher between the
   Nuxt UI templates, is removed: it has no place on this site.
 - The content-page OG image is nuxt-og-image's `Docs` community template,
-  ejected to `app/components/OgImage/Docs.takumi.vue` (`869a42ec`), not the
-  template's own component of that name. The template's draws the Nuxt logo in
-  Nuxt green and prints `ui.nuxt.com`; the community one takes the site name and
-  colours as props, which `[...slug].vue` passes.
+  ejected (`869a42ec`) and renamed to
+  `app/components/OgImage/ContentPage.takumi.vue`, not the template's own
+  component of that name. The template's draws the Nuxt logo in Nuxt green and
+  prints `ui.nuxt.com`; the community one takes the site name and colours as
+  props, which `[...slug].vue` passes. The rename keeps it from sharing a name
+  with the community original, which nuxt-og-image registers in dev; see
+  [testing-notes.md](testing-notes.md#open-graph-images).
 - Added [architecture-decision-record.md](architecture-decision-record.md).
 - Small code-level differences, such as the MCP tools logging the error they
   swallow, the header's tooltips or the search entry for `/changelog`, are
