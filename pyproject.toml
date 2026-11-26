@@ -9,7 +9,7 @@ requires-python = ">=3.15.2,<3.16"
 
 [dependency-groups]
 dev = [
-  "iglootools @ git+https://github.com/iglootools/common@v2.2.2",
+  "iglootools @ git+https://github.com/iglootools/common@v2.3.0",
 ]
 
 # A virtual project: uv installs the dependency group, and builds nothing from this one.
