@@ -167,6 +167,14 @@ export default defineNuxtConfig({
     }
   },
 
+  typescript: {
+    // Type-checks in the dev server only, showing errors in the page's
+    // problems badge and the DevTools Problems panel. Not at build time: CI
+    // already runs `nuxt typecheck` separately (mise run lint-types), so `true`
+    // would check twice.
+    typeCheck: 'dev'
+  },
+
   eslint: {
     config: {
       stylistic: {

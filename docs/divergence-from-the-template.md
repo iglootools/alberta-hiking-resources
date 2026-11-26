@@ -204,6 +204,10 @@ itself is described in [architecture.md](architecture.md).
   `experimental.early404: false` sits beside it because the root catch-all page
   makes `early404` impossible here, and Nuxt would otherwise warn
   (`NUXT_B4019`).
+- `typescript.typeCheck: 'dev'` (Nuxt 4.7) type-checks in the dev server only,
+  showing errors in the page's problems badge. CI's `nuxt typecheck` stays the
+  gate, so checking at build time too would only repeat it. It depends on the
+  OG image component's rename (below).
 - `ui.eslint` is the template's, with `RegionMapSvg`'s scoped-style classes
   added to its `ignore` list beside `StarsBg`'s.
 - `llms.sections` rewritten from the 2 demo sections to the 8 real sections;
