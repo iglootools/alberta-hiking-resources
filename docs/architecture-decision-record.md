@@ -1034,10 +1034,11 @@ moves — not ahead of it.
   `npm view typescript-eslint peerDependencies`.
 - A Renovate PR that the stack's ranges cannot satisfy is closed or held, not
   forced through with an override.
-- **The exception is a security fix the stack cannot take yet.** `esbuild` is
-  overridden past the range `fontless` (via `@nuxt/fonts`) declares, because the
-  advisory has no fix inside that range and no newer `fontless` exists. The
-  comment on the override in [pnpm-workspace.yaml](../pnpm-workspace.yaml)
-  gives the reason and the check. It is narrow, and retires when `fontless`
-  widens its range — the override is the exception that proves the rule, not a
+- **The exception is a security fix the stack cannot take yet.** `esbuild` was
+  overridden past the range `fontless` 0.2 (via `@nuxt/fonts` 0.14) declared,
+  because the advisory had no fix inside that range and no newer `fontless`
+  existed. The override was narrow, carried its reason and its check in
+  [pnpm-workspace.yaml](../pnpm-workspace.yaml), and retired on 2026-11-25 when
+  `@nuxt/ui` 4.13 moved to `@nuxt/fonts` 1.2, whose `fontless` 1.x no longer
+  depends on `esbuild`. It was the exception that proves the rule, not a
   precedent for upgrading ahead of the stack.

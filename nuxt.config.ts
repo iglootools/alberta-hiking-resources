@@ -29,8 +29,8 @@ export default defineNuxtConfig({
     '@nuxtjs/robots',
     'nuxt-og-image',
     'nuxt-llms',
+    'nuxt-agent-discovery',
     '@nuxtjs/mcp-toolkit',
-    '@nuxt/fonts',
     // Dev-only: exposes the running app's routes, components, and resolved
     // config to an AI assistant over MCP at /__mcp/sse. Excluded from the
     // prerendered production bundle. includeNuxtDocsMcp is disabled because it
@@ -44,6 +44,9 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true,
 
+    // Turns on the DevTools Timeline tab, which records composable calls and
+    // route changes. Dev-only and off by default; kept on because it helps
+    // when debugging, and costs nothing in the built site.
     timeline: {
       enabled: true
     }
@@ -77,6 +80,22 @@ export default defineNuxtConfig({
     }
   },
 
+  ui: {
+    eslint: {
+      // Classes styled in a component's own <style> block, which the linter
+      // cannot see: StarsBg's (as in the template) and RegionMapSvg's map layers.
+      ignore: [
+        '^stars$', '^star-layer$', '^star$',
+        '^region-map(-frame)?$', '^(sea|land|lake|over|regions|borders|towns|labels)$'
+      ],
+      rules: {
+        'no-unknown-classes': 'error',
+        'no-conflicting-classes': 'error',
+        'no-palette-colors': 'error'
+      }
+    }
+  },
+
   runtimeConfig: {
     // Keys within public are also exposed client-side
     public: {
@@ -97,10 +116,11 @@ export default defineNuxtConfig({
 
   nitro: {
     prerender: {
-      routes: [
-        '/'
-      ],
-      crawlLinks: true,
+      // Writes /foo.html rather than /foo/index.html. GitHub Pages serves the
+      // former at /foo, the URL the sitemap, canonical links and every internal
+      // link use; the latter makes /foo a 301 to /foo/. The template dropped
+      // this (0462726) because it does not deploy to GitHub Pages. Nitro-only,
+      // so it stays here rather than under the top-level `prerender`.
       autoSubfolderIndex: false
     }
   },
@@ -138,6 +158,11 @@ export default defineNuxtConfig({
   },
 
   icon: {
+    // @nuxt/icon defaults to `server` unless it detects `nuxt generate`, and
+    // `nuxt build --preset github_pages` is not detected as one, so the client
+    // would fetch unbundled icons from /api/_nuxt_icon, which a static GitHub
+    // Pages host does not serve. The template dropped this line (30e0c06)
+    // because it does not deploy statically.
     provider: 'iconify',
 
     // Without this, only the icons @nuxt/ui registers itself end up in the
@@ -250,5 +275,12 @@ export default defineNuxtConfig({
   // zeroRuntime strips the runtime endpoint and silences the URL-signing warning.
   ogImage: {
     zeroRuntime: true
+  },
+
+  prerender: {
+    routes: [
+      '/'
+    ],
+    crawlLinks: true
   }
 })
