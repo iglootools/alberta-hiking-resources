@@ -20,6 +20,7 @@ app follows its upstream template in
   - [Tolerate StackBlitz's unlocked, unverified install while it cannot start](#tolerate-stackblitzs-unlocked-unverified-install-while-it-cannot-start)
   - [Install the dev container's mise unpinned, from its apt repository](#install-the-dev-containers-mise-unpinned-from-its-apt-repository)
   - [Do not call the shared link checker until the docs need one](#do-not-call-the-shared-link-checker-until-the-docs-need-one)
+- [Documentation](#documentation)
 <!-- tocstop -->
 
 ## Out of scope
@@ -112,3 +113,21 @@ The measurements are in [link-checking.md](guidelines/link-checking.md).
 the shared workflow then with its `paths` input scoped to `docs/**` and
 `README.md`. Checking `content/` stays off the table until its links stop being
 predominantly third-party consumer sites.
+
+## Documentation
+
+Each kind of change, and the documents it updates in the same pull request:
+
+| Change | Update |
+|---|---|
+| A mise task added, renamed or removed | its `description`, which `mise tasks` lists; the entry points and families in [building-and-testing.md › Task reference](building-and-testing.md#task-reference); a `ci-*` task also in [CI pipeline](building-and-testing.md#ci-pipeline) |
+| A workflow added or a trigger changed | [building-and-testing.md](building-and-testing.md), and [releasing-and-publishing.md](releasing-and-publishing.md) for `release.yml` and `publish.yml` |
+| A repository setting the pipeline depends on | its apply and verify commands in [building-and-testing.md › GitHub Config](building-and-testing.md#github-config) |
+| A trip report source adapter | its registration in [sources/index.ts](../scripts/trip-report-index/sources/index.ts), which the docs link to rather than count; a source that needs a credential is also an environment variable (below) |
+| A region | all three sections at once, with the same id, title, icon and order, as [ADR-006](architecture-decision-record.md#adr-006--one-region-taxonomy-across-trip-reports-weather-and-accommodation) requires: the trip report regions, the weather pages and the accommodation pages |
+| An environment variable | the table in [setup-development-environment.md › Environment variables](setup-development-environment.md#environment-variables), and [.env.example](../.env.example) |
+| An editor extension or a committed `.vscode/settings.json` key | both [.vscode/extensions.json](../.vscode/extensions.json) and the dev container's list, and [setup-development-environment.md › VS Code](setup-development-environment.md#vs-code) |
+| A dependency hold, override or tolerated advisory | a comment beside it with its reason and retirement condition, as in [pnpm-workspace.yaml](../pnpm-workspace.yaml) and [renovate.json](../renovate.json) |
+| A departure from the shared guidelines | a comment where it applies, indexed under [Exceptions](#exceptions) |
+| An architectural decision | a new entry in [architecture-decision-record.md](architecture-decision-record.md) |
+| A change to anything the Nuxt UI Docs template provides | [divergence-from-the-template.md](divergence-from-the-template.md) |
