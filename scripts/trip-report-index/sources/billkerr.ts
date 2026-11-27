@@ -19,8 +19,7 @@ import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
 import { MONTH_ABBREVIATIONS, decodeEntities } from '../html.ts'
-import { fetchJson } from '../fetch.ts'
-import { PAGE_SIZE, expectArray, readAllPages } from './selfhosted-wordpress.ts'
+import { PAGE_SIZE, readAllPages } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://www.billkerr.ca'
 
@@ -124,8 +123,8 @@ async function tagNames(fetchText: Fetcher): Promise<Map<number, string>> {
 }
 
 async function outingCategoryIds(fetchText: Fetcher): Promise<number[]> {
-  const url = `${BASE}/wp-json/wp/v2/categories?per_page=100&_fields=id,name`
-  const categories = await fetchJson<Category[]>(fetchText, url, expectArray(url, 'billkerr'))
+  const categories = await readAllPages<Category>(fetchText, page =>
+    `${BASE}/wp-json/wp/v2/categories?per_page=${PAGE_SIZE}&page=${page}&_fields=id,name`)
   return categories.filter(c => OUTING_CATEGORIES.has(c.name.toLowerCase())).map(c => c.id)
 }
 

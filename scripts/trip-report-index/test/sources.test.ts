@@ -9,6 +9,8 @@ import { regionFromTags, scrapeBillKerr } from '../sources/billkerr.ts'
 import { regionOfLocality, scrapeSpectacularMountains, siteLinks, tripLocality } from '../sources/spectacularmountains.ts'
 import { scrapeCoastBackcountry } from '../sources/coastbackcountry.ts'
 import { readWordPress } from '../sources/wordpress.ts'
+import { scrapePeaksAndStreams } from '../sources/peaksandstreams.ts'
+import { PAGE_SIZE } from '../sources/selfhosted-wordpress.ts'
 import { createFetcher } from '../fetch.ts'
 import { stubFetcher, tempDir } from './support.ts'
 
@@ -263,5 +265,36 @@ describe('scrapeBillKerr', () => {
       ['Ski up to Wawa Sunshine', 'banff'],
       ['Mount Sarrail', 'kananaskis-canmore']
     ])
+  })
+})
+
+describe('tag and category lists longer than one page', () => {
+  /** WordPress's answer for `items` paged by PAGE_SIZE: each page in turn, then the 400 past the end. */
+  const paged = (url: string, items: readonly object[]): string | number => {
+    const page = Number(new URL(url).searchParams.get('page') ?? 1)
+    const batch = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    return batch.length > 0 ? JSON.stringify(batch) : 400
+  }
+  const filler = (count: number, name: string) => Array.from({ length: count }, (_, index) => ({ id: 1000 + index, name: `${name} ${index}` }))
+
+  it('reads a Peaks and Streams tag past the first hundred', async () => {
+    const tags = [...filler(PAGE_SIZE, 'ski'), { id: 7, name: 'Crowsnest Pass' }]
+    const fetchText = stubFetcher(url => url.includes('/tags?')
+      ? paged(url, tags)
+      : paged(url, [{ link: 'https://p/haig', title: { rendered: 'Mount Haig, 3 July, 2013' }, tags: [7] }]))
+    const reports = await scrapePeaksAndStreams(fetchText)
+    assert.deepEqual(reports.map(report => [report.title, report.sourceRegion]), [['Mount Haig', 'Crowsnest Pass']])
+  })
+
+  it('reads a Bill Kerr outing category past the first hundred', async () => {
+    const categories = [...filler(PAGE_SIZE, 'hockey'), { id: 7, name: 'scramble' }]
+    const fetchText = stubFetcher((url) => {
+      if (url.includes('/categories?')) return paged(url, categories)
+      if (url.includes('/tags?')) return paged(url, [])
+      return new URL(url).searchParams.get('categories') === '7'
+        ? paged(url, [{ link: 'https://b/1', title: { rendered: 'Scramble Chester Mountain Sept 3, 2022' }, tags: [] }])
+        : paged(url, [])
+    })
+    assert.deepEqual((await scrapeBillKerr(fetchText)).map(report => report.title), ['Chester Mountain'])
   })
 })

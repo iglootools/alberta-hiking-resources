@@ -12,8 +12,7 @@ import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { MONTHS, decodeEntities } from '../html.ts'
-import { fetchJson } from '../fetch.ts'
-import { PAGE_SIZE, expectArray, readAllPages } from './selfhosted-wordpress.ts'
+import { PAGE_SIZE, readAllPages } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://peaksandstreams.com'
 
@@ -49,8 +48,8 @@ function toReport(post: Post, tagNames: ReadonlyMap<number, string>): RawReport 
 }
 
 export async function scrapePeaksAndStreams(fetchText: Fetcher): Promise<RawReport[]> {
-  const url = `${BASE}/wp-json/wp/v2/tags?per_page=100&_fields=id,name`
-  const tags = await fetchJson<Tag[]>(fetchText, url, expectArray(url, 'peaksandstreams'))
+  const tags = await readAllPages<Tag>(fetchText, page =>
+    `${BASE}/wp-json/wp/v2/tags?per_page=${PAGE_SIZE}&page=${page}&_fields=id,name`)
   const tagNames = new Map(tags.map(tag => [tag.id, decodeEntities(tag.name)]))
 
   const posts = await readAllPages<Post>(fetchText, page =>
