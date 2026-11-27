@@ -1,9 +1,10 @@
 {
   "description": [
-    "The shared rules (digest pinning, the 14-day minimumReleaseAge with timestamp-optional, and the managers for the mise version in workflows and for the iglootools command in pyproject.toml) come from the iglootools base preset, pinned to a release tag: see guidelines/project-setup/dependency-automation.md in iglootools/common. Grouping comes from Nuxt's preset and group:all; what is below is this project's own."
+    "The shared rules (digest pinning, the 14-day minimumReleaseAge with timestamp-optional, and the managers for the mise version in workflows and for the iglootools command in pyproject.toml) come from the iglootools base preset, pinned to a release tag: see guidelines/project-setup/dependency-automation.md in iglootools/common. Grouping comes from Nuxt's preset and group:all; what is below is this project's own.",
+    "Nuxt's preset is pinned to a commit of its main branch, so an upstream packageRule (which applies after top-level settings, and could shorten the 14-day hold) reaches this repository only through a reviewed diff. Not to a tag: its latest, v0.1.3, is from April 2025, 178 commits behind main, and would reintroduce `ignoreDeps: [\"node\"]`, freezing node in mise.toml. Renovate cannot move a commit pin (it skips it as invalid-value), so move it by hand: compare `gh api repos/nuxt/renovate-config-nuxt/compare/<pinned>...main`, then pin `gh api repos/nuxt/renovate-config-nuxt/commits/main --jq .sha`. Pin a tag instead once upstream tags main again."
   ],
   "extends": [
-    "github>nuxt/renovate-config-nuxt",
+    "github>nuxt/renovate-config-nuxt#9d078b97b445d296cee1a47d03a44a6ff1436d02",
     "group:all",
     "github>iglootools/common//renovate/base#v2.5.0"
   ],
