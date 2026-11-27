@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import type { LLMsSection } from 'nuxt-llms'
 
 const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://www.alberta-hiking-resources.org'
 const siteTitle = 'Alberta Hiking Resources'
@@ -17,6 +18,66 @@ const siteVersion = (() => {
     return undefined
   }
 })()
+
+// The llms.txt and llms-full.txt sections, one per top-level folder of content/.
+const llmsSections: LLMsSection[] = [
+  {
+    title: 'Getting Started',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/getting-started%' }
+    ]
+  },
+  {
+    title: 'Meetup Groups',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/meetup-groups%' }
+    ]
+  },
+  {
+    title: 'Hiking & Scrambling Beta',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/hiking-scrambling-beta%' }
+    ]
+  },
+  {
+    title: 'Weather & Trail Conditions',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/weather-trail-conditions%' }
+    ]
+  },
+  {
+    title: 'Events',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/events%' }
+    ]
+  },
+  {
+    title: 'Outdoor Gear',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/outdoor-gear%' }
+    ]
+  },
+  {
+    title: 'Hike Organizers',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/hike-organizers%' }
+    ]
+  },
+  {
+    title: 'Frequently Asked Questions',
+    contentCollection: 'docs',
+    contentFilters: [
+      { field: 'path', operator: 'LIKE', value: '/faq%' }
+    ]
+  }
+]
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -230,64 +291,7 @@ export default defineNuxtConfig({
       title: siteTitle,
       description: siteDescription
     },
-    sections: [
-      {
-        title: 'Getting Started',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/getting-started%' }
-        ]
-      },
-      {
-        title: 'Meetup Groups',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/meetup-groups%' }
-        ]
-      },
-      {
-        title: 'Hiking & Scrambling Beta',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/hiking-scrambling-beta%' }
-        ]
-      },
-      {
-        title: 'Weather & Trail Conditions',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/weather-trail-conditions%' }
-        ]
-      },
-      {
-        title: 'Events',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/events%' }
-        ]
-      },
-      {
-        title: 'Outdoor Gear',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/outdoor-gear%' }
-        ]
-      },
-      {
-        title: 'Hike Organizers',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/hike-organizers%' }
-        ]
-      },
-      {
-        title: 'Frequently Asked Questions',
-        contentCollection: 'docs',
-        contentFilters: [
-          { field: 'path', operator: 'LIKE', value: '/faq%' }
-        ]
-      }
-    ]
+    sections: llmsSections
   },
 
   // `name` is consumed by @nuxtjs/mcp-toolkit (the runtime MCP server). Note
