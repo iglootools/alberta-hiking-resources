@@ -69,5 +69,14 @@ export function sourceLabel(sourceId: string): string {
   return Object.hasOwn(DETAILS, sourceId) ? DETAILS[sourceId as SourceId].label : sourceId
 }
 
+/**
+ * A source's position in `order`, or the end of it for a source `order` leaves
+ * out, so that every ranking puts an unlisted source last.
+ */
+export function rankIn(order: readonly string[], sourceId: string): number {
+  const index = order.indexOf(sourceId)
+  return index === -1 ? order.length : index
+}
+
 /** The source ids in the order their links appear under an objective. */
 export const SOURCE_ORDER: readonly string[] = SOURCE_IDS

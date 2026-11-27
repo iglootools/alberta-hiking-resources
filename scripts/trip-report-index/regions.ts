@@ -13,6 +13,7 @@
  * on which blog reported it.
  */
 import type { RawReport } from './types.ts'
+import { rankIn } from './sources/catalog.ts'
 
 export interface Region {
   readonly id: string
@@ -493,13 +494,8 @@ export function mountainsOf(reports: readonly RawReport[]): Set<string>[] {
  */
 export function strongestStatedRegion(reports: readonly RawReport[]): string | undefined {
   const ranked = reports
-    .map(report => ({ regionId: mappedRegionOf(report), rank: rank(report.sourceId) }))
+    .map(report => ({ regionId: mappedRegionOf(report), rank: rankIn(REGION_PRIORITY, report.sourceId) }))
     .filter(entry => entry.regionId && entry.regionId !== OUT_OF_SCOPE)
     .sort((left, right) => left.rank - right.rank)
   return ranked[0]?.regionId
-}
-
-function rank(sourceId: string): number {
-  const index = REGION_PRIORITY.indexOf(sourceId)
-  return index === -1 ? REGION_PRIORITY.length : index
 }

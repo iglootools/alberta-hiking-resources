@@ -14,7 +14,7 @@ import { REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { displayName, objectiveKey } from './canon.ts'
 import { UnknownRegionError } from './errors.ts'
 import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, areNeighbours, mappedRegionOf, mountainsOf, strongestStatedRegion } from './regions.ts'
-import { SOURCE_ORDER } from './sources/catalog.ts'
+import { SOURCE_ORDER, rankIn } from './sources/catalog.ts'
 import { NOTHING_INFERRED, isStated, regionsOf } from './types.ts'
 
 /** Applies a curated REPORT_OBJECTIVES entry in place of the title's own parse. */
@@ -36,10 +36,7 @@ function groupByObjective(reports: readonly RawReport[]): Map<string, RawReport[
   return groups
 }
 
-const sourceRank = (sourceId: string) => {
-  const index = SOURCE_ORDER.indexOf(sourceId)
-  return index === -1 ? SOURCE_ORDER.length : index
-}
+const sourceRank = (sourceId: string) => rankIn(SOURCE_ORDER, sourceId)
 
 /**
  * The name to print. Sources spell the same peak differently, so the one from
@@ -70,10 +67,12 @@ const KIND_RANK: Readonly<Record<Signal['kind'], number>> = {
   'curated': 0, 'stated': 1, 'tick-list': 2, 'sub-range': 3, 'companion': 4, 'linked': 5, 'trailhead': 6, 'named-place': 7
 }
 
+/** Sources as their claims rank: REGION_PRIORITY's first, then the rest in SOURCE_ORDER. */
+const CLAIM_SOURCE_ORDER = [...REGION_PRIORITY, ...SOURCE_ORDER.filter(sourceId => !REGION_PRIORITY.includes(sourceId))]
+
 function claimRank(claim: Claim): [number, number] {
   const sourceId = 'sourceId' in claim.signal ? claim.signal.sourceId : ''
-  const priority = REGION_PRIORITY.indexOf(sourceId)
-  return [KIND_RANK[claim.signal.kind], priority === -1 ? REGION_PRIORITY.length + sourceRank(sourceId) : priority]
+  return [KIND_RANK[claim.signal.kind], rankIn(CLAIM_SOURCE_ORDER, sourceId)]
 }
 
 function byStrength(left: Claim, right: Claim): number {
