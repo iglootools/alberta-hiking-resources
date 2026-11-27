@@ -7,7 +7,7 @@
   //
   // IncludeGlobalTools is off (the extension's own recommendation) and is load-bearing
   // here: with the default `true`, this Nuxt project — whose mise.toml declares only
-  // node and pnpm — was given metals.javaHome, three java.* keys and a
+  // the project's own tools — was given metals.javaHome, three java.* keys and a
   // python.defaultInterpreterPath pointing at a global mise interpreter, none of which
   // correspond to anything this repo builds. Those keys were removed when this comment
   // was written; if they reappear, this setting has been lost.
@@ -32,7 +32,7 @@
   "debug.javascript.defaultRuntimeExecutable": {
     "pwa-node": "${workspaceFolder}/.vscode/mise-tools/node"
   },
-  // Format on save, per language, with the tool the `format` task runs, so a saved file passes
+  // Format on save, per language, with the tool the `fmt` task runs, so a saved file passes
   // `lint-fmt`. Per language rather than globally: a global formatOnSave would also let
   // Volar format .vue and .ts files, which ESLint's stylistic rules own. The MDC pages under
   // content/ are excluded in .rumdl.toml. See guidelines/project-setup/ide.md in
