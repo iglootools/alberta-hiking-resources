@@ -7,7 +7,7 @@
  */
 import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { BuildResult } from './build.ts'
+import type { BuildResult } from './types.ts'
 import { UnknownPagesError } from './errors.ts'
 import { indent } from './output.ts'
 import { REGIONS, UNSORTED } from './regions.ts'

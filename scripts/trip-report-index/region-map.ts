@@ -18,7 +18,7 @@
  */
 import type { Gazetteer } from './gazetteer.ts'
 import type { Coordinates, Objective } from './types.ts'
-import { regionsOf } from './build.ts'
+import { regionsOf } from './types.ts'
 import { distanceKm } from './geo.ts'
 
 export interface Extent {

@@ -7,12 +7,10 @@
  * on every run and is not committed — it is a worksheet for editing
  * curation.ts, and its entries are printed ready to paste there.
  */
-import type { BuildResult, Dropped } from './build.ts'
-import type { Claim, Objective } from './types.ts'
-import { regionsOf } from './build.ts'
+import type { BuildResult, Claim, Dropped, Objective } from './types.ts'
 import { DISTINCT_NAMES } from './curation.ts'
 import { REGIONS } from './regions.ts'
-import { isStated } from './types.ts'
+import { isStated, regionsOf } from './types.ts'
 
 /** Similarity above which two names are worth a human looking at them. */
 const NEAR_MISS_CUTOFF = 0.86

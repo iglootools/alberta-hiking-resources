@@ -8,45 +8,14 @@
  * Parkway by two, and it is in both, on the boundary; a reader browsing either
  * should find it. Each claim keeps its signal so the page can say who says so.
  */
-import type { Claim, Objective, RawReport, Signal } from './types.ts'
+import type { BuildResult, Claim, Dropped, Inferred, Objective, RawReport, Signal } from './types.ts'
 import type { GuidebookIndex } from './guidebooks.ts'
-import type { Inferred } from './inference.ts'
 import { REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { displayName, objectiveKey } from './canon.ts'
 import { UnknownRegionError } from './errors.ts'
-import { NOTHING_INFERRED } from './inference.ts'
 import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, areNeighbours, mappedRegionOf, mountainsOf, strongestStatedRegion } from './regions.ts'
 import { SOURCE_ORDER } from './sources/index.ts'
-import { isStated } from './types.ts'
-
-/**
- * Why a name group was left off every page. A wrong exclusion is otherwise
- * invisible — the objective simply disappears — so each is kept for the
- * worksheet rather than only counted.
- *
- * - `curated`: REGION_OVERRIDES says out-of-scope.
- * - `filed-elsewhere`: a blog files it somewhere this site does not cover
- *   (`sourceIds`), and nothing stated places it here.
- * - `outside`: a trailhead or place-name position is far from every region.
- */
-export interface Dropped {
-  readonly key: string
-  readonly name: string
-  readonly reason: 'curated' | 'filed-elsewhere' | 'outside'
-  readonly sourceIds: readonly string[]
-  readonly url: string
-}
-
-export interface BuildResult {
-  /** Every objective once, placed or not. */
-  readonly objectives: readonly Objective[]
-  /** Each region's objectives; an objective with claims on two regions is in both lists. */
-  readonly byRegion: ReadonlyMap<string, readonly Objective[]>
-  /** Objectives nothing places and no override covers. Input to curation. */
-  readonly unplaced: readonly Objective[]
-  /** Name groups left off every page as out of scope, with the reason. */
-  readonly dropped: readonly Dropped[]
-}
+import { NOTHING_INFERRED, isStated, regionsOf } from './types.ts'
 
 /** Applies a curated REPORT_OBJECTIVES entry in place of the title's own parse. */
 function withCuratedObjectives(report: RawReport): RawReport {
@@ -294,11 +263,6 @@ function place(key: string, group: readonly RawReport[], context: Context): Obje
   const weak = weakClaimsOf(key, group, context.inferred)
   if (weak.length === 0 && isOutside(key, group, context.inferred)) return dropped(key, group, 'outside', [])
   return [objectiveOf(key, name, group, weak, context.guidebooks)]
-}
-
-/** The distinct regions an objective is listed under, strongest first. */
-export function regionsOf(objective: Objective): string[] {
-  return [...new Set(objective.claims.map(claim => claim.regionId))]
 }
 
 function groupByRegion(objectives: readonly Objective[]): Map<string, Objective[]> {

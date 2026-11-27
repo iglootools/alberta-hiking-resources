@@ -4,6 +4,9 @@
  * A `RawReport` is what a source adapter scrapes: one published trip report,
  * naming one or more objectives. An `Objective` is what the renderer emits: one
  * mountain/summit with every report that covers it, from every source.
+ *
+ * The values passed between the stages live here too — what the build returns
+ * and what inference hands back to it — so no two stages import each other.
  */
 
 import type { GuidebookEntry } from './guidebooks.ts'
@@ -92,3 +95,60 @@ export interface Objective {
   /** Guidebooks this objective appears in, with the book's own grade. */
   readonly guidebooks?: readonly GuidebookEntry[]
 }
+
+/** The distinct regions an objective is listed under, strongest first. */
+export function regionsOf(objective: Objective): string[] {
+  return [...new Set(objective.claims.map(claim => claim.regionId))]
+}
+
+/**
+ * Why a name group was left off every page. A wrong exclusion is otherwise
+ * invisible — the objective simply disappears — so each is kept for the
+ * worksheet rather than only counted.
+ *
+ * - `curated`: REGION_OVERRIDES says out-of-scope.
+ * - `filed-elsewhere`: a blog files it somewhere this site does not cover
+ *   (`sourceIds`), and nothing stated places it here.
+ * - `outside`: a trailhead or place-name position is far from every region.
+ */
+export interface Dropped {
+  readonly key: string
+  readonly name: string
+  readonly reason: 'curated' | 'filed-elsewhere' | 'outside'
+  readonly sourceIds: readonly string[]
+  readonly url: string
+}
+
+/** What build.ts makes of the reports: every objective, placed or not, and what it left out. */
+export interface BuildResult {
+  /** Every objective once, placed or not. */
+  readonly objectives: readonly Objective[]
+  /** Each region's objectives; an objective with claims on two regions is in both lists. */
+  readonly byRegion: ReadonlyMap<string, readonly Objective[]>
+  /** Objectives nothing places and no override covers. Input to curation. */
+  readonly unplaced: readonly Objective[]
+  /** Name groups left off every page as out of scope, with the reason. */
+  readonly dropped: readonly Dropped[]
+}
+
+/** Claims about the report's objectives, by report URL, and about an objective as a whole, by key. */
+export interface InferredClaims {
+  readonly byReport: ReadonlyMap<string, readonly Claim[]>
+  readonly byKey: ReadonlyMap<string, readonly Claim[]>
+}
+
+/**
+ * What inference.ts reads from a first build, for the second to apply: the build
+ * runs twice, and this is what passes between the two passes.
+ */
+export interface Inferred extends InferredClaims {
+  /** Thin or split evidence, for an objective nothing else places. */
+  readonly weak: InferredClaims
+  /** Report URLs and objective keys whose position is far outside every region. */
+  readonly outside: ReadonlySet<string>
+}
+
+const NO_CLAIMS: InferredClaims = { byReport: new Map(), byKey: new Map() }
+
+/** A first build's input: nothing inferred yet. */
+export const NOTHING_INFERRED: Inferred = { ...NO_CLAIMS, weak: NO_CLAIMS, outside: new Set() }

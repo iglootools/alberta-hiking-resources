@@ -8,9 +8,8 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import type { BuildResult } from './build.ts'
 import type { Gazetteer } from './gazetteer.ts'
-import type { Objective } from './types.ts'
+import type { BuildResult, Objective } from './types.ts'
 import { buildObjectives } from './build.ts'
 import { checkIndexLinks, checkMirroredSections } from './checks.ts'
 import { MinimumNotMetError } from './errors.ts'

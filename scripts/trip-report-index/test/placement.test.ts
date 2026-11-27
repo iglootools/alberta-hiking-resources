@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import type { Inferred } from '../inference.ts'
-import type { Claim, RawReport } from '../types.ts'
-import { buildObjectives, regionsOf } from '../build.ts'
+import type { Claim, Inferred, RawReport } from '../types.ts'
+import { buildObjectives } from '../build.ts'
 import { objectiveKey } from '../canon.ts'
-import { NOTHING_INFERRED } from '../inference.ts'
 import { NEIGHBOUR_IDS, REGIONS, REGION_IDS, areNeighbours, mountainsOf } from '../regions.ts'
+import { NOTHING_INFERRED, regionsOf } from '../types.ts'
 
 // A name no curation entry mentions, so only the reports below decide.
 const NAME = 'Mount Testington'

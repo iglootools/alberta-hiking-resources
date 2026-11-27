@@ -42,10 +42,9 @@
  * Colorado, Hawaii and Bavaria; those are dropped as out of scope, the way a blog
  * that files a trip abroad has it dropped.
  */
-import type { BuildResult } from './build.ts'
 import type { Gazetteer } from './gazetteer.ts'
 import type { Landmark } from './geo.ts'
-import type { Claim, Coordinates, Objective, RawReport } from './types.ts'
+import type { BuildResult, Claim, Coordinates, Inferred, Objective, RawReport } from './types.ts'
 import { nearestRegion } from './geo.ts'
 import { OUT_OF_SCOPE, mappedRegionOf } from './regions.ts'
 import { isStated } from './types.ts'
@@ -78,23 +77,6 @@ const OUTSIDE_KM = 50
 
 /** Rounds of letting newly placed reports vote on their neighbours. The second adds a handful; the third, none. */
 const LINK_ROUNDS = 3
-
-/** Claims about the report's objectives, by report URL, and about an objective as a whole, by key. */
-export interface InferredClaims {
-  readonly byReport: ReadonlyMap<string, readonly Claim[]>
-  readonly byKey: ReadonlyMap<string, readonly Claim[]>
-}
-
-export interface Inferred extends InferredClaims {
-  /** Thin or split evidence, for an objective nothing else places. */
-  readonly weak: InferredClaims
-  /** Report URLs and objective keys whose position is far outside every region. */
-  readonly outside: ReadonlySet<string>
-}
-
-const NO_CLAIMS: InferredClaims = { byReport: new Map(), byKey: new Map() }
-
-export const NOTHING_INFERRED: Inferred = { ...NO_CLAIMS, weak: NO_CLAIMS, outside: new Set() }
 
 function statedRegions(objective: Objective): Set<string> {
   return new Set(objective.claims.filter(isStated).map(claim => claim.regionId))
