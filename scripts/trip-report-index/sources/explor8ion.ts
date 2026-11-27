@@ -9,7 +9,7 @@
 import type { Fetcher } from '../fetch.ts'
 import { fetchUnlessStatus } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
-import { anchors, decodeEntities, sitemapLocations, textOf } from '../html.ts'
+import { MONTHS, anchors, decodeEntities, sitemapLocations, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
 
 const BASE = 'https://explor8ion.com/'
@@ -25,7 +25,6 @@ const TRIP_ENTRY = /<a\s+class="title"\s+href="(\/trips\/[^"]+\/)"[^>]*>([\s\S]*
  * locality a trip page states, so it is what places the few dozen trips the
  * region pages omit.
  */
-const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December'
 const STANDFIRST = new RegExp(`(?:${MONTHS})\\s+\\d{1,2},\\s*\\d{4},\\s*([A-Z][^]{0,48}?)\\s+(?:Summit|Gain|Distance|Elevation|Round)`)
 
 /**

@@ -21,7 +21,7 @@ import type { Fetcher } from './fetch.ts'
 import { objectiveKey, splitObjectives } from './canon.ts'
 import { MinimumNotMetError } from './errors.ts'
 import { matchArea } from './areas.ts'
-import { decodeEntities, textOf } from './html.ts'
+import { decodeEntities, tableRows, textOf } from './html.ts'
 
 /**
  * Lower case since the site's September 2026 rebuild. The old capitalised paths
@@ -64,8 +64,6 @@ const LISTS: readonly ListSpec[] = [
   { slug: 'don%27t-waste-your-time', book: 'Don’t Waste Your Time', mark: GRADE, minimumRows: 120 }
 ]
 
-const ROW = /<tr[^>]*>([\s\S]*?)<\/tr>/gi
-const CELL = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi
 const LINK = /href="([^"]+)"/i
 
 export interface GuidebookEntry {
@@ -98,8 +96,7 @@ interface Mark {
  * The marks in one table row, or undefined when it is not a data row — the
  * header, or a malformed one — so it does not count towards `minimumRows`.
  */
-function marksOfRow(rowHtml: string, { slug, book, mark }: ListSpec): Mark[] | undefined {
-  const cells = [...rowHtml.matchAll(CELL)].map(cell => cell[1] ?? '')
+function marksOfRow(cells: readonly string[], { slug, book, mark }: ListSpec): Mark[] | undefined {
   const [trip, grade, region] = cells
   if (!trip || !grade) return undefined
 
@@ -126,8 +123,8 @@ function marksOfRow(rowHtml: string, { slug, book, mark }: ListSpec): Mark[] | u
 /** Every mark on one list, failing if the list yielded too few rows to be real. */
 async function readList(fetchText: Fetcher, spec: ListSpec): Promise<Mark[]> {
   const html = await fetchText(`${BASE}${spec.slug}`)
-  const rows = [...html.matchAll(ROW)]
-    .map(row => marksOfRow(row[1] ?? '', spec))
+  const rows = tableRows(html)
+    .map(cells => marksOfRow(cells, spec))
     .flatMap(marks => marks ? [marks] : [])
   if (rows.length < spec.minimumRows) {
     throw new MinimumNotMetError(spec.slug, rows.length, spec.minimumRows, 'rows')

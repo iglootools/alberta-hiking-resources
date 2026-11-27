@@ -14,13 +14,10 @@ import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
-import { decodeEntities, textOf } from '../html.ts'
+import { decodeEntities, tableRows, textOf } from '../html.ts'
 
 const INDEX = 'https://sonnybou.ca/scrambles/'
 
-/** `<tr>` … `<td>` cells, with the anchor kept so the link survives. */
-const ROW = /<tr[^>]*>([\s\S]*?)<\/tr>/gi
-const CELL = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi
 const LINK = /<a\s[^>]*href=["']?([^"'\s>]+)/i
 
 /**
@@ -36,9 +33,7 @@ export async function scrapeSonnyBou(fetchText: Fetcher): Promise<RawReport[]> {
   const html = await fetchText(INDEX)
   const reports = new Map<string, RawReport>()
 
-  for (const row of html.matchAll(ROW)) {
-    const cells = [...(row[1] ?? '').matchAll(CELL)].map(cell => cell[1] ?? '')
-    const [summit, location] = cells
+  for (const [summit, location] of tableRows(html)) {
     if (!summit || !location) continue
 
     const href = LINK.exec(summit)?.[1]

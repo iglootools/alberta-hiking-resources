@@ -11,12 +11,11 @@
 import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
-import { decodeEntities } from '../html.ts'
+import { MONTHS, decodeEntities } from '../html.ts'
 import { PAGE_SIZE, readAllPages } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://peaksandstreams.com'
 
-const MONTHS = 'january|february|march|april|may|june|july|august|september|october|november|december'
 /** ", 3 July, 2013" and the like. */
 const TRAILING_DATE = new RegExp(`[\\s,-]+\\d{0,2}\\s*(?:${MONTHS})[a-z]*,?\\s*\\d{0,2},?\\s*\\d{4}\\s*$`, 'i')
 

@@ -22,12 +22,11 @@ import { ApiError, MissingCredentialError, SourceChangedError } from '../errors.
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
+import { MONTH_ABBREVIATIONS } from '../html.ts'
 
 const API = 'https://www.googleapis.com/youtube/v3'
 const HANDLE = 'AnnieSteveClimbingTheRockies'
 const PAGE_SIZE = 50
-
-const MONTHS = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
 
 /**
  * The trailing date, in any of the forms the channel uses. A slash counts as a
@@ -36,7 +35,7 @@ const MONTHS = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
  * "Jewell Pass loop Sunrise Jan23rd2021".
  */
 const TRAILING_DATE = new RegExp(
-  `[\\s,/-]+(?:${MONTHS})[a-z]*\\.?\\s*\\d{1,2}(?:st|nd|rd|th)?[,\\s]*\\d{4}.*$`, 'i')
+  `[\\s,/-]+(?:${MONTH_ABBREVIATIONS})[a-z]*\\.?\\s*\\d{1,2}(?:st|nd|rd|th)?[,\\s]*\\d{4}.*$`, 'i')
 
 /** Objective first, then area, separated by commas or a spaced dash. */
 const PART_SEPARATOR = /\s+-\s+|,\s*/

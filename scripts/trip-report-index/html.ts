@@ -35,6 +35,26 @@ export function decodeEntities(value: string): string {
   })
 }
 
+/**
+ * The month names, as a regex alternation, for the dates sources put in their
+ * titles and headers. Capitalised: a source that writes them otherwise is
+ * matched with the `i` flag.
+ */
+export const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December'
+
+/** The months' three-letter forms, as MONTHS; follow with `[a-z]*` to accept "Sept" or the full name too. */
+export const MONTH_ABBREVIATIONS = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
+
+/**
+ * The cells of every table row in `html`, each as its inner HTML so links
+ * survive, header cells included. Nested tables are not handled; none of the
+ * pages read has one.
+ */
+export function tableRows(html: string): string[][] {
+  return [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)]
+    .map(row => [...(row[1] ?? '').matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => cell[1] ?? ''))
+}
+
 /** Strips tags and collapses whitespace, including the &nbsp; these sites favour. */
 export function textOf(html: string): string {
   return decodeEntities(html.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim()

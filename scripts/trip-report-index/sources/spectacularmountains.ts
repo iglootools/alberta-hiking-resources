@@ -22,7 +22,7 @@
 import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { matchArea } from '../areas.ts'
-import { anchors, textOf } from '../html.ts'
+import { MONTHS, anchors, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
 import { readSelfHostedPosts } from './selfhosted-wordpress.ts'
 
@@ -41,8 +41,6 @@ function regionFromPath(url: string): string | undefined {
   const [area, region] = new URL(url).pathname.split('/').filter(Boolean)
   return area && region && REGION_PREFIX.test(area) ? `${area}/${region}` : undefined
 }
-
-const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December'
 
 /**
  * The trip's date: "9 August 2025", a span such as "26 & 27 July 2025", or the
