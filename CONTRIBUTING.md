@@ -8,7 +8,10 @@ itself, see the in-site
 
 - [docs/setup-development-environment.md](docs/setup-development-environment.md)
   — follow to set up Codespaces, a dev container or a local environment, and the
-  iglootools Claude Code plugin and MCP servers
+  iglootools Claude Code plugin and MCP servers. Codespaces needs no install:
+  [open one](https://codespaces.new/iglootools/alberta-hiking-resources) and
+  the whole build and test pipeline runs there. StackBlitz cannot currently run
+  the project; the doc says why and how to retest
 - [docs/building-and-testing.md](docs/building-and-testing.md) — follow to
   build, lint and typecheck, and look up the checks CI runs, the dependency
   management, and the GitHub settings the repository depends on
