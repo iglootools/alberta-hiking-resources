@@ -151,7 +151,7 @@ description = "Lint the Markdown with rumdl (configured in .rumdl.toml; fix what
 run = "rumdl check ."
 
 [tasks.lint-types]
-description = "Type-check with the Nuxt typecheck"
+description = "Type-check the app with nuxt typecheck and the scripts with tsc"
 run = "pnpm typecheck"
 
 [tasks.lint-shell]

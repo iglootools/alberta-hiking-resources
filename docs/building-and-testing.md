@@ -20,28 +20,31 @@
 
 ## Task reference
 
-The `mise` tasks wrap the underlying `pnpm` scripts:
+`mise tasks` lists every task with its description, which is the one place the
+full list is kept; [mise.toml](../mise.toml) and
+[mise-tasks/](../mise-tasks/) define them. Tasks are named by family, so the
+name says what a task does:
 
-| Task                  | Description                              |
-| --------------------- | ---------------------------------------- |
-| `mise run install`    | Install dependencies (frozen lockfile)   |
-| `mise run dev`        | Start the Nuxt dev server                |
-| `mise run preflight`  | Run every lint and the tests, then build (`preflight-quick` leaves out the build) |
-| `mise run lint`       | Run every lint below                     |
-| `mise run lint-eslint` | Lint the code with ESLint                |
-| `mise run fmt`        | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
-| `mise run lint-fmt`   | Check they are formatted (runs `lint-fmt-dprint`) |
-| `mise run lint-markdown` | Lint the Markdown with rumdl (`content/` excluded) |
-| `mise run lint-renovate` | Validate `renovate.json` with Renovate's validator, strictly |
-| `mise run lint-common-pins` | Check that every pin on iglootools/common agrees |
-| `mise run renovate-dry-run` | List the updates Renovate would propose, writing nothing (needs `gh auth`) |
-| `mise run lint-types` | Run the Nuxt type check                  |
-| `mise run test`       | Run the trip report index tests          |
-| `mise run build`      | Build the Nuxt application               |
-| `mise run build-pages`| Build for GitHub Pages deployment        |
-| `mise run preview`    | Preview the production build             |
-| `mise run ci-preflight` | Run the full CI pipeline locally       |
+| Family | What it does | Run them all with |
+|---|---|---|
+| `lint-*` | fails without writing anything; each description says how to fix a failure | `mise run lint` |
+| writers (`fmt-*`, `toc`) | rewrite files: `fmt` runs ESLint's fixes, dprint and rumdl | `mise run fmt` |
+| `test` | runs the tests | `mise run test` |
+| `preflight`, `preflight-quick` | every lint and the tests, then the build (`preflight-quick` leaves out the build) | — |
+| `ci-*` | what one workflow job runs: `ci-preflight`, `ci-release` | — |
+
+The entry points beyond those:
+
+| Task | Description |
+|---|---|
+| `mise run install` | Install dependencies (frozen lockfile) |
+| `mise run dev` | Start the Nuxt dev server |
+| `mise run build` | Build the Nuxt application |
+| `mise run build-pages` | Build for GitHub Pages deployment |
+| `mise run preview` | Preview the production build |
 | `mise run build-trip-index` | Rebuild the by-objective trip report index |
+| `mise run renovate-dry-run` | List the updates Renovate would propose, writing nothing (needs `gh auth`) |
+| `mise run release` | Release with semantic-release; `--dry-run` previews ([releasing-and-publishing.md](releasing-and-publishing.md)) |
 
 The sections below cover the build, lint, and CI tasks in more detail; see
 [setup-development-environment.md](setup-development-environment.md) for
@@ -50,17 +53,19 @@ The sections below cover the build, lint, and CI tasks in more detail; see
 ## Linting and type checking
 
 ```bash
-mise run lint          # every lint below
-mise run lint-eslint   # eslint .
-mise run lint-fmt      # every lint-fmt-*: dprint check on the JSON, TOML and YAML
-mise run lint-markdown # rumdl check: the repository's Markdown, not the MDC pages
-mise run lint-types    # nuxt typecheck
+mise run lint      # every lint-* task
+mise run fmt       # fix what the formatters can, then re-run the lint that failed
 ```
+
+`lint-types` runs `pnpm typecheck`, which type-checks the Nuxt app with
+`nuxt typecheck` and the scripts under [scripts/](../scripts/) with `tsc`.
+`lint-markdown` checks the repository's Markdown, not the MDC pages under
+`content/`.
 
 ## Tests
 
 ```bash
-mise run test        # node --test 'scripts/**/*.test.ts'
+mise run test        # pnpm test: node --test over the *.test.ts files
 ```
 
 The tests cover the trip report index under
@@ -101,6 +106,8 @@ the Nitro output, so a plain `mise run build` is not what ships.
 [`preflight.yml`](../.github/workflows/preflight.yml) workflow: `install` →
 `preflight` (every lint and `test` in parallel, then `build`). The build is in
 `preflight` because it is itself a check: a broken page fails the prerender.
+[`release.yml`](../.github/workflows/release.yml) runs `ci-release`: `install` →
+`release`.
 
 ## Bundling icon sets
 
