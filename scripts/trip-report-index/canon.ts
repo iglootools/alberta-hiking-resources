@@ -38,7 +38,8 @@ const ELEVATION = /\s+\d{3,5}\s*m\b/gi
 
 const COMPANION_SEPARATOR = /\s*(?:[,&+]|\band\b)\s*/
 
-function stripAccents(value: string): string {
+/** `value` with its accents removed: "Îyarhe" becomes "Iyarhe". */
+export function stripAccents(value: string): string {
   return value.normalize('NFD').replace(/\p{Mn}/gu, '')
 }
 

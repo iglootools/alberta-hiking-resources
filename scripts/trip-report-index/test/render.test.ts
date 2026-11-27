@@ -62,3 +62,11 @@ describe('renderRegionPage, frontmatter', () => {
     assert.match(renderRegionPage(UNSORTED, []), /^---\n(?:.*\n)*?generated: true\n(?:.*\n)*?---\n/)
   })
 })
+
+describe('renderRegionPage, A–Z sections', () => {
+  it('files a name with an accented initial under its base letter', () => {
+    const named = (name: string): Objective => ({ ...bowPeak, key: name.toLowerCase(), name, claims: [] })
+    const page = renderRegionPage(region('kananaskis-canmore'), [named('Ice Peak'), named('Îyarhe Îpan')])
+    assert.deepEqual(page.match(/^## .+$/gm), ['## I'])
+  })
+})

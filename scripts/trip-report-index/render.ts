@@ -17,6 +17,7 @@ import type { Region } from './regions.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { ACCOMMODATION, TRIP_REPORTS, WEATHER, regionPath } from './sections.ts'
 import { sourceLabel as label } from './sources/catalog.ts'
+import { stripAccents } from './canon.ts'
 
 const REGION_TITLES = new Map(REGIONS.map(region => [region.id, region.title]))
 
@@ -121,9 +122,12 @@ function renderObjective(objective: Objective, here: Region): string[] {
  * start with a letter starts with a digit, and collects under "0–9". That
  * bucket was once "#", which slugifies to an empty heading id: the anchor went
  * nowhere and the table of contents' scroll-spy threw on the selector "#".
+ *
+ * The letter is folded to its base, so "Îyarhe Îpan" is under I, where the
+ * name sort already puts it, rather than under a heading of its own after I.
  */
 function bucketOf(objective: Objective): string {
-  const first = objective.name.replace(/^[^\p{L}\p{N}]+/u, '').charAt(0).toUpperCase()
+  const first = stripAccents(objective.name.replace(/^[^\p{L}\p{N}]+/u, '')).charAt(0).toUpperCase()
   return /\p{L}/u.test(first) ? first : '0–9'
 }
 
