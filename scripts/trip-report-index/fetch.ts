@@ -10,7 +10,12 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { HttpError, InvalidJsonError, RequestTimeoutError, redactKey } from './errors.ts'
 
-/** Courtesy delay between live requests to the same host, in milliseconds. */
+/**
+ * Courtesy delay between live requests made by one fetcher, in milliseconds.
+ * It is not per host: a fetcher keeps one timestamp for every host it reads,
+ * and each fetcher a run creates starts unthrottled. The sources are read one
+ * after another, so in practice it spaces the requests to each blog.
+ */
 const THROTTLE_MS = 300
 
 /**
