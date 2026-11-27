@@ -10,6 +10,7 @@ import { regionOfLocality, scrapeSpectacularMountains, siteLinks, tripLocality }
 import { scrapeCoastBackcountry } from '../sources/coastbackcountry.ts'
 import { readWordPress } from '../sources/wordpress.ts'
 import { scrapePeaksAndStreams } from '../sources/peaksandstreams.ts'
+import { scrapeSteepSheep } from '../sources/steepsheep.ts'
 import { PAGE_SIZE } from '../sources/selfhosted-wordpress.ts'
 import { createFetcher } from '../fetch.ts'
 import { stubFetcher, tempDir } from './support.ts'
@@ -296,5 +297,20 @@ describe('tag and category lists longer than one page', () => {
         : paged(url, [])
     })
     assert.deepEqual((await scrapeBillKerr(fetchText)).map(report => report.title), ['Chester Mountain'])
+  })
+})
+
+describe('scrapeSteepSheep', () => {
+  const pages = (...titles: string[]) => stubFetcher(() => JSON.stringify({
+    found: titles.length,
+    posts: titles.map((title, index) => ({ title, URL: `https://steepsheep.ca/${index}/` }))
+  }))
+
+  it('files a trip abroad by its country bracket, and states no region for the rest', async () => {
+    const reports = await scrapeSteepSheep(pages('Avalanche Peak (NZ) 1833m', 'Mount Nelson 3313m', 'About'))
+    assert.deepEqual(reports.map(report => [report.objectives, report.sourceRegion]), [
+      [['Avalanche Peak'], 'elsewhere'],
+      [['Mount Nelson'], undefined]
+    ])
   })
 })

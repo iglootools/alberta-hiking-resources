@@ -304,8 +304,9 @@ export const REGION_MAP: Readonly<Partial<Record<SourceId, RegionVocabulary>>> =
     'Colorado': OUT_OF_SCOPE
   },
 
-  // Marks anything outside the Rockies with a country in its title.
-  steepsheep: SELF_RESOLVED,
+  // Marks anything outside the Rockies with a country in its title, and states
+  // no region otherwise.
+  steepsheep: { elsewhere: OUT_OF_SCOPE },
 
   // Files most pages under a region path: /canada/kananaskis/, /canada/ghost/.
   // The rest are placed by the locality line each trip opens with, which the
