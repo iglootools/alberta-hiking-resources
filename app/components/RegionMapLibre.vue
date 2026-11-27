@@ -18,7 +18,7 @@
 -->
 <script setup lang="ts">
 import type { FeatureCollection } from 'geojson'
-import type { Map as MapLibreMap, MapLayerMouseEvent } from 'maplibre-gl'
+import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap, MapLayerMouseEvent, SourceSpecification } from 'maplibre-gl'
 import { joinURL } from 'ufo'
 
 const props = defineProps<{
@@ -57,39 +57,49 @@ let featureIds = new Map<string, number>()
 
 const isDark = () => colorMode.value === 'dark'
 
-/**
- * A style swap drops every layer the page added, so they are added here and
- * this runs on every `style.load`, not once.
- */
-function addRegionLayers(target: MapLibreMap) {
-  if (!regions) return
-  const firstLabel = target.getStyle().layers.find(layer => layer.type === 'symbol')?.id
-  target.addSource('dem', { type: 'raster-dem', tiles: [TERRAIN_TILES], encoding: 'terrarium', tileSize: 256, maxzoom: 14, attribution: 'Terrain: Mapzen / AWS Terrain Tiles' })
-  target.addLayer({ id: 'hillshade', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.5 } }, firstLabel)
-  target.addSource('regions', { type: 'geojson', data: regions })
-  target.addLayer({
+/** How much the 3D terrain view stretches elevations. */
+const TERRAIN_EXAGGERATION = 1.3
+
+const DEM_SOURCE: SourceSpecification = { type: 'raster-dem', tiles: [TERRAIN_TILES], encoding: 'terrarium', tileSize: 256, maxzoom: 14, attribution: 'Terrain: Mapzen / AWS Terrain Tiles' }
+const HILLSHADE_LAYER: LayerSpecification = { id: 'hillshade', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.5 } }
+
+/** A feature-state expression: `hovered` while the region is highlighted, `rest` otherwise. */
+function whenHovered(hovered: number, rest: number): ExpressionSpecification {
+  return ['case', ['boolean', ['feature-state', 'hover'], false], hovered, rest]
+}
+
+/** Each region filled in its own colour, indexed by the feature's `region` property. */
+function regionFillLayer(dark: boolean, regionCount: number): LayerSpecification {
+  const colors = Array.from({ length: regionCount }, (_, index) => regionColor(index, dark))
+  return {
     id: 'region-fill',
     type: 'fill',
     source: 'regions',
     filter: ['==', ['get', 'kind'], 'fill'],
     paint: {
       'fill-antialias': false,
-      'fill-color': ['to-color', ['at', ['get', 'region'], ['literal', Array.from({ length: Math.max(...featureIds.values()) + 1 }, (_, index) => regionColor(index, isDark()))]]],
-      'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.6, 0.3]
+      'fill-color': ['to-color', ['at', ['get', 'region'], ['literal', colors]]],
+      'fill-opacity': whenHovered(0.6, 0.3)
     }
-  }, firstLabel)
-  target.addLayer({
+  }
+}
+
+function regionOutlineLayer(dark: boolean): LayerSpecification {
+  return {
     id: 'region-outline',
     type: 'line',
     source: 'regions',
     filter: ['==', ['get', 'kind'], 'outline'],
     paint: {
-      'line-color': isDark() ? '#e5e7eb' : '#1f2937',
-      'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.9, 0.3],
-      'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 0.7]
+      'line-color': dark ? '#e5e7eb' : '#1f2937',
+      'line-opacity': whenHovered(0.9, 0.3),
+      'line-width': whenHovered(2, 0.7)
     }
-  })
-  target.addLayer({
+  }
+}
+
+function regionLabelLayer(dark: boolean): LayerSpecification {
+  return {
     id: 'region-label',
     type: 'symbol',
     source: 'regions',
@@ -101,12 +111,27 @@ function addRegionLayers(target: MapLibreMap) {
       'text-max-width': 8
     },
     paint: {
-      'text-color': isDark() ? '#f3f4f6' : '#111827',
-      'text-halo-color': isDark() ? '#111827' : '#ffffff',
+      'text-color': dark ? '#f3f4f6' : '#111827',
+      'text-halo-color': dark ? '#111827' : '#ffffff',
       'text-halo-width': 1.6
     }
-  })
-  if (terrain.value) target.setTerrain({ source: 'dem', exaggeration: 1.3 })
+  }
+}
+
+/**
+ * A style swap drops every layer the page added, so they are added here and
+ * this runs on every `style.load`, not once.
+ */
+function addRegionLayers(target: MapLibreMap) {
+  if (!regions) return
+  const firstLabel = target.getStyle().layers.find(layer => layer.type === 'symbol')?.id
+  target.addSource('dem', DEM_SOURCE)
+  target.addLayer(HILLSHADE_LAYER, firstLabel)
+  target.addSource('regions', { type: 'geojson', data: regions })
+  target.addLayer(regionFillLayer(isDark(), Math.max(...featureIds.values()) + 1), firstLabel)
+  target.addLayer(regionOutlineLayer(isDark()))
+  target.addLayer(regionLabelLayer(isDark()))
+  if (terrain.value) target.setTerrain({ source: 'dem', exaggeration: TERRAIN_EXAGGERATION })
   // A style swap also drops feature state, so re-apply the highlight.
   hoveredId = undefined
   setHover(target, highlighted.value === undefined ? undefined : featureIds.get(highlighted.value))
@@ -183,7 +208,7 @@ watch(() => colorMode.value, () => map?.setStyle(isDark() ? STYLES.dark : STYLES
 
 watch(terrain, (on) => {
   if (!map) return
-  map.setTerrain(on ? { source: 'dem', exaggeration: 1.3 } : null)
+  map.setTerrain(on ? { source: 'dem', exaggeration: TERRAIN_EXAGGERATION } : null)
   map.easeTo({ pitch: on ? 60 : 0, duration: 800 })
 })
 
