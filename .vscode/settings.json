@@ -19,6 +19,16 @@
   "mise.configureExtensionsAutomatically": true,
   "mise.configureExtensionsUseSymLinks": true,
   "mise.configureExtensionsIncludeGlobalTools": false,
+  // Supplying the list replaces the extension's default, so its two entries are repeated:
+  // biomejs.biome and oxc.oxc-vscode write absolute ~/.local/share/mise paths whatever
+  // UseSymLinks says, and oxc fires for any project with node. ms-python.python is excluded
+  // because the extension writes the .venv directory rather than its interpreter; the
+  // explicit pin below stands instead. See guidelines/project-setup/ide.md in iglootools/common.
+  "mise.configureExtensionsAutomaticallyIgnoreList": [
+    "biomejs.biome",
+    "oxc.oxc-vscode",
+    "ms-python.python"
+  ],
   "debug.javascript.defaultRuntimeExecutable": {
     "pwa-node": "${workspaceFolder}/.vscode/mise-tools/node"
   },
@@ -35,5 +45,7 @@
     "editor.defaultFormatter": "rvben.rumdl",
     "editor.formatOnSave": true
   },
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
+  // The interpreter, not the environment directory: uv's .venv, which runs the iglootools
+  // command.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
 }
