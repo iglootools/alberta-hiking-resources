@@ -3,7 +3,7 @@
  * a failure. Decisions only, over plain values; main.ts acts on them.
  */
 import { parseArgs } from 'node:util'
-import { UsageError } from './errors.ts'
+import { MissingCredentialError, UsageError } from './errors.ts'
 
 export const USAGE = `Usage: mise run build-trip-index -- [options]
 
@@ -51,7 +51,12 @@ export function parseCommandLine(args: readonly string[]): Command {
   return { kind: 'run', dryRun: Boolean(values['dry-run'] || values['review-only']), refresh: Boolean(values.refresh) }
 }
 
-/** 2 for a usage error, which the input must fix; 1 for a run that failed. */
+/**
+ * 2 for a usage or configuration error, which whoever runs it must fix (an
+ * unknown option, a missing credential); 1 for a run that failed, such as a
+ * source that changed shape. A script can then tell "set the key" from "a
+ * source broke".
+ */
 export function exitCodeFor(error: unknown): 1 | 2 {
-  return error instanceof UsageError ? 2 : 1
+  return error instanceof UsageError || error instanceof MissingCredentialError ? 2 : 1
 }

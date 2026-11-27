@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { exitCodeFor, parseCommandLine } from '../cli.ts'
-import { SourceChangedError, UsageError } from '../errors.ts'
+import { MissingCredentialError, SourceChangedError, UsageError } from '../errors.ts'
 
 describe('parseCommandLine', () => {
   it('runs for real by default', () => {
@@ -37,5 +37,9 @@ describe('exitCodeFor', () => {
     assert.equal(exitCodeFor(new UsageError('Unknown option')), 2)
     assert.equal(exitCodeFor(new SourceChangedError('spirko', 'no index')), 1)
     assert.equal(exitCodeFor(new TypeError('fetch failed')), 1)
+  })
+
+  it('exits 2 for a missing credential, a configuration error', () => {
+    assert.equal(exitCodeFor(new MissingCredentialError('YOUTUBE_API_KEY', 'not set')), 2)
   })
 })
