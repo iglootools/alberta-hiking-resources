@@ -58,7 +58,8 @@
         "dbaeumer.vscode-eslint",
         "hverlin.mise-vscode",
         "dprint.dprint",
-        "rvben.rumdl"
+        "rvben.rumdl",
+        "tombi-toml.tombi"
       ]
     }
   }
