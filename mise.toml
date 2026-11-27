@@ -88,7 +88,7 @@ run = [
 ]
 
 [tasks.test]
-description = "Run the trip report index tests"
+description = "Run the trip report index, app and server tests"
 run = "pnpm test"
 
 # Writers (guidelines/project-setup/formatting.md in iglootools/common). ESLint's stylistic rules

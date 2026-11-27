@@ -78,7 +78,8 @@ environment, the directories — is a parameter, so tests pass a stub in rather
 than patching a module, and assert on the fields of the typed errors in
 [errors.ts](../scripts/trip-report-index/errors.ts) rather than on message text.
 
-The Nuxt app itself has no tests.
+The app and the server have tests too (`app/**/*.test.ts` and
+`server/**/*.test.ts`), run by the same runner in the same `mise run test`.
 
 ## Building
 
