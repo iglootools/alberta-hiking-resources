@@ -9,7 +9,7 @@ useSeoMeta({
 })
 
 const { data: versions, error } = await useFetch(computed(() => `https://ungh.cc/repos/${appConfig.repository}/releases`), {
-  transform: (data: {
+  transform: async (data: {
     releases?: {
       name?: string
       tag: string
@@ -20,12 +20,18 @@ const { data: versions, error } = await useFetch(computed(() => `https://ungh.cc
     if (!Array.isArray(data.releases)) {
       throw new TypeError('ungh.cc answered without a list of releases')
     }
-    return data.releases.map(release => ({
+    const { parseMarkdown } = await import('@nuxtjs/mdc/runtime')
+    return Promise.all(data.releases.map(async release => ({
       tag: release.tag,
       title: release.name || release.tag,
       date: release.publishedAt,
-      markdown: release.markdown
-    }))
+      // ungh.cc is an unauthenticated third-party proxy, so its Markdown is
+      // reduced to plain Markdown before it is rendered under this site's
+      // origin: no raw HTML, no MDC components (ADR-014).
+      body: release.markdown
+        ? toPlainMarkdown((await parseMarkdown(release.markdown, { toc: false, contentHeading: false })).body)
+        : undefined
+    })))
   }
 })
 
@@ -66,9 +72,9 @@ if (error.value) {
       }"
     >
       <template #body>
-        <MDC
-          v-if="version.markdown"
-          :value="version.markdown"
+        <MDCRenderer
+          v-if="version.body"
+          :body="version.body"
         />
       </template>
     </UChangelogVersion>

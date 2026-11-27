@@ -1176,6 +1176,14 @@ GitHub's releases by however long ungh.cc caches them.
   missing releases, and GitHub's own release page is always current.
 - Keeping builds free of credentials keeps them reproducible anywhere,
   including on a fork or a fresh clone.
+- ungh.cc is trusted for the releases' facts, not for markup. Whatever it
+  returns is prerendered under this site's origin, so the page reduces each
+  release's Markdown to plain Markdown (`toPlainMarkdown` in
+  [release-notes.ts](../app/utils/release-notes.ts)) before rendering it: raw
+  HTML, MDC components, attributes and images are dropped, and their text
+  kept. A compromised or misbehaving proxy can then alter the wording and
+  links of the notes, which semantic-release writes from commit subjects
+  anyway, but not inject markup, styles or components into the page.
 
 ### Consequences
 
