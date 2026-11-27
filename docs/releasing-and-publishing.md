@@ -19,9 +19,9 @@ A release is **started by hand**, and everything after that is automatic:
    (`gh run rerun <run-id> --failed`): re-running the whole run uploads a
    second artifact, and `deploy-pages` refuses a run that has two.
 
-**The push trigger is deliberately commented out** in `release.yml`, so merging
-to `main` does *not* cut a release on its own. Uncomment the
-`push: branches: [main]` block to make releases automatic.
+**`release.yml` has no push trigger, on purpose**, so merging to `main` does
+*not* cut a release on its own. To make releases automatic, add
+`push: branches: [main]` under its `on:`.
 
 What links step 1 to step 2 is worth knowing, because the obvious reading is
 wrong. `publish.yml` does listen for `push: tags: ['v*']`, but a tag created by
@@ -40,12 +40,22 @@ apply and verify it under
 
 ## Running them by hand
 
+Preview the next version and its release notes first, tagging nothing:
+
+```bash
+gh workflow run release.yml -f dry-run=true
+```
+
 Cut a release (this is the normal path, per the flow above):
 
 ```bash
 gh workflow run release.yml
 gh run list --workflow release.yml
 ```
+
+Both run `mise run ci-release` (with `--dry-run` for the preview), which
+installs the dependencies and runs semantic-release. Outside CI,
+semantic-release only ever reports what it would release.
 
 Re-deploy an existing tag without cutting a new release:
 
