@@ -269,7 +269,10 @@ export const DISTINCT_NAMES: readonly (readonly [string, string])[] = [
  * stays short — it is the residue after cross-source inheritance, not the whole
  * of either blog. The review worksheet lists the current residue in paste-ready form.
  */
-export const REGION_OVERRIDES: Readonly<Record<string, string>> = {
+/** Region ids, or 'out-of-scope', by canonical objective name. */
+export type RegionOverrides = Readonly<Record<string, string>>
+
+export const REGION_OVERRIDES: RegionOverrides = {
   // --- Kananaskis Country and Canmore ---
   'black prince outlier': 'kananaskis-canmore',
   'buller north ridge': 'kananaskis-canmore',

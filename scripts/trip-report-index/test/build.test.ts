@@ -39,9 +39,9 @@ describe('buildObjectives', () => {
   })
 
   it('lets a curated region replace every other claim', () => {
-    // 'pringle mount' is curated to the Ghost in curation.ts.
-    const curated: RawReport = { ...report, title: 'Pringle Mount', objectives: ['Pringle Mount'], sourceId: 'spirko', sourceRegion: 'Banff' }
-    const [objective] = buildObjectives([curated]).objectives
+    const stated: RawReport = { ...report, sourceId: 'spirko', sourceRegion: 'Banff' }
+    const overrides = { [canonKey(NAME)]: 'ghost-front-ranges' }
+    const [objective] = buildObjectives([stated], undefined, NOTHING_INFERRED, overrides).objectives
     assert.deepEqual(objective?.claims, [{ regionId: 'ghost-front-ranges', signal: { kind: 'curated' } }])
   })
 

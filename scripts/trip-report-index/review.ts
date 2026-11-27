@@ -195,11 +195,11 @@ const GENERIC_WORD = /\b(?:mount|mountain|peak|ridge|hill|lake|pass|tower|butte|
  * question. Like near misses, these are candidates for ALIASES, never acted on
  * automatically.
  */
-export function bareNameCandidates(keys: ReadonlySet<string>): [string, string][] {
+export function bareNameCandidates(keys: ReadonlySet<string>, distinctNames: readonly NamePair[] = DISTINCT_NAMES): [string, string][] {
   return [...keys].sort().flatMap((key) => {
     if (GENERIC_WORD.test(key) || /\d/.test(key)) return []
     const forms = GENERIC_FORMS.map(form => form(key)).filter(form => keys.has(form))
-    return forms.length === 1 && !isDistinct(DISTINCT_NAMES, key, forms[0]!) ? [[key, forms[0]!] as [string, string]] : []
+    return forms.length === 1 && !isDistinct(distinctNames, key, forms[0]!) ? [[key, forms[0]!] as [string, string]] : []
   })
 }
 

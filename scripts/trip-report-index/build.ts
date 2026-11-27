@@ -10,6 +10,7 @@
  */
 import type { BuildResult, Claim, Dropped, Inferred, Objective, RawReport, Signal } from './types.ts'
 import type { GuidebookIndex } from './guidebooks.ts'
+import type { RegionOverrides } from './curation.ts'
 import { REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { displayName, objectiveKey } from './canon.ts'
 import { UnknownRegionError } from './errors.ts'
@@ -172,6 +173,7 @@ const filedAbroad = (report: RawReport) => mappedRegionOf(report) === OUT_OF_SCO
 interface Context {
   readonly guidebooks?: GuidebookIndex
   readonly inferred: Inferred
+  readonly overrides: RegionOverrides
 }
 
 /**
@@ -181,8 +183,8 @@ interface Context {
  * one heading, which puts Rogers Pass and the Kokanee Glacier 200 km apart in
  * one bucket — and listing it under their region as well would undo it.
  */
-function claimsOf(key: string, group: readonly RawReport[], { guidebooks, inferred }: Context): Claim[] {
-  const overridden = REGION_OVERRIDES[key]
+function claimsOf(key: string, group: readonly RawReport[], { guidebooks, inferred, overrides }: Context): Claim[] {
+  const overridden = overrides[key]
   if (overridden) return [{ regionId: overridden, signal: { kind: 'curated' } }]
 
   const tickList = guidebooks?.regions.get(key)
@@ -234,12 +236,12 @@ function dropped(key: string, group: readonly RawReport[], reason: Dropped['reas
  * Utah peak sharing a name with a Kananaskis one is still in Utah.
  */
 function place(key: string, group: readonly RawReport[], context: Context): Objective[] | Dropped {
-  if (REGION_OVERRIDES[key] === OUT_OF_SCOPE) return dropped(key, group, 'curated', [])
+  if (context.overrides[key] === OUT_OF_SCOPE) return dropped(key, group, 'curated', [])
   const name = pickName(key, group)
 
   const mountains = mountainsOf(group)
   if (mountains.length > 1) {
-    const fallback = REGION_OVERRIDES[key] ?? strongestStatedRegion(group)
+    const fallback = context.overrides[key] ?? strongestStatedRegion(group)
     // A tick-list entry is about one of the mountains, the one in its region:
     // Steven Song's Mount Murchison above Squamish is not the 11,000er.
     const tickRegion = context.guidebooks?.regions.get(key)
@@ -284,14 +286,18 @@ function groupByRegion(objectives: readonly Objective[]): Map<string, Objective[
  *
  * `inferred` comes from inference.ts, which reads a first build made without
  * it; see there for why the build runs twice.
+ *
+ * `overrides` is curation.ts's REGION_OVERRIDES unless a test passes its own,
+ * so that a test of the builder does not break when curators edit the table.
  */
 export function buildObjectives(
   reports: readonly RawReport[],
   guidebooks?: GuidebookIndex,
-  inferred: Inferred = NOTHING_INFERRED
+  inferred: Inferred = NOTHING_INFERRED,
+  overrides: RegionOverrides = REGION_OVERRIDES
 ): BuildResult {
   const groups = [...groupByObjective(reports.map(withCuratedObjectives))]
-  const outcomes = groups.map(([key, group]) => place(key, group, { guidebooks, inferred }))
+  const outcomes = groups.map(([key, group]) => place(key, group, { guidebooks, inferred, overrides }))
   const objectives = outcomes.flatMap(outcome => Array.isArray(outcome) ? outcome : []).sort(byName)
 
   return {
