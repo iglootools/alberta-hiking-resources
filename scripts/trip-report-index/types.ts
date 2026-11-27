@@ -11,13 +11,6 @@
 
 import type { GuidebookEntry } from './guidebooks.ts'
 
-/** A source blog, as credited in the generated pages. */
-export interface Source {
-  readonly id: string
-  readonly label: string
-  readonly home: string
-}
-
 export interface RawReport {
   readonly sourceId: string
   /** The report's own title, shown when it differs from the objective name. */

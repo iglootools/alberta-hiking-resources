@@ -14,7 +14,7 @@ import { REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { displayName, objectiveKey } from './canon.ts'
 import { UnknownRegionError } from './errors.ts'
 import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, areNeighbours, mappedRegionOf, mountainsOf, strongestStatedRegion } from './regions.ts'
-import { SOURCE_ORDER } from './sources/index.ts'
+import { SOURCE_ORDER } from './sources/catalog.ts'
 import { NOTHING_INFERRED, isStated, regionsOf } from './types.ts'
 
 /** Applies a curated REPORT_OBJECTIVES entry in place of the title's own parse. */
