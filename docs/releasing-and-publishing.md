@@ -50,9 +50,12 @@ gh run list --workflow release.yml
 Re-deploy an existing tag without cutting a new release:
 
 ```bash
-gh workflow run publish.yml --ref <tag>
+gh workflow run publish.yml -f tag=<tag>
 gh run list --workflow publish.yml
 ```
+
+Pass the tag as the `tag` input, not as `--ref <tag>`: the `github-pages`
+environment accepts deployments only from `main`, so it refuses a run on a tag.
 
 ## Further reading
 
