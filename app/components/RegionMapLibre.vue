@@ -51,6 +51,7 @@ const config = useRuntimeConfig()
 let map: MapLibreMap | undefined
 let regions: FeatureCollection | undefined
 let hoveredId: number | undefined
+let loadTimeout: ReturnType<typeof setTimeout> | undefined
 /** Region id to feature id, which is the region's index. */
 let featureIds = new Map<string, number>()
 
@@ -147,7 +148,7 @@ onMounted(async () => {
     regions = data
     featureIds = new Map(data.features.map(feature => [feature.properties!.id as string, feature.id as number]))
     if (!container.value) return
-    setTimeout(() => {
+    loadTimeout = setTimeout(() => {
       if (status.value === 'loading') status.value = 'failed'
     }, LOAD_TIMEOUT_MS)
     const created = new maplibre.Map({
@@ -161,6 +162,7 @@ onMounted(async () => {
     created.addControl(new maplibre.ScaleControl(), 'bottom-left')
     created.on('style.load', () => addRegionLayers(created))
     created.once('load', () => {
+      clearTimeout(loadTimeout)
       status.value = 'ready'
     })
     created.on('error', ({ error }) => console.error('[RegionMapLibre]', error))
@@ -185,7 +187,10 @@ watch(terrain, (on) => {
   map.easeTo({ pitch: on ? 60 : 0, duration: 800 })
 })
 
-onBeforeUnmount(() => map?.remove())
+onBeforeUnmount(() => {
+  clearTimeout(loadTimeout)
+  map?.remove()
+})
 </script>
 
 <template>
