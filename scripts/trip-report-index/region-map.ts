@@ -53,6 +53,8 @@ export interface MapPoint extends Coordinates {
 
 export interface Grid {
   readonly extent: Extent
+  /** One cell's size in degrees. */
+  readonly cell: { readonly lat: number, readonly lon: number }
   readonly rows: number
   readonly cols: number
   /** Row-major region indices into the `regionIds` the grid was drawn for; -1 is no region. */
@@ -114,16 +116,23 @@ export function rasterize(points: readonly MapPoint[], regionIds: readonly strin
   const cols = Math.ceil((extent.east - extent.west) / CELL.lon)
   const cells = Array.from({ length: rows * cols }, (_, index) => cellVote(
     cellCentre(extent, Math.floor(index / cols), index % cols), points, regionIds))
-  return despeckle({ extent, rows, cols, cells })
+  return despeckle({ extent, cell: CELL, rows, cols, cells })
 }
 
 function cellCentre(extent: Extent, row: number, col: number): Coordinates {
   return { lat: extent.north - (row + 0.5) * CELL.lat, lon: extent.west + (col + 0.5) * CELL.lon }
 }
 
+/** The region index of the cell holding `at`, or undefined outside the grid. */
+export function regionAt(grid: Grid, at: Coordinates): number | undefined {
+  const row = Math.floor((grid.extent.north - at.lat) / grid.cell.lat)
+  const col = Math.floor((at.lon - grid.extent.west) / grid.cell.lon)
+  return row < 0 || col < 0 || row >= grid.rows || col >= grid.cols ? undefined : grid.cells[row * grid.cols + col]
+}
+
 /** Cell edges as coordinates: row 0 is the north edge, col 0 the west. */
-const edgeLat = (grid: Grid, row: number) => round(grid.extent.north - row * CELL.lat)
-const edgeLon = (grid: Grid, col: number) => round(grid.extent.west + col * CELL.lon)
+const edgeLat = (grid: Grid, row: number) => round(grid.extent.north - row * grid.cell.lat)
+const edgeLon = (grid: Grid, col: number) => round(grid.extent.west + col * grid.cell.lon)
 const round = (value: number, places = 4) => Number(value.toFixed(places))
 
 /** [col, endCol) runs of one region on one row. */
