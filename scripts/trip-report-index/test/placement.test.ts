@@ -4,7 +4,8 @@ import type { Claim, Inferred, RawReport } from '../types.ts'
 import type { SourceId } from '../sources/catalog.ts'
 import { buildObjectives } from '../build.ts'
 import { objectiveKey } from '../canon.ts'
-import { NEIGHBOUR_IDS, REGIONS, REGION_IDS, areNeighbours } from '../regions.ts'
+import { NEIGHBOUR_IDS, OUT_OF_SCOPE, REGIONS, REGION_IDS, areNeighbours } from '../regions.ts'
+import { REGION_MAP, REGION_PRIORITY } from '../sources/catalog.ts'
 import { mountainsOf } from '../stated.ts'
 import { NOTHING_INFERRED, regionsOf } from '../types.ts'
 
@@ -16,6 +17,21 @@ const filed = (sourceId: SourceId, sourceRegion: string): RawReport =>
 
 const regionSets = (reports: readonly RawReport[]) =>
   mountainsOf(reports).map(regions => [...regions].sort()).sort()
+
+describe('region vocabularies', () => {
+  // A mistyped region id would otherwise throw UnknownRegionError only after
+  // every source had been scraped. Their keys, source ids, are type-checked.
+  it('map every label onto a region that exists, or out of scope', () => {
+    const unknown = Object.entries(REGION_MAP).flatMap(([sourceId, vocabulary]) =>
+      Object.entries(vocabulary).filter(([, regionId]) => regionId !== OUT_OF_SCOPE && !REGION_IDS.has(regionId))
+        .map(([label, regionId]) => `${sourceId}: ${label} → ${regionId}`))
+    assert.deepEqual(unknown, [])
+  })
+
+  it('rank each source once at most', () => {
+    assert.equal(new Set(REGION_PRIORITY).size, REGION_PRIORITY.length)
+  })
+})
 
 describe('region adjacency', () => {
   it('names only regions that exist', () => {
