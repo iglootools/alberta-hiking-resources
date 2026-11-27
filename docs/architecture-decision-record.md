@@ -1182,6 +1182,9 @@ GitHub's releases by however long ungh.cc caches them.
 - `/changelog` can omit the most recent releases. Re-running publish
   (`gh workflow run publish.yml -f tag=<tag>`) once ungh.cc has refreshed
   brings it up to date without a new release.
+- A build that cannot read the releases from ungh.cc fails rather than
+  publish an empty changelog: the page throws, and Nuxt's prerender fails on
+  any route that does. Re-running publish once ungh.cc answers again recovers.
 - The footer's version comes from the build's own git tag, not from ungh.cc,
   so it is always current, and can name a release the changelog does not list
   yet.

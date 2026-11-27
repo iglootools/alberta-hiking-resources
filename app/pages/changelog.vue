@@ -8,15 +8,18 @@ useSeoMeta({
   ogDescription: 'Latest releases and updates for Alberta Hiking Resources.'
 })
 
-const { data: versions } = await useFetch(computed(() => `https://ungh.cc/repos/${appConfig.repository}/releases`), {
+const { data: versions, error } = await useFetch(computed(() => `https://ungh.cc/repos/${appConfig.repository}/releases`), {
   transform: (data: {
-    releases: {
+    releases?: {
       name?: string
       tag: string
       publishedAt: string
       markdown: string
     }[]
   }) => {
+    if (!Array.isArray(data.releases)) {
+      throw new TypeError('ungh.cc answered without a list of releases')
+    }
     return data.releases.map(release => ({
       tag: release.tag,
       title: release.name || release.tag,
@@ -25,6 +28,18 @@ const { data: versions } = await useFetch(computed(() => `https://ungh.cc/repos/
     }))
   }
 })
+
+// The page is prerendered, so an outage at ungh.cc would otherwise be
+// published as "No releases yet." until the next build. Failing the render
+// fails the prerender, and with it the publish, which can then be re-run.
+if (error.value) {
+  throw createError({
+    status: 502,
+    statusText: 'Bad Gateway',
+    message: `Could not load the releases from ungh.cc: ${error.value.message}`,
+    fatal: true
+  })
+}
 </script>
 
 <template>
