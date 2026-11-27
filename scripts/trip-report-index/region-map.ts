@@ -76,11 +76,29 @@ export function dropIsolated(points: readonly MapPoint[], km = ISOLATION_KM): Ma
     other !== point && other.regionId === point.regionId && distanceKm(point, other) < km))
 }
 
+/**
+ * The `count` points nearest `at`, nearest first, and the earlier in `points`
+ * first among equally near ones, as a stable sort would order them.
+ *
+ * Kept as a bounded list rather than by sorting every point: this runs once
+ * per cell, some 25,000 times a run, and sorting thousands of points each time
+ * made drawing the map take tens of seconds.
+ */
+function nearestPoints(at: Coordinates, points: readonly MapPoint[], count: number): { point: MapPoint, km: number }[] {
+  const nearest: { point: MapPoint, km: number }[] = []
+  for (const point of points) {
+    const km = distanceKm(at, point)
+    if (nearest.length === count && km >= nearest[count - 1]!.km) continue
+    let index = nearest.length
+    while (index > 0 && nearest[index - 1]!.km > km) index -= 1
+    nearest.splice(index, 0, { point, km })
+    if (nearest.length > count) nearest.pop()
+  }
+  return nearest
+}
+
 function cellVote(at: Coordinates, points: readonly MapPoint[], regionIds: readonly string[]): number {
-  const nearest = points
-    .map(point => ({ point, km: distanceKm(at, point) }))
-    .sort((left, right) => left.km - right.km)
-    .slice(0, VOTERS)
+  const nearest = nearestPoints(at, points, VOTERS)
   if (nearest.length === 0 || nearest[0]!.km > REACH_KM) return -1
   const votes = new Map<string, number>()
   for (const { point, km } of nearest) votes.set(point.regionId, (votes.get(point.regionId) ?? 0) + point.weight / (km + 1))
