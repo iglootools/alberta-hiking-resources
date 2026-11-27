@@ -3,8 +3,14 @@ name: release
 on:
   # Manually trigger the workflow using
   # gh workflow run release.yml # --ref <branch>
+  # gh workflow run release.yml -f dry-run=true # preview the next version and notes
   # gh run list --workflow release.yml
   workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Print the next version and its release notes; tag and release nothing.
+        type: boolean
+        default: false
   repository_dispatch:
 
 concurrency:
@@ -48,4 +54,11 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mise run ci-release
+          # Empty for repository_dispatch, which always releases.
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            mise run ci-release --dry-run
+          else
+            mise run ci-release
+          fi

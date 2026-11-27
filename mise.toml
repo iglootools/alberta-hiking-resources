@@ -80,10 +80,11 @@ run = [
 ]
 
 [tasks.ci-release]
-description = "Install, then release (what the release workflow runs)"
+description = "Install, then release (what the release workflow runs; --dry-run tags nothing)"
+usage = 'flag "--dry-run" help="Print the next version and its notes; tag and release nothing"'
 run = [
   { task = "install" },
-  { task = "release" },
+  { task = "release{% if usage.dry_run %} --dry-run{% endif %}" },
 ]
 
 [tasks.test]
@@ -179,8 +180,9 @@ run = "pnpm build:pages"
 # docs/releasing-and-publishing.md. Configured in .releaserc.json; needs GITHUB_TOKEN. Outside CI,
 # semantic-release only reports what it would release.
 [tasks.release]
-description = "Tag the next version from the commits on main with semantic-release (CI runs it through ci-release)"
-run = "pnpm exec semantic-release"
+description = "Tag the next version from the commits on main with semantic-release (CI runs it through ci-release; --dry-run tags nothing)"
+usage = 'flag "--dry-run" help="Print the next version and its notes; tag and release nothing"'
+run = "pnpm exec semantic-release{% if usage.dry_run %} --dry-run{% endif %}"
 
 [tasks.build-trip-index]
 description = "Rebuild the by-objective trip report index from the source blogs"
