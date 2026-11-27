@@ -1,4 +1,5 @@
 import { queryCollection } from '@nuxt/content/server'
+import { currentRequestEvent } from '../../utils/request-event'
 
 export default defineMcpTool({
   description: `Lists all available documentation pages with their categories and basic information.
@@ -21,9 +22,8 @@ OUTPUT: Returns a structured list with:
 - url: Full URL for reference`,
   cache: '1h',
   handler: async () => {
-    const event = useEvent()
-    const url = getRequestURL(event)
-    const siteUrl = import.meta.dev ? `${url.protocol}//${url.hostname}:${url.port}` : url.origin
+    const event = currentRequestEvent()
+    const siteUrl = event.url.origin
 
     try {
       const pages = await queryCollection(event, 'docs')

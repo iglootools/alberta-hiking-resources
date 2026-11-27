@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { queryCollection } from '@nuxt/content/server'
+import { serverFetch } from 'nuxt/server'
+import { currentRequestEvent } from '../../utils/request-event'
 
 export default defineMcpTool({
   description: `Retrieves the full content and details of a specific documentation page.
@@ -18,9 +20,8 @@ WORKFLOW: This tool returns the complete page content including title, descripti
   },
   cache: '1h',
   handler: async ({ path }) => {
-    const event = useEvent()
-    const url = getRequestURL(event)
-    const siteUrl = import.meta.dev ? `${url.protocol}//${url.hostname}:${url.port}` : url.origin
+    const event = currentRequestEvent()
+    const siteUrl = event.url.origin
 
     try {
       const page = await queryCollection(event, 'docs')
@@ -35,9 +36,13 @@ WORKFLOW: This tool returns the complete page content including title, descripti
         }
       }
 
-      const content = await $fetch<string>(`/raw${path}.md`, {
-        baseURL: siteUrl
-      })
+      // In process, rather than an HTTP request back to this server: Nitro v3
+      // has no global $fetch in server code.
+      const response = await serverFetch(event, `/raw${path}.md`)
+      if (!response.ok) {
+        throw new Error(`/raw${path}.md answered ${response.status}`)
+      }
+      const content = await response.text()
 
       const result = {
         title: page.title,
