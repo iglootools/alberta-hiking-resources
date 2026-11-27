@@ -40,6 +40,18 @@ describe('createFetcher', async () => {
     )
   })
 
+  it('keeps an API key out of a failure it reports', async () => {
+    const fetchImpl = async () => new Response('', { status: 403, statusText: 'Forbidden' })
+    await assert.rejects(
+      createFetcher(cacheDir, { now, fetchImpl })('https://x.test/api?part=id&key=SECRET&max=5'),
+      (error: Error & { url: string }) => {
+        assert.equal(error.url, 'https://x.test/api?part=id&key=REDACTED&max=5')
+        assert.doesNotMatch(error.message, /SECRET/)
+        return true
+      }
+    )
+  })
+
   it('serves a repeat request from the cache', async () => {
     let calls = 0
     const fetchImpl = async () => {

@@ -7,16 +7,29 @@
  */
 import { indent, shown } from './output.ts'
 
-/** A response that came back, but not with a 2xx. Network failures are not this. */
+/**
+ * `url` with its `key=` query parameter masked. The YouTube Data API takes its
+ * credential in the query string, so any URL an error carries, and so prints,
+ * goes through this first.
+ */
+export function redactKey(url: string): string {
+  return url.replace(/([?&]key=)[^&]*/i, '$1REDACTED')
+}
+
+/**
+ * A response that came back, but not with a 2xx. Network failures are not this.
+ * `url` is redacted with `redactKey`.
+ */
 export class HttpError extends Error {
   readonly status: number
   readonly url: string
 
   constructor(status: number, statusText: string, url: string) {
-    super(`${status} ${statusText} for ${url}`)
+    const shownUrl = redactKey(url)
+    super(`${status} ${statusText} for ${shownUrl}`)
     this.name = 'HttpError'
     this.status = status
-    this.url = url
+    this.url = shownUrl
   }
 }
 
@@ -43,16 +56,18 @@ export class MinimumNotMetError extends Error {
 
 /**
  * A paginated read reached its page cap without the API saying it had finished.
- * Stopping there would index part of the archive and look complete.
+ * Stopping there would index part of the archive and look complete. `url` is
+ * redacted with `redactKey`.
  */
 export class PageLimitError extends Error {
   readonly url: string
   readonly limit: number
 
   constructor(url: string, limit: number) {
-    super(`Still paginating after ${limit} pages at ${url}. Raise the cap; the archive has outgrown it.`)
+    const shownUrl = redactKey(url)
+    super(`Still paginating after ${limit} pages at ${shownUrl}. Raise the cap; the archive has outgrown it.`)
     this.name = 'PageLimitError'
-    this.url = url
+    this.url = shownUrl
     this.limit = limit
   }
 }

@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { HttpError } from './errors.ts'
+import { HttpError, redactKey } from './errors.ts'
 
 /** Courtesy delay between live requests to the same host, in milliseconds. */
 const THROTTLE_MS = 300
@@ -28,7 +28,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
  * rotating a key should not invalidate every cached response.
  */
 function cachePath(cacheDir: string, url: string): string {
-  const identity = url.replace(/([?&]key=)[^&]*/i, '$1REDACTED')
+  const identity = redactKey(url)
   return join(cacheDir, `${createHash('sha256').update(identity).digest('hex').slice(0, 32)}.html`)
 }
 
