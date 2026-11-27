@@ -22,6 +22,9 @@ version: 2
 # expecting HTTP 204 and `"enabled": true`. A 404 or `false` means this file is inert and
 # nothing is watching for advisories.
 #
+# uv.lock has no entry here: GitHub's dependency graph cannot parse it, so
+# workflows/uv-dependency-submission.yml submits it, and its alerts come from that.
+#
 # `target-branch` is deliberately absent. Pointing it at a non-default branch switches
 # security updates off for the ecosystem — the one option that silently undoes the purpose of
 # this file.

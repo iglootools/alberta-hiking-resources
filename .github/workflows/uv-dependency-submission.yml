@@ -1,0 +1,40 @@
+name: uv-dependency-submission
+
+# GitHub's dependency graph does not parse uv.lock, so without this the packages it locks (the
+# iglootools command and its dependencies, which run in every lint and in publish.yml) are
+# missing from the graph, and Dependabot raises no alert for them: alerts come from the graph.
+
+on:
+  # Only when the lockfile changes, plus a weekly floor so a broken submission surfaces on its
+  # own rather than waiting for the next dependency bump.
+  push:
+    branches:
+      - main
+    paths:
+      - "uv.lock"
+  schedule:
+    - cron: "30 18 * * 1"
+  workflow_dispatch:
+  repository_dispatch:
+
+# Nothing at workflow level: the write grant below is scoped to the one job that needs it.
+permissions: {}
+
+# As in preflight.yml: every commit on main gets a group of its own, and elsewhere a new run
+# supersedes the one in flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && format('main-{0}', github.event.workflow_run.head_sha || github.sha) || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    permissions:
+      # Submits the dependency snapshot. Must be granted here: `permissions` in the called
+      # workflow is a ceiling on what the caller allowed, not a grant of its own. It cannot be
+      # narrower: there is no dependency-graph scope, and the snapshot API sits behind
+      # contents: write.
+      contents: write
+    # This workflow holds nothing else, because the shared job runs a third-party action under
+    # that grant. The action is pinned by commit SHA in iglootools/common, so a bump of this pin
+    # is not a routine dependency update: read the shared workflow's header before approving one.
+    uses: iglootools/common/.github/workflows/reusable-uv-dependency-submission.yml@e066ee8ebf5c067045afec10a1a3d1b1b13fa086 # v2.5.0
