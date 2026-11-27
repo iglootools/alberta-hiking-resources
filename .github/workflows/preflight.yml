@@ -18,6 +18,10 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Read-only: the job runs install scripts, lints, tests and the build, all third-party
+    # code, on every branch Renovate's included, so it must not hold a token that can push.
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
