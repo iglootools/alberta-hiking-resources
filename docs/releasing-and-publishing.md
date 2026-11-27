@@ -13,8 +13,11 @@ A release is **started by hand**, and everything after that is automatic:
    configured in [.releaserc.json](../.releaserc.json) with
    `branches: ["main"]`, which analyses the commits and creates a version tag.
 2. [`publish.yml`](../.github/workflows/publish.yml) then runs
-   `mise run build-pages` (`nuxt build --preset github_pages`) and deploys the
-   result to GitHub Pages.
+   `mise run build-pages` (`nuxt build --preset github_pages`) in its `build`
+   job, which uploads the result, and its `deploy` job deploys it to GitHub
+   Pages. If only `deploy` fails, retry it with **Re-run failed jobs**
+   (`gh run rerun <run-id> --failed`): re-running the whole run uploads a
+   second artifact, and `deploy-pages` refuses a run that has two.
 
 **The push trigger is deliberately commented out** in `release.yml`, so merging
 to `main` does *not* cut a release on its own. Uncomment the

@@ -30,9 +30,14 @@ env:
   # Fail on a stale uv.lock instead of silently re-resolving on the runner.
   UV_LOCKED: 1
 
+# Build and deploy are separate jobs, as in GitHub's own Pages workflow. In one job,
+# deploy-pages lists the run's artifacts within a second of the upload, and that listing
+# is eventually consistent: it intermittently found none (actions/deploy-pages#451). A
+# re-run then uploaded a second artifact of the same name, which deploy-pages also refuses.
+# Split, "Re-run failed jobs" retries the deploy alone, against the one artifact.
 jobs:
-  publish:
-    name: Build and deploy to GitHub Pages
+  build:
+    name: Build the site
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # workflow_run fires on both success and failure; skip if the release workflow failed.
@@ -41,11 +46,9 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
       || github.event_name != 'workflow_run'
     permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: read
+    outputs:
+      skip: ${{ steps.release.outputs.skip }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -90,7 +93,19 @@ jobs:
         with:
           path: .output/public
 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: needs.build.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
-        if: steps.release.outputs.skip != 'true'
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
