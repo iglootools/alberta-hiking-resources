@@ -100,6 +100,11 @@ twice, in prose there and in ADR form here.
   - [Decision](#decision-12)
   - [Rationale](#rationale-12)
   - [Consequences](#consequences-12)
+- [ADR-014 — Read the changelog's releases from ungh.cc, and accept its lag](#adr-014--read-the-changelogs-releases-from-unghcc-and-accept-its-lag)
+  - [Context](#context-13)
+  - [Decision](#decision-13)
+  - [Rationale](#rationale-13)
+  - [Consequences](#consequences-13)
 <!-- tocstop -->
 
 ## ADR-001 — Use ESLint (not Biome) for linting and formatting
@@ -1130,3 +1135,57 @@ write server code against Nitro v3, h3 v2 and `nuxt/server`.
 - **Revisit** when Nuxt 5 makes Nitro v3 the default, which retires the opt-in,
   or if a Nitro v3 release changes the prerendered output in a way the build
   comparison would have caught.
+
+---
+
+## ADR-014 — Read the changelog's releases from ungh.cc, and accept its lag
+
+**Date:** 2026-11-27
+**Status:** Accepted
+
+### Context
+
+[`/changelog`](../app/pages/changelog.vue) lists the project's GitHub releases.
+It fetches them from [ungh.cc](https://ungh.cc), a free, unauthenticated proxy
+of the GitHub API that caches its answers, as Nuxt UI's
+[changelog template](https://github.com/nuxt-ui-templates/changelog) does. The
+page is prerendered, so the request happens once per build, and what the build
+receives is what the deployed page shows until the next build.
+
+ungh.cc's cache can be well behind GitHub. On 2026-11-27 it still returned
+v1.30.2 as the latest release, more than a day after v1.30.3 was published,
+so the page built for v1.30.5 lacked the last three releases.
+
+The alternative is the GitHub REST API itself, which is current. Without a
+token it allows 60 requests an hour per IP address, and GitHub-hosted runners
+share their addresses with every other workflow running on them, so a
+release build could hit the limit through no request of its own and fail, or
+prerender an empty changelog. A token lifts the limit, but every build, local
+ones included, would then need a credential to render one page.
+
+### Decision
+
+Keep ungh.cc as the changelog's source, and accept that the page can trail
+GitHub's releases by however long ungh.cc caches them.
+
+### Rationale
+
+- A changelog that is a few releases behind is a cosmetic defect, while a
+  publish that fails on someone else's API quota blocks a release.
+- The lag corrects itself: the next build after ungh.cc refreshes shows the
+  missing releases, and GitHub's own release page is always current.
+- Keeping builds free of credentials keeps them reproducible anywhere,
+  including on a fork or a fresh clone.
+
+### Consequences
+
+- `/changelog` can omit the most recent releases. Re-running publish
+  (`gh workflow run publish.yml -f tag=<tag>`) once ungh.cc has refreshed
+  brings it up to date without a new release.
+- The footer's version comes from the build's own git tag, not from ungh.cc,
+  so it is always current, and can name a release the changelog does not list
+  yet.
+- **Revisit** if the lag starts to matter, for instance if the changelog becomes
+  how people learn about changes: the GitHub API with the workflow's
+  `GITHUB_TOKEN`, falling back to ungh.cc when no token is set, is the likely
+  replacement.
