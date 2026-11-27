@@ -176,9 +176,6 @@ function splitHomonym(group: readonly RawReport[], mountains: readonly ReadonlyS
   return partitions
 }
 
-/** Claim kinds that say where an objective is rather than infer it: a blog, a tick-list, a curator. */
-const isAnchor = (claim: Claim) => claim.signal.kind === 'curated' || claim.signal.kind === 'tick-list' || isStated(claim)
-
 /** A vote's agreeing share, for ranking weak claims; 1 for a signal that does not count. */
 const share = (claim: Claim) => isVote(claim.signal) ? claim.signal.agreeing / claim.signal.total : 1
 
@@ -192,11 +189,11 @@ const share = (claim: Claim) => isVote(claim.signal) ? claim.signal.agreeing / c
  * compares a view with one he had in Kananaskis, and the vote counted it.
  */
 function coherent(claims: readonly Claim[]): Claim[] {
-  const anchors = claims.filter(isAnchor)
-  const anchorRegions = anchors.length > 0
-    ? anchors.map(claim => claim.regionId)
+  const stated = claims.filter(isStated)
+  const anchorRegions = stated.length > 0
+    ? stated.map(claim => claim.regionId)
     : [...claims].sort((left, right) => share(right) - share(left) || byStrength(left, right)).slice(0, 1).map(claim => claim.regionId)
-  return claims.filter(claim => isAnchor(claim) || anchorRegions.some(regionId => areNeighbours(regionId, claim.regionId)))
+  return claims.filter(claim => isStated(claim) || anchorRegions.some(regionId => areNeighbours(regionId, claim.regionId)))
 }
 
 /** Whether a report's own source files it outside every region. */
