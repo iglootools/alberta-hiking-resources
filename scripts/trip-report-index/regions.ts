@@ -143,8 +143,13 @@ export const UNSORTED: Region = {
 /**
  * Sentinel for a source region that is deliberately out of scope — Explor8ion's
  * canoe trips in Manitoba and Ontario, Steven Song's international and coastal
- * BC peaks. Distinguished from "unrecognised" so that a source adding a region
- * we have never seen still fails loudly.
+ * BC peaks. A report filed under it drops its objective unless another source
+ * states a region we cover (see build.ts).
+ *
+ * It is not the same as a label missing from the map, which fails nothing: the
+ * report is read as stating no region, and its objective is placed by the
+ * other sources or by inference, or lands on the catch-all page. Mapping a
+ * label to this sentinel is what keeps a foreign objective off that page.
  */
 export const OUT_OF_SCOPE = 'out-of-scope'
 
