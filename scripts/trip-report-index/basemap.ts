@@ -11,7 +11,7 @@
  */
 import type { Fetcher } from './fetch.ts'
 import type { Extent, Projection } from './region-map.ts'
-import { SourceChangedError } from './errors.ts'
+import { MinimumNotMetError, SourceChangedError } from './errors.ts'
 
 const RELEASE = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson'
 
@@ -90,9 +90,7 @@ async function readLayer(fetchText: Fetcher, layer: keyof typeof LAYERS, extent:
   if (!Array.isArray(body.features)) throw new SourceChangedError('natural-earth', `no features array at ${url}`)
   const found = body.features.filter(feature => feature.geometry
     && polygons(feature.geometry).some(polygon => polygon[0]!.some(point => inside(extent, point))))
-  if (found.length < minimum) {
-    throw new SourceChangedError('natural-earth', `${file} has ${found.length} features in the map extent, expected at least ${minimum}`)
-  }
+  if (found.length < minimum) throw new MinimumNotMetError('natural-earth', found.length, minimum, `${file} features in the map extent`)
   return found
 }
 
