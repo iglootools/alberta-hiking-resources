@@ -300,6 +300,7 @@ re-applied rather than reconstructed from the UI.
   with the same two URLs and `-X DELETE`. Needs admin on the repository; the
   dependency graph is a prerequisite and is on by default for public
   repositories.
+
 - **GitHub Pages builds from GitHub Actions** (Settings → Pages → Source), which
   is what lets [`publish.yml`](../.github/workflows/publish.yml) deploy the site
   — see [releasing-and-publishing.md](releasing-and-publishing.md). Create the
@@ -309,6 +310,93 @@ re-applied rather than reconstructed from the UI.
     gh api --method POST repos/iglootools/alberta-hiking-resources/pages -f build_type=workflow   # no Pages site yet
     gh api --method PUT repos/iglootools/alberta-hiking-resources/pages -f build_type=workflow    # existing site
     gh api repos/iglootools/alberta-hiking-resources/pages -q .build_type                         # expect workflow
+    ```
+
+- **The default workflow token is read-only, and Actions cannot approve pull
+  requests.** Every job declares its own `permissions`, so neither setting
+  changes what a workflow here can do; they are the floor for a job that forgets
+  to, which would otherwise get a read-write token, and they keep a compromised
+  workflow from approving its own pull request. This repository started
+  read-write with approval allowed, as older repositories do:
+
+    ```bash
+    gh api --method PUT repos/iglootools/alberta-hiking-resources/actions/permissions/workflow \
+      -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false
+    gh api repos/iglootools/alberta-hiking-resources/actions/permissions/workflow
+    # expect: {"default_workflow_permissions":"read","can_approve_pull_request_reviews":false}
+    ```
+
+  The `PUT` returns `204` and prints nothing. An organization-level policy can
+  override either; if the `GET` disagrees after the `PUT`, check
+  `gh api orgs/iglootools/actions/permissions/workflow` (needs an org admin).
+
+- **The `github-pages` environment accepts deployments only from named branches,
+  `main` among them, and from no tag**, which is what makes a `publish.yml` run
+  dispatched with `--ref <tag>` fail rather than deploy, as
+  [releasing-and-publishing.md](releasing-and-publishing.md#running-them-by-hand)
+  relies on. GitHub creates the environment on the first Pages deployment; the
+  policy is set on it:
+
+    ```bash
+    gh api --method PUT repos/iglootools/alberta-hiking-resources/environments/github-pages --input - <<'JSON'
+    { "deployment_branch_policy": { "protected_branches": false, "custom_branch_policies": true } }
+    JSON
+    gh api --method POST repos/iglootools/alberta-hiking-resources/environments/github-pages/deployment-branch-policies \
+      -f name=main -f type=branch
+    gh api repos/iglootools/alberta-hiking-resources/environments/github-pages/deployment-branch-policies \
+      -q '[.branch_policies[] | .name]'
+    # expect: ["gh-pages","main"]
+    ```
+
+  `gh-pages` is left from the old deploy, which pushed the site to a `gh-pages`
+  branch (see the comment in `publish.yml`); `main` is the one that matters, and
+  no `v*` tag may be added.
+
+- **The `iglootools-renovate-lock` GitHub App is installed, and its two secrets
+  reach this repository**, so
+  [`renovate-mise-lock.yml`](../.github/workflows/renovate-mise-lock.yml) pushes
+  the regenerated lock as the app and the preflight it triggers starts without
+  waiting for approval. The app and the organization secrets
+  `RENOVATE_LOCK_APP_CLIENT_ID` and `RENOVATE_LOCK_APP_PRIVATE_KEY` are set up
+  once for the whole organization, as the shared
+  [lock regenerator guide](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md#call-the-shared-lock-regenerator-on-renovate-branches)
+  describes; this public repository receives them with no step of its own.
+  Verify both:
+
+    ```bash
+    gh api repos/iglootools/alberta-hiking-resources/actions/organization-secrets -q '[.secrets[].name]'
+    # expect both names among them
+    gh api orgs/iglootools/installations \
+      -q '.installations[] | select(.app_slug == "iglootools-renovate-lock") | .repository_selection'
+    # expect: all (needs the admin:org scope)
+    ```
+
+  Without them the workflow still runs, pushing with `GITHUB_TOKEN`, and warns:
+  the next preflight then waits in `action_required`.
+
+- **Renovate is installed and has run here.** The
+  [Renovate app](https://github.com/apps/renovate) is installed on the
+  organization for all repositories (install it from that page otherwise), and
+  its first run opens the Dependency Dashboard issue, which is how to tell it
+  reads [renovate.json](../renovate.json):
+
+    ```bash
+    gh api orgs/iglootools/installations \
+      -q '.installations[] | select(.app_slug == "renovate") | .repository_selection'
+    # expect: all (needs the admin:org scope)
+    gh issue list -R iglootools/alberta-hiking-resources --author app/renovate \
+      --search 'Dependency Dashboard in:title' --state open
+    # expect: one open "Dependency Dashboard" issue
+    ```
+
+- **The dependency graph is on**, which
+  [`uv-dependency-submission.yml`](../.github/workflows/uv-dependency-submission.yml)
+  submits `uv.lock` to, and which Dependabot alerts are raised from. It is on by
+  default for public repositories:
+
+    ```bash
+    gh api repos/iglootools/alberta-hiking-resources/dependency-graph/sbom -q .sbom.name
+    # expect a name rather than a 404 or 403
     ```
 
 - **Private vulnerability reporting is on**, so the channel the organization's
@@ -385,7 +473,7 @@ re-applied rather than reconstructed from the UI.
   ```
 
   `preflight` (the job in `preflight.yml` that runs `ci-preflight`) must keep
-  reporting on every pull request. It runs on every push (`on: push` in
+  reporting on every pull request. It runs on every push (the `push` trigger in
   `preflight.yml`), which covers pull request branches; a `paths` or `branches`
   filter added there would leave the pull requests it skips unmergeable.
 
