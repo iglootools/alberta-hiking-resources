@@ -19,10 +19,10 @@
 import type { Fetcher } from '../fetch.ts'
 import { fetchUnlessStatus } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
-import { anchors, textOf } from '../html.ts'
+import { MONTHS, anchors, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
-import { REGION_MAP } from '../regions.ts'
+import { REGION_MAP } from './catalog.ts'
 
 const BASE = 'http://bobspirko.ca/'
 
@@ -39,8 +39,6 @@ const NAVIGATION = /^(home|map|about|articles?|archive|bio|index|top)$/i
 
 /** Path segments that classify the outing rather than locate it. */
 const NON_REGION = new Set(['Hiking', 'Snowshoe', 'OtherScrambles', 'USTrips', 'Misc'])
-
-const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December'
 
 /** Everything between the report's heading and its date; the locality is last. */
 const HEADER_BLOCK = new RegExp(`class="heading"[\\s\\S]{0,600}?(?=(?:${MONTHS})\\s+\\d{1,2},\\s*\\d{4})`, 'i')

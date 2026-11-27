@@ -1,17 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { matchArea } from '../areas.ts'
-import { canonKey } from '../canon.ts'
 import { ALIASES, REGION_OVERRIDES } from '../curation.ts'
 import { OUT_OF_SCOPE, REGION_IDS } from '../regions.ts'
-import { bareNameCandidates } from '../review.ts'
-
-describe('canonKey', () => {
-  it('reads "Mtn" after a name as "Mountain", as "Mt." before one is "Mount"', () => {
-    assert.equal(canonKey('Prairie Mtn'), 'prairie mountain')
-    assert.equal(canonKey('Mt. Temple'), 'mount temple')
-  })
-})
+import { bareNameCandidates, nearMisses } from '../review.ts'
 
 describe('matchArea', () => {
   it('puts Lillooet with the Sea to Sky', () => {
@@ -26,19 +18,34 @@ describe('matchArea', () => {
 
 describe('bareNameCandidates', () => {
   it('pairs a bare name with the one spelling that adds its generic back', () => {
-    assert.deepEqual(bareNameCandidates(new Set(['brett', 'mount brett'])), [['brett', 'mount brett']])
+    assert.deepEqual(bareNameCandidates(new Set(['brett', 'mount brett']), []), [['brett', 'mount brett']])
   })
 
   it('leaves a bare name with two such spellings to a human', () => {
-    assert.deepEqual(bareNameCandidates(new Set(['cascade', 'mount cascade', 'cascade mountain'])), [])
+    assert.deepEqual(bareNameCandidates(new Set(['cascade', 'mount cascade', 'cascade mountain']), []), [])
   })
 
   it('skips a pair confirmed to be two different places', () => {
-    assert.deepEqual(bareNameCandidates(new Set(['wedge', 'wedge mountain'])), [])
+    assert.deepEqual(bareNameCandidates(new Set(['wedge', 'wedge mountain']), [['wedge mountain', 'wedge']]), [])
   })
 
   it('looks only at names without a generic of their own', () => {
-    assert.deepEqual(bareNameCandidates(new Set(['wasootch ridge', 'mount wasootch ridge', 'gr123456', 'gr123456 peak'])), [])
+    assert.deepEqual(bareNameCandidates(new Set(['wasootch ridge', 'mount wasootch ridge', 'gr123456', 'gr123456 peak']), []), [])
+  })
+})
+
+describe('nearMisses', () => {
+  it('offers two spellings a letter apart', () => {
+    assert.deepEqual(nearMisses(new Set(['mount sir douglas', 'mount sir douglass']), []), [['mount sir douglas', 'mount sir douglass']])
+  })
+
+  it('leaves alone two names that only share a word', () => {
+    assert.deepEqual(nearMisses(new Set(['mount kitchener', 'mount michener']), []), [])
+  })
+
+  it('skips a pair confirmed to be two different places, whichever way round it is listed', () => {
+    const keys = new Set(['mount sir douglas', 'mount sir douglass'])
+    assert.deepEqual(nearMisses(keys, [['mount sir douglass', 'mount sir douglas']]), [])
   })
 })
 

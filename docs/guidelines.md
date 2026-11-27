@@ -17,8 +17,10 @@ app follows its upstream template in
 - [Out of scope](#out-of-scope)
 - [Exceptions](#exceptions)
   - [Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`](#exempt-replacement-pin-and-lock-file-maintenance-updates-from-minimumreleaseage)
-  - [Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start](#tolerate-stackblitz-bypassing-minimumreleaseage-while-it-cannot-start)
+  - [Tolerate StackBlitz's unlocked, unverified install while it cannot start](#tolerate-stackblitzs-unlocked-unverified-install-while-it-cannot-start)
+  - [Install the dev container's mise unpinned, from its apt repository](#install-the-dev-containers-mise-unpinned-from-its-apt-repository)
   - [Do not call the shared link checker until the docs need one](#do-not-call-the-shared-link-checker-until-the-docs-need-one)
+- [Documentation](#documentation)
 <!-- tocstop -->
 
 ## Out of scope
@@ -54,21 +56,47 @@ and the `lockFileMaintenance` override, and check on the Dependency Dashboard
 that the next lock-file maintenance update is not held for
 `renovate/stability-days`. Restore them if it is.
 
-### Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start
+### Tolerate StackBlitz's unlocked, unverified install while it cannot start
 
 Overrides
-[dependency-automation.md › Extend the shared Renovate presets](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md#extend-the-shared-renovate-presets):
-[.stackblitzrc](../.stackblitzrc) boots via npm, which cannot read
-`pnpm-lock.yaml`, so it resolves fresh from the `package.json` ranges on every
-boot and bypasses the base preset's 14-day hold entirely.
+[dependency-automation.md › Extend the shared Renovate presets](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md#extend-the-shared-renovate-presets)
+and
+[general.md › Pin or lock every dependency, and have CI assert the lock](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md#pin-or-lock-every-dependency-and-have-ci-assert-the-lock):
+[.stackblitzrc](../.stackblitzrc) opens two holes.
 
-**Why:** the hole is tolerable only because nothing can start that way:
+- It boots via npm, which cannot read `pnpm-lock.yaml`, so it resolves fresh
+  from the `package.json` ranges on every boot and bypasses the base preset's
+  14-day hold entirely.
+- Its `npm_config_sqlite3_binary_host_mirror` has prebuild-install fetch the
+  native `sqlite3` binding from `registry.npmmirror.com`, a third-party host
+  the project does not control, with no checksum.
+
+**Why:** the holes are tolerable only because nothing can start that way:
 StackBlitz cannot run this project, as
 [setup-development-environment.md](setup-development-environment.md#stackblitz-does-not-currently-work)
-records.
+records. The mirror stays because it is what gets the boot as far as it goes,
+so that the day WebContainer allows native addons the project simply starts.
 
-**Retires when:** StackBlitz becomes able to run the project. Close the hole
-*before* anyone relies on it, not after.
+**Retires when:** StackBlitz becomes able to run the project. Close both holes
+*before* anyone relies on it, not after: install from the lock, and fetch the
+`sqlite3` binding from its own release or drop the mirror.
+
+### Install the dev container's mise unpinned, from its apt repository
+
+Overrides
+[general.md › Pin or lock every dependency, and have CI assert the lock](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md#pin-or-lock-every-dependency-and-have-ci-assert-the-lock):
+[.devcontainer/setup.sh](../.devcontainer/setup.sh) installs whatever mise
+release mise's apt repository carries when the container is built.
+
+**Why:** that repository's index carries only the current release, so a pinned
+`apt-get install mise=<version>` would fail the day the version is superseded,
+and it is GPG-verified, unlike `curl | sh`. mise is not what is pinned but what
+reads the pins: the tools come from `mise.toml` and `mise.lock` whichever mise
+installs them. The comment in `setup.sh` holds the full reasoning.
+
+**Retires when:** mise itself needs a pin, such as a `mise.lock` format only
+newer releases read. Download that release's binary instead and verify it
+against its `SHASUMS256.txt`, as the comment describes.
 
 ### Do not call the shared link checker until the docs need one
 
@@ -85,3 +113,21 @@ The measurements are in [link-checking.md](guidelines/link-checking.md).
 the shared workflow then with its `paths` input scoped to `docs/**` and
 `README.md`. Checking `content/` stays off the table until its links stop being
 predominantly third-party consumer sites.
+
+## Documentation
+
+Each kind of change, and the documents it updates in the same pull request:
+
+| Change | Update |
+|---|---|
+| A mise task added, renamed or removed | its `description`, which `mise tasks` lists; the entry points and families in [building-and-testing.md › Task reference](building-and-testing.md#task-reference); a `ci-*` task also in [CI pipeline](building-and-testing.md#ci-pipeline) |
+| A workflow added or a trigger changed | [building-and-testing.md](building-and-testing.md), and [releasing-and-publishing.md](releasing-and-publishing.md) for `release.yml` and `publish.yml` |
+| A repository setting the pipeline depends on | its apply and verify commands in [building-and-testing.md › GitHub Config](building-and-testing.md#github-config) |
+| A trip report source adapter | its entries in [sources/catalog.ts](../scripts/trip-report-index/sources/catalog.ts) and [sources/index.ts](../scripts/trip-report-index/sources/index.ts), as [architecture.md › Where new code goes](architecture.md#where-new-code-goes) lists, which the docs link to rather than count; a source that needs a credential is also an environment variable (below) |
+| A region | all three sections at once, with the same id, title, icon and order, as [ADR-006](architecture-decision-record.md#adr-006--one-region-taxonomy-across-trip-reports-weather-and-accommodation) requires: the trip report regions, the weather pages and the accommodation pages |
+| An environment variable | the table in [setup-development-environment.md › Environment variables](setup-development-environment.md#environment-variables), and [.env.example](../.env.example) |
+| An editor extension or a committed `.vscode/settings.json` key | both [.vscode/extensions.json](../.vscode/extensions.json) and the dev container's list, and [setup-development-environment.md › VS Code](setup-development-environment.md#vs-code) |
+| A dependency hold, override or tolerated advisory | a comment beside it with its reason and retirement condition, as in [pnpm-workspace.yaml](../pnpm-workspace.yaml) and [renovate.json](../renovate.json) |
+| A departure from the shared guidelines | a comment where it applies, indexed under [Exceptions](#exceptions) |
+| An architectural decision | a new entry in [architecture-decision-record.md](architecture-decision-record.md) |
+| A change to anything the Nuxt UI Docs template provides | [divergence-from-the-template.md](divergence-from-the-template.md) |

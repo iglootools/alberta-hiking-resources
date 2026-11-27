@@ -16,17 +16,17 @@
  * give a region as well as a name.
  */
 import type { Fetcher } from '../fetch.ts'
+import { fetchJson } from '../fetch.ts'
 import { indent } from '../output.ts'
 import { ApiError, MissingCredentialError, SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
+import { MONTH_ABBREVIATIONS } from '../html.ts'
 
 const API = 'https://www.googleapis.com/youtube/v3'
 const HANDLE = 'AnnieSteveClimbingTheRockies'
 const PAGE_SIZE = 50
-
-const MONTHS = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
 
 /**
  * The trailing date, in any of the forms the channel uses. A slash counts as a
@@ -35,7 +35,7 @@ const MONTHS = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
  * "Jewell Pass loop Sunrise Jan23rd2021".
  */
 const TRAILING_DATE = new RegExp(
-  `[\\s,/-]+(?:${MONTHS})[a-z]*\\.?\\s*\\d{1,2}(?:st|nd|rd|th)?[,\\s]*\\d{4}.*$`, 'i')
+  `[\\s,/-]+(?:${MONTH_ABBREVIATIONS})[a-z]*\\.?\\s*\\d{1,2}(?:st|nd|rd|th)?[,\\s]*\\d{4}.*$`, 'i')
 
 /** Objective first, then area, separated by commas or a spaced dash. */
 const PART_SEPARATOR = /\s+-\s+|,\s*/
@@ -154,11 +154,15 @@ interface ChannelPage {
   readonly error?: { readonly message?: string }
 }
 
+/** Rejects a 2xx body carrying an API error, so it is never cached. */
+const rejectApiError = (api: string) => (body: { readonly error?: { readonly message?: string } }) => {
+  if (body.error) throw new ApiError(api, body.error.message ?? 'unknown error')
+}
+
 /** Every upload on the channel, oldest page first. */
 export async function readUploads(fetchText: Fetcher, key: string): Promise<{ title: string, videoId: string }[]> {
-  const channel = JSON.parse(await fetchText(
-    `${API}/channels?part=contentDetails&forHandle=${HANDLE}&key=${key}`)) as ChannelPage
-  if (channel.error) throw new ApiError('YouTube channels', channel.error.message ?? 'unknown error')
+  const channel = await fetchJson<ChannelPage>(fetchText,
+    `${API}/channels?part=contentDetails&forHandle=${HANDLE}&key=${key}`, rejectApiError('YouTube channels'))
 
   const uploads = channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
   if (!uploads) throw new SourceChangedError('annie', `no uploads playlist for @${HANDLE}`)
@@ -166,10 +170,10 @@ export async function readUploads(fetchText: Fetcher, key: string): Promise<{ ti
   const videos: { title: string, videoId: string }[] = []
   let pageToken = ''
   do {
-    const page = JSON.parse(await fetchText(
+    const page = await fetchJson<PlaylistPage>(fetchText,
       `${API}/playlistItems?part=snippet&playlistId=${uploads}`
-      + `&maxResults=${PAGE_SIZE}&key=${key}${pageToken ? `&pageToken=${pageToken}` : ''}`)) as PlaylistPage
-    if (page.error) throw new ApiError('YouTube playlistItems', page.error.message ?? 'unknown error')
+      + `&maxResults=${PAGE_SIZE}&key=${key}${pageToken ? `&pageToken=${pageToken}` : ''}`,
+      rejectApiError('YouTube playlistItems'))
 
     for (const item of page.items ?? []) {
       const title = item.snippet?.title?.trim()
@@ -182,12 +186,11 @@ export async function readUploads(fetchText: Fetcher, key: string): Promise<{ ti
 }
 
 /**
- * The API key, or a failure explaining how to get one. Exported as the source's
- * preflight so the run stops before scraping anything rather than after five
- * minutes of reading every other site. `env` is a parameter so a test can
- * supply one without touching the process.
+ * The API key in `env`, or a failure explaining how to get one. Read by the
+ * run's preflight (`readCredentials`), so the run stops before scraping
+ * anything rather than after five minutes of reading every other site.
  */
-export function requireApiKey(env: NodeJS.ProcessEnv = process.env): string {
+export function requireApiKey(env: NodeJS.ProcessEnv): string {
   const key = env.YOUTUBE_API_KEY
   if (!key) {
     throw new MissingCredentialError('YOUTUBE_API_KEY', [
@@ -202,11 +205,13 @@ export function requireApiKey(env: NodeJS.ProcessEnv = process.env): string {
   return key
 }
 
-export async function scrapeAnnie(fetchText: Fetcher): Promise<RawReport[]> {
-  const key = requireApiKey()
-
+/**
+ * Every trip video on the channel, as reports. The key is read once, by the
+ * run's preflight (`readCredentials`), and passed in.
+ */
+export async function scrapeAnnie(fetchText: Fetcher, { youtubeApiKey }: { readonly youtubeApiKey: string }): Promise<RawReport[]> {
   const reports: RawReport[] = []
-  for (const { title, videoId } of await readUploads(fetchText, key)) {
+  for (const { title, videoId } of await readUploads(fetchText, youtubeApiKey)) {
     const parsed = parseTitle(title)
     if (!parsed || parsed.objectives.length === 0) continue
     reports.push({

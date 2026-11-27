@@ -14,12 +14,11 @@ import type { Fetcher } from '../fetch.ts'
 import { fetchUnlessStatus } from '../fetch.ts'
 import type { Coordinates, RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
-import { anchors } from '../html.ts'
+import { MONTHS, anchors } from '../html.ts'
 
 const BASE = 'https://www.on-top.ca/'
 const INDEXES = ['Index-Summits.html', 'Index-Hikes.html']
 
-const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December'
 const TRAILING_DATE = new RegExp(`[\\s,-]+(?:${MONTHS})\\s*,?\\s*\\d{4}\\s*$`, 'i')
 
 const MAPS_LINK = /href="(https?:\/\/(?:www\.)?google\.[a-z.]+\/maps[^"]*)"/gi

@@ -7,7 +7,7 @@
   //
   // IncludeGlobalTools is off (the extension's own recommendation) and is load-bearing
   // here: with the default `true`, this Nuxt project — whose mise.toml declares only
-  // node and pnpm — was given metals.javaHome, three java.* keys and a
+  // the project's own tools — was given metals.javaHome, three java.* keys and a
   // python.defaultInterpreterPath pointing at a global mise interpreter, none of which
   // correspond to anything this repo builds. Those keys were removed when this comment
   // was written; if they reappear, this setting has been lost.
@@ -19,10 +19,20 @@
   "mise.configureExtensionsAutomatically": true,
   "mise.configureExtensionsUseSymLinks": true,
   "mise.configureExtensionsIncludeGlobalTools": false,
+  // Supplying the list replaces the extension's default, so its two entries are repeated:
+  // biomejs.biome and oxc.oxc-vscode write absolute ~/.local/share/mise paths whatever
+  // UseSymLinks says, and oxc fires for any project with node. ms-python.python is excluded
+  // because the extension writes the .venv directory rather than its interpreter; the
+  // explicit pin below stands instead. See guidelines/project-setup/ide.md in iglootools/common.
+  "mise.configureExtensionsAutomaticallyIgnoreList": [
+    "biomejs.biome",
+    "oxc.oxc-vscode",
+    "ms-python.python"
+  ],
   "debug.javascript.defaultRuntimeExecutable": {
     "pwa-node": "${workspaceFolder}/.vscode/mise-tools/node"
   },
-  // Format on save, per language, with the tool the `format` task runs, so a saved file passes
+  // Format on save, per language, with the tool the `fmt` task runs, so a saved file passes
   // `lint-fmt`. Per language rather than globally: a global formatOnSave would also let
   // Volar format .vue and .ts files, which ESLint's stylistic rules own. The MDC pages under
   // content/ are excluded in .rumdl.toml. See guidelines/project-setup/ide.md in
@@ -35,5 +45,7 @@
     "editor.defaultFormatter": "rvben.rumdl",
     "editor.formatOnSave": true
   },
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
+  // The interpreter, not the environment directory: uv's .venv, which runs the iglootools
+  // command.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
 }

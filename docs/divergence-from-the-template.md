@@ -221,7 +221,8 @@ itself is described in [architecture.md](architecture.md).
   ([ADR-013](architecture-decision-record.md#adr-013--build-the-server-with-nitro-v3-without-the-compatibility-layer)).
 - `ui.eslint` is the template's, with `RegionMapSvg`'s scoped-style classes
   added to its `ignore` list beside `StarsBg`'s.
-- `llms.sections` rewritten from the 2 demo sections to the 8 real sections;
+- `llms.sections` rewritten from the 2 demo sections to one per top-level
+  content folder, and the config fails to load when a folder has none;
   `mcp.name` set to the site title.
 - Dropped the template's `content.experimental.sqliteConnector`, leaving it
   unset. `@nuxt/content` defaults to `better-sqlite3` and switches to `sqlite3`
@@ -238,7 +239,7 @@ itself is described in [architecture.md](architecture.md).
 
 ## Content, components & docs
 
-- Content fully replaced: the template's demo docs → the 8 hiking sections.
+- Content fully replaced: the template's demo docs → the 9 hiking sections.
 - Custom content components: `WeatherLocation`, `FacebookGroupLinks`,
   `SafetyWarnings`, `HeroMountains`, `StarsBg`; added `pages/changelog.vue`, and
   `AlphabetJump`, a sticky A–Z strip `[...slug].vue` shows on pages whose

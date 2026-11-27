@@ -10,8 +10,9 @@
  * Read through the same cached fetcher as the blogs, so iterating costs nothing.
  */
 import type { Fetcher } from './fetch.ts'
+import { fetchJson } from './fetch.ts'
 import type { Extent, Projection } from './region-map.ts'
-import { SourceChangedError } from './errors.ts'
+import { MinimumNotMetError, SourceChangedError } from './errors.ts'
 
 const RELEASE = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson'
 
@@ -86,13 +87,12 @@ function ringPath(ring: Ring, extent: Extent, project: Projection, minimumPixels
 async function readLayer(fetchText: Fetcher, layer: keyof typeof LAYERS, extent: Extent): Promise<Feature[]> {
   const { file, minimum } = LAYERS[layer]
   const url = `${RELEASE}/${file}.geojson`
-  const body = JSON.parse(await fetchText(url)) as { features?: Feature[] }
-  if (!Array.isArray(body.features)) throw new SourceChangedError('natural-earth', `no features array at ${url}`)
-  const found = body.features.filter(feature => feature.geometry
+  const body = await fetchJson<{ features?: Feature[] }>(fetchText, url, (value) => {
+    if (!Array.isArray(value.features)) throw new SourceChangedError('natural-earth', `no features array at ${url}`)
+  })
+  const found = body.features!.filter(feature => feature.geometry
     && polygons(feature.geometry).some(polygon => polygon[0]!.some(point => inside(extent, point))))
-  if (found.length < minimum) {
-    throw new SourceChangedError('natural-earth', `${file} has ${found.length} features in the map extent, expected at least ${minimum}`)
-  }
+  if (found.length < minimum) throw new MinimumNotMetError('natural-earth', found.length, minimum, `${file} features in the map extent`)
   return found
 }
 

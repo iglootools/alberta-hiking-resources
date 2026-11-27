@@ -1,4 +1,5 @@
 import { queryCollection } from '@nuxt/content/server'
+import { listPages, onlyPages } from '../../utils/mcp-pages'
 import { currentRequestEvent } from '../../utils/request-event'
 
 export default defineMcpTool({
@@ -23,34 +24,12 @@ OUTPUT: Returns a structured list with:
   cache: '1h',
   handler: async () => {
     const event = currentRequestEvent()
-    const siteUrl = event.url.origin
-
-    try {
-      // The collection also holds each folder's .navigation.yml, which is
-      // navigation metadata, not a page; the sitemap and llms.txt skip it too.
-      const pages = await queryCollection(event, 'docs')
-        .where('extension', '=', 'md')
+    return listPages({
+      siteUrl: event.url.origin,
+      logError: console.error,
+      findPages: () => onlyPages(queryCollection(event, 'docs'))
         .select('title', 'path', 'description')
         .all()
-
-      const result = pages.map(page => ({
-        title: page.title,
-        path: page.path,
-        description: page.description,
-        url: `${siteUrl}${page.path}`
-      }))
-
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-      }
-    } catch (error) {
-      // The caller sees only a generic failure, so the cause has to reach the
-      // server log or it is lost entirely.
-      console.error(`[mcp] list-pages failed`, error)
-      return {
-        content: [{ type: 'text', text: 'Failed to list pages' }],
-        isError: true
-      }
-    }
+    })
   }
 })

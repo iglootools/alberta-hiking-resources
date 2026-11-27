@@ -7,21 +7,20 @@
  * on every run and is not committed — it is a worksheet for editing
  * curation.ts, and its entries are printed ready to paste there.
  */
-import type { BuildResult, Dropped } from './build.ts'
-import type { Claim, Objective } from './types.ts'
-import { regionsOf } from './build.ts'
+import type { BuildResult, Claim, Dropped, Objective } from './types.ts'
 import { DISTINCT_NAMES } from './curation.ts'
 import { REGIONS } from './regions.ts'
-import { isStated } from './types.ts'
+import { isInferredOnly, isMultiRegion, regionsOf } from './types.ts'
 
 /** Similarity above which two names are worth a human looking at them. */
 const NEAR_MISS_CUTOFF = 0.86
 
-const distinct = new Set(DISTINCT_NAMES.flatMap(([left, right]) => [`${left}|${right}`, `${right}|${left}`]))
+/** A pair of keys confirmed to be two objectives, as DISTINCT_NAMES lists them. */
+export type NamePair = readonly [string, string]
 
-/** Whether a candidate pair has been checked and found to be two objectives. */
-function isDistinct(left: string, right: string): boolean {
-  return distinct.has(`${left}|${right}`)
+/** Whether a candidate pair has been checked and found to be two objectives, either way round. */
+function isDistinct(distinctNames: readonly NamePair[], left: string, right: string): boolean {
+  return distinctNames.some(([a, b]) => (a === left && b === right) || (a === right && b === left))
 }
 
 function sources(objective: Objective): string {
@@ -70,7 +69,7 @@ function claimsText(objective: Objective): string {
 }
 
 function multiRegionSection(objectives: readonly Objective[]): string[] {
-  const listed = objectives.filter(objective => regionsOf(objective).length > 1)
+  const listed = objectives.filter(isMultiRegion)
   if (listed.length === 0) return ['No objective is listed in more than one region.', '']
   return [
     `${listed.length} objectives listed in more than one region, strongest claim first. That is`,
@@ -107,7 +106,7 @@ function splitSection(objectives: readonly Objective[]): string[] {
 }
 
 function inferredOnlySection(objectives: readonly Objective[]): string[] {
-  const inferred = objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated))
+  const inferred = objectives.filter(isInferredOnly)
   if (inferred.length === 0) return ['No objective is placed by inference alone.', '']
   return [
     `${inferred.length} objectives placed only by inference. These are the ones to spot-check:`,
@@ -139,15 +138,33 @@ function similarity(left: string, right: string): number {
   return total > 0 ? (2 * shared) / total : 0
 }
 
-function nearMissSection(result: BuildResult): string[] {
-  const keys = [...new Set(result.objectives.map(objective => objective.key))].sort()
-  const pairs: string[] = []
-  for (let index = 0; index < keys.length; index += 1) {
-    for (let other = index + 1; other < Math.min(index + 12, keys.length); other += 1) {
-      const [left, right] = [keys[index]!, keys[other]!]
-      if (similarity(left, right) >= NEAR_MISS_CUTOFF && !isDistinct(left, right)) pairs.push(`- \`${left}\` vs \`${right}\``)
+/**
+ * How many keys after each one, in sorted order, it is compared with. Spelling
+ * variants mostly share their first letters, so they sort close together, and
+ * comparing every pair of some 4,000 keys would cost millions of comparisons
+ * for little more.
+ */
+const NEAR_MISS_WINDOW = 11
+
+/**
+ * Pairs of keys whose spellings are close enough that they may be one
+ * objective, in sorted order, leaving out the pairs DISTINCT_NAMES has settled.
+ */
+export function nearMisses(keys: ReadonlySet<string>, distinctNames: readonly NamePair[] = DISTINCT_NAMES): [string, string][] {
+  const sorted = [...keys].sort()
+  const pairs: [string, string][] = []
+  for (let index = 0; index < sorted.length; index += 1) {
+    for (let other = index + 1; other <= Math.min(index + NEAR_MISS_WINDOW, sorted.length - 1); other += 1) {
+      const [left, right] = [sorted[index]!, sorted[other]!]
+      if (similarity(left, right) >= NEAR_MISS_CUTOFF && !isDistinct(distinctNames, left, right)) pairs.push([left, right])
     }
   }
+  return pairs
+}
+
+function nearMissSection(result: BuildResult): string[] {
+  const pairs = nearMisses(new Set(result.objectives.map(objective => objective.key)))
+    .map(([left, right]) => `- \`${left}\` vs \`${right}\``)
   return [
     `${pairs.length} near-miss name pairs. Most are distinct neighbouring peaks — Explor8ion`,
     'alone publishes both Mount Kitchener and Mount Michener. Add an ALIASES entry only',
@@ -178,11 +195,11 @@ const GENERIC_WORD = /\b(?:mount|mountain|peak|ridge|hill|lake|pass|tower|butte|
  * question. Like near misses, these are candidates for ALIASES, never acted on
  * automatically.
  */
-export function bareNameCandidates(keys: ReadonlySet<string>): [string, string][] {
+export function bareNameCandidates(keys: ReadonlySet<string>, distinctNames: readonly NamePair[] = DISTINCT_NAMES): [string, string][] {
   return [...keys].sort().flatMap((key) => {
     if (GENERIC_WORD.test(key) || /\d/.test(key)) return []
     const forms = GENERIC_FORMS.map(form => form(key)).filter(form => keys.has(form))
-    return forms.length === 1 && !isDistinct(key, forms[0]!) ? [[key, forms[0]!] as [string, string]] : []
+    return forms.length === 1 && !isDistinct(distinctNames, key, forms[0]!) ? [[key, forms[0]!] as [string, string]] : []
   })
 }
 
@@ -247,7 +264,7 @@ export interface ReviewContext {
 }
 
 /** `generatedOn` is supplied by the caller, so the worksheet is a pure function of its inputs. */
-export function writeReview(result: BuildResult, generatedOn: Date, { newlyUnsorted = [] }: ReviewContext = {}): string {
+export function renderReview(result: BuildResult, generatedOn: Date, { newlyUnsorted = [] }: ReviewContext = {}): string {
   return [
     '# Trip report index — review',
     '',

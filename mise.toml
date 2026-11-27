@@ -79,18 +79,31 @@ run = [
   { task = "preflight" },
 ]
 
+[tasks.ci-release]
+description = "Install, then release (what the release workflow runs; --dry-run tags nothing)"
+usage = 'flag "--dry-run" help="Print the next version and its notes; tag and release nothing"'
+run = [
+  { task = "install" },
+  { task = "release{% if usage.dry_run %} --dry-run{% endif %}" },
+]
+
 [tasks.test]
-description = "Run the trip report index tests"
+description = "Run the trip report index, app and server tests"
 run = "pnpm test"
 
 # Writers (guidelines/project-setup/formatting.md in iglootools/common). ESLint's stylistic rules
-# own the code.
+# own the code, so fmt-eslint formats it.
 [tasks.fmt]
-description = "Format the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; lint-fmt verifies only)"
+description = "Format the code with ESLint, and the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; lint-fmt verifies only)"
 run = [
+  { task = "fmt-eslint" },
   { task = "fmt-dprint" },
   { task = "fmt-rumdl" },
 ]
+
+[tasks.fmt-eslint]
+description = "Apply ESLint's automatic fixes, its stylistic rules included"
+run = "pnpm lint --fix"
 
 [tasks.fmt-dprint]
 description = "Format the JSON, TOML and YAML with dprint"
@@ -130,7 +143,7 @@ description = "Check that the JSON, TOML and YAML are formatted with dprint (fix
 run = "dprint check"
 
 [tasks.lint-eslint]
-description = "Lint the code with ESLint, its stylistic rules included"
+description = "Lint the code with ESLint, its stylistic rules included (fix what it can with `mise run fmt-eslint`)"
 run = "pnpm lint"
 
 [tasks.lint-markdown]
@@ -138,7 +151,7 @@ description = "Lint the Markdown with rumdl (configured in .rumdl.toml; fix what
 run = "rumdl check ."
 
 [tasks.lint-types]
-description = "Type-check with the Nuxt typecheck"
+description = "Type-check the app with nuxt typecheck and the scripts with tsc"
 run = "pnpm typecheck"
 
 [tasks.lint-shell]
@@ -168,6 +181,13 @@ run = "uv run --no-sync iglootools common check-pins"
 description = "Build the Nuxt application for GitHub Pages deployment"
 depends = ["install"]
 run = "pnpm build:pages"
+
+# docs/releasing-and-publishing.md. Configured in .releaserc.json; needs GITHUB_TOKEN. Outside CI,
+# semantic-release only reports what it would release.
+[tasks.release]
+description = "Tag the next version from the commits on main with semantic-release (CI runs it through ci-release; --dry-run tags nothing)"
+usage = 'flag "--dry-run" help="Print the next version and its notes; tag and release nothing"'
+run = "pnpm exec semantic-release{% if usage.dry_run %} --dry-run{% endif %}"
 
 [tasks.build-trip-index]
 description = "Rebuild the by-objective trip report index from the source blogs"

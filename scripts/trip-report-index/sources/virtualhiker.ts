@@ -6,7 +6,7 @@
  */
 import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
-import { REGION_MAP } from '../regions.ts'
+import { REGION_MAP } from './catalog.ts'
 import { readWordPress } from './wordpress.ts'
 import { splitObjectives } from '../canon.ts'
 

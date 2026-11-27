@@ -1,13 +1,16 @@
 {
-  // A full Linux environment for the project, usable from GitHub Codespaces,
-  // CodeSandbox, or the VS Code Dev Containers extension against local Docker.
+  // A full Linux environment for the project, usable from GitHub Codespaces or
+  // the VS Code Dev Containers extension against local Docker. CodeSandbox is not
+  // one of them: it retired repository import
+  // (docs/setup-development-environment.md, "Why CodeSandbox is not listed").
   //
-  // This exists alongside .stackblitzrc, which covers StackBlitz. The two are
-  // not interchangeable: StackBlitz runs Node compiled to WebAssembly inside a
-  // browser tab, so there is no container for a devcontainer.json to describe
-  // and no way to load the project's native addons. StackBlitz is the
-  // no-account, instant path for previewing content edits; this is the one where
-  // `mise run ci-preflight` -- lints, tests, build -- actually runs.
+  // This exists alongside .stackblitzrc, which is not an alternative to it:
+  // StackBlitz runs Node compiled to WebAssembly inside a browser tab, so there
+  // is no container for a devcontainer.json to describe and no way to load the
+  // project's native addons, and it cannot run this project at all
+  // (docs/setup-development-environment.md, "StackBlitz (does not currently
+  // work)"). This is where `mise run ci-preflight` -- lints, tests, build --
+  // actually runs.
   "name": "Alberta Hiking Resources",
 
   // A plain Ubuntu base rather than a Node image, because mise installs Node and
@@ -26,7 +29,10 @@
   //
   // If a native module ever builds here but fails in CI, this is the first place
   // to look, and pinning back to `ubuntu-24.04` is the fix.
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu26.04",
+  //
+  // Pinned by digest so the base changes only through a reviewed diff; Renovate's
+  // devcontainer manager moves the digest with the tag.
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu26.04@sha256:e15941f70f26542ef9b0ef4bb64f88b8ecdfe8c3372e730ab6e405792805e742",
 
   // onCreateCommand rather than postCreateCommand so that Codespaces prebuilds
   // bake the apt packages, the toolchain, and node_modules into the image. Left
@@ -44,14 +50,19 @@
 
   "customizations": {
     "vscode": {
-      // nuxt.mdc mirrors .vscode/extensions.json; the rest are the ones a
-      // contributor would otherwise have to discover from
-      // docs/setup-development-environment.md.
+      // Mirrors .vscode/extensions.json: keep the two lists in step. A
+      // container installs these rather than prompting for the
+      // recommendations, and .vscode/settings.json names dprint.dprint and
+      // rvben.rumdl as formatters, so without them format-on-save silently
+      // does nothing here.
       "extensions": [
         "nuxt.mdc",
         "Vue.volar",
         "dbaeumer.vscode-eslint",
-        "hverlin.mise-vscode"
+        "hverlin.mise-vscode",
+        "dprint.dprint",
+        "rvben.rumdl",
+        "tombi-toml.tombi"
       ]
     }
   }

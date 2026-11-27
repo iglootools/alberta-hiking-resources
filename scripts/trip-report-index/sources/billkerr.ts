@@ -18,7 +18,7 @@ import { SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
-import { decodeEntities } from '../html.ts'
+import { MONTH_ABBREVIATIONS, decodeEntities } from '../html.ts'
 import { PAGE_SIZE, readAllPages } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://www.billkerr.ca'
@@ -30,8 +30,6 @@ const OUTING_CATEGORIES = new Set([
   'backcountry camping', 'bivy'
 ])
 
-const MONTHS = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec'
-
 /**
  * The date, in the many shapes this blog writes it: "May 21, 2023",
  * "April 26/09", "Feb 25 - Feb 28, 2012", "Aug 10th", "Mid Jan/2011". Everything
@@ -39,7 +37,7 @@ const MONTHS = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec'
  * tail, the conditions, or the gear rather than the objective.
  */
 const FROM_FIRST_DATE = new RegExp(
-  `[\\s,/-]+(?:mid\\s+)?(?:${MONTHS})[a-z]*\\.?\\s*\\d{0,2}(?:st|nd|rd|th)?\\s*[,/-]?\\s*(?:\\d{4}|\\d{2})?\\b[\\s\\S]*$`, 'i')
+  `[\\s,/-]+(?:mid\\s+)?(?:${MONTH_ABBREVIATIONS})[a-z]*\\.?\\s*\\d{0,2}(?:st|nd|rd|th)?\\s*[,/-]?\\s*(?:\\d{4}|\\d{2})?\\b[\\s\\S]*$`, 'i')
 
 /**
  * Objective first, then grade, area or conditions. Splitting on the separator
@@ -49,7 +47,7 @@ const FROM_FIRST_DATE = new RegExp(
 const PART_SEPARATOR = /\s+[\u2013\u2014-]\s+|,\s*/
 
 /** A month on its own, left behind when the whole title was a date. */
-const BARE_MONTH = new RegExp(`^(?:${MONTHS})[a-z]*\\.?$`, 'i')
+const BARE_MONTH = new RegExp(`^(?:${MONTH_ABBREVIATIONS})[a-z]*\\.?$`, 'i')
 
 /** Posts filed under an outing category that are not an outing. */
 const NOT_A_TRIP = /house|hockey|fundrais|charity|\bmove to\b|rehab|diet|stretch|radios?\b|antenna|equipment|review|skate|kayak|\bfish\b|sky dive|birthday|wedding|surgery|misc posts|\bsled\b|avalanche hazard|notable or significant/i
@@ -125,8 +123,8 @@ async function tagNames(fetchText: Fetcher): Promise<Map<number, string>> {
 }
 
 async function outingCategoryIds(fetchText: Fetcher): Promise<number[]> {
-  const categories = JSON.parse(await fetchText(
-    `${BASE}/wp-json/wp/v2/categories?per_page=100&_fields=id,name`)) as Category[]
+  const categories = await readAllPages<Category>(fetchText, page =>
+    `${BASE}/wp-json/wp/v2/categories?per_page=${PAGE_SIZE}&page=${page}&_fields=id,name`)
   return categories.filter(c => OUTING_CATEGORIES.has(c.name.toLowerCase())).map(c => c.id)
 }
 

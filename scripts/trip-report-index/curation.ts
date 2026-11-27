@@ -18,7 +18,7 @@
  * shared with a different mountain, published by a source with no region of
  * its own. The exact-match key merges it into the other peak, and because no
  * single source files the name under two regions, the homonym split in
- * regions.ts never fires. Giving the report a name of its own is what keeps it
+ * stated.ts never fires. Giving the report a name of its own is what keeps it
  * off the wrong page. Only add a report you have read.
  */
 export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
@@ -69,7 +69,7 @@ export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
  * Automatic fuzzy matching is deliberately not used — see the note in canon.ts.
  * Explor8ion alone publishes both "Mount Kitchener" and "Mount Michener", so
  * anything edit-distance would merge here has to be checked by a human first.
- * `--review` lists near-miss candidates to work from.
+ * The review worksheet every run writes lists near-miss candidates to work from.
  */
 export const ALIASES: Readonly<Record<string, string>> = {
   // Spelling variants of one peak.
@@ -267,9 +267,12 @@ export const DISTINCT_NAMES: readonly (readonly [string, string])[] = [
  * a guidebook grouping that spans four regions. An objective only lands here if
  * it is also absent from every source that *does* publish a region, so the list
  * stays short — it is the residue after cross-source inheritance, not the whole
- * of either blog. `--review` prints the current residue in paste-ready form.
+ * of either blog. The review worksheet lists the current residue in paste-ready form.
  */
-export const REGION_OVERRIDES: Readonly<Record<string, string>> = {
+/** Region ids, or 'out-of-scope', by canonical objective name. */
+export type RegionOverrides = Readonly<Record<string, string>>
+
+export const REGION_OVERRIDES: RegionOverrides = {
   // --- Kananaskis Country and Canmore ---
   'black prince outlier': 'kananaskis-canmore',
   'buller north ridge': 'kananaskis-canmore',

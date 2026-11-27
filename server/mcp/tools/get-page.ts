@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { queryCollection } from '@nuxt/content/server'
 import { serverFetch } from 'nuxt/server'
+import { getPage, onlyPages } from '../../utils/mcp-pages'
 import { currentRequestEvent } from '../../utils/request-event'
 
 export default defineMcpTool({
@@ -21,50 +22,15 @@ WORKFLOW: This tool returns the complete page content including title, descripti
   cache: '1h',
   handler: async ({ path }) => {
     const event = currentRequestEvent()
-    const siteUrl = event.url.origin
-
-    try {
-      const page = await queryCollection(event, 'docs')
-        .where('path', '=', path)
-        // Pages only, not a folder's .navigation.yml (see list-pages).
-        .where('extension', '=', 'md')
+    return getPage(path, {
+      siteUrl: event.url.origin,
+      logError: console.error,
+      findPage: pagePath => onlyPages(queryCollection(event, 'docs').where('path', '=', pagePath))
         .select('title', 'path', 'description')
-        .first()
-
-      if (!page) {
-        return {
-          content: [{ type: 'text', text: 'Page not found' }],
-          isError: true
-        }
-      }
-
+        .first(),
       // In process, rather than an HTTP request back to this server: Nitro v3
       // has no global $fetch in server code.
-      const response = await serverFetch(event, `/raw${path}.md`)
-      if (!response.ok) {
-        throw new Error(`/raw${path}.md answered ${response.status}`)
-      }
-      const content = await response.text()
-
-      const result = {
-        title: page.title,
-        path: page.path,
-        description: page.description,
-        content,
-        url: `${siteUrl}${page.path}`
-      }
-
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-      }
-    } catch (error) {
-      // The caller sees only a generic failure, so the cause has to reach the
-      // server log or it is lost entirely.
-      console.error(`[mcp] get-page failed`, error)
-      return {
-        content: [{ type: 'text', text: 'Failed to get page' }],
-        isError: true
-      }
-    }
+      fetch: rawPath => serverFetch(event, rawPath)
+    })
   }
 })

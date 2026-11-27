@@ -109,16 +109,19 @@ pnpm versions ([mise.toml](../mise.toml)) and acts as the task runner.
 ### Environment variables
 
 One task needs a credential; nothing else here does, and neither the dev server
-nor the build ever asks for one.
+nor the build ever asks for one. The other variable is optional.
 
 | Variable | Needed by | Without it |
 |---|---|---|
 | `YOUTUBE_API_KEY` | `mise run build-trip-index` | the task **fails in preflight**, before fetching or writing anything |
+| `NUXT_PUBLIC_SITE_URL` | the dev server and the build, read in [nuxt.config.ts](../nuxt.config.ts) for the site URL, canonical links, the sitemap, the OG images and the `llms.txt` domain | the production URL, `https://www.alberta-hiking-resources.org`, which is what the deployed build uses |
 
 `mise run build-trip-index` regenerates the by-objective
 [trip report pages](../content/3.hiking-scrambling-beta/3.trip-reports/) from
-seven sources. Six are plain websites; the seventh, Annie Ouellet's YouTube
-channel, is read through the YouTube Data API, which is keyed:
+the sources in
+[sources/index.ts](../scripts/trip-report-index/sources/index.ts). All but one
+are plain websites; Annie Ouellet's YouTube channel is read through the YouTube
+Data API, which is keyed:
 
 ```bash
 export YOUTUBE_API_KEY=...        # in your shell profile
@@ -220,9 +223,10 @@ First, getting a usable package manager:
 
 pnpm is squeezed from both sides: `packages:` became optional only in pnpm 10
 and `allowBuilds` is pnpm 11, so **this repo needs pnpm 10 or newer**, while the
-newest pnpm WebContainer can execute is older. `packageManager: pnpm@11.15.1` in
-[package.json](../package.json) does not help — WebContainer ignores it, and
-pnpm 10 honours it only by trying to upgrade into the version that cannot run.
+newest pnpm WebContainer can execute is older. The `packageManager` field in
+[package.json](../package.json) (`pnpm@11.15.1` when this was tested; newer
+since) does not help — WebContainer ignores it, and pnpm 10 honours it only by
+trying to upgrade into a version that cannot run.
 
 **npm gets past all of that, and still fails.** This is the part worth knowing,
 because it shows the package manager was never the real problem:
@@ -323,7 +327,8 @@ it is not.
 ### VS Code
 
 The extensions worth having — MDC syntax for `content/`, Vue (Volar), ESLint,
-and mise — are declared in the repo rather than listed here, so there is no
+mise, the dprint and rumdl formatters, and tombi for TOML — are declared in the
+repo rather than listed here, so there is no
 hand-maintained copy to fall out of date. They live in two files, which do
 different things:
 
@@ -341,20 +346,22 @@ What belongs in that list follows the shared rule in
 because a setting whose extension is absent is not an error — it is a silent
 no-op, and whoever cloned the repo cannot tell it apart from a working setup.
 
-This project commits no `.vscode/settings.json`, so today the four entries are
-there for capability rather than to back a setting. Apply the rule the moment
-one is added: a `mise.*` key needs `hverlin.mise-vscode` present to have a
-reader at all, and the same holds for any `vue.*` or `eslint.*` key.
+[.vscode/settings.json](../.vscode/settings.json) is committed, and its keys
+are what make some of these load-bearing: it names `dprint.dprint` as the
+formatter for JSON, TOML and YAML and `rvben.rumdl` for Markdown, with format on
+save, so without them saving formats nothing and `lint-fmt` or `lint-markdown`
+fails later; and its `mise.*` keys need `hverlin.mise-vscode` to have a reader
+at all. The rest are there for capability.
 
-Both files list the same four extensions, and the container still needs its own
+Both files list the same extensions, and the container still needs its own
 copy, because a dev container splits the editor in half. The UI runs on your
 machine, but language servers and linters run *inside* the container, since that
 is where the source and `node_modules` are — and extensions installed on your
 machine do not follow you across that boundary. A recommendation would not help
 there either, as there is nobody present to accept the prompt while the
 container is being created. Without the install list, a fresh container gives
-you an editor with no Vue intelligence, no ESLint feedback, and no MDC
-highlighting in `content/`.
+you an editor with no Vue intelligence, no ESLint feedback, no MDC
+highlighting in `content/`, and no format on save.
 
 Keep the two lists in step when changing either.
 

@@ -1176,12 +1176,23 @@ GitHub's releases by however long ungh.cc caches them.
   missing releases, and GitHub's own release page is always current.
 - Keeping builds free of credentials keeps them reproducible anywhere,
   including on a fork or a fresh clone.
+- ungh.cc is trusted for the releases' facts, not for markup. Whatever it
+  returns is prerendered under this site's origin, so the page reduces each
+  release's Markdown to plain Markdown (`toPlainMarkdown` in
+  [release-notes.ts](../app/utils/release-notes.ts)) before rendering it: raw
+  HTML, MDC components, attributes and images are dropped, and their text
+  kept. A compromised or misbehaving proxy can then alter the wording and
+  links of the notes, which semantic-release writes from commit subjects
+  anyway, but not inject markup, styles or components into the page.
 
 ### Consequences
 
 - `/changelog` can omit the most recent releases. Re-running publish
   (`gh workflow run publish.yml -f tag=<tag>`) once ungh.cc has refreshed
   brings it up to date without a new release.
+- A build that cannot read the releases from ungh.cc fails rather than
+  publish an empty changelog: the page throws, and Nuxt's prerender fails on
+  any route that does. Re-running publish once ungh.cc answers again recovers.
 - The footer's version comes from the build's own git tag, not from ungh.cc,
   so it is always current, and can name a release the changelog does not list
   yet.

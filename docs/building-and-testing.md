@@ -20,28 +20,31 @@
 
 ## Task reference
 
-The `mise` tasks wrap the underlying `pnpm` scripts:
+`mise tasks` lists every task with its description, which is the one place the
+full list is kept; [mise.toml](../mise.toml) and
+[mise-tasks/](../mise-tasks/) define them. Tasks are named by family, so the
+name says what a task does:
 
-| Task                  | Description                              |
-| --------------------- | ---------------------------------------- |
-| `mise run install`    | Install dependencies (frozen lockfile)   |
-| `mise run dev`        | Start the Nuxt dev server                |
-| `mise run preflight`  | Run every lint and the tests, then build (`preflight-quick` leaves out the build) |
-| `mise run lint`       | Run every lint below                     |
-| `mise run lint-eslint` | Lint the code with ESLint                |
-| `mise run fmt`        | Format the JSON, TOML, YAML and Markdown with dprint and rumdl |
-| `mise run lint-fmt`   | Check they are formatted (runs `lint-fmt-dprint`) |
-| `mise run lint-markdown` | Lint the Markdown with rumdl (`content/` excluded) |
-| `mise run lint-renovate` | Validate `renovate.json` with Renovate's validator, strictly |
-| `mise run lint-common-pins` | Check that every pin on iglootools/common agrees |
-| `mise run renovate-dry-run` | List the updates Renovate would propose, writing nothing (needs `gh auth`) |
-| `mise run lint-types` | Run the Nuxt type check                  |
-| `mise run test`       | Run the trip report index tests          |
-| `mise run build`      | Build the Nuxt application               |
-| `mise run build-pages`| Build for GitHub Pages deployment        |
-| `mise run preview`    | Preview the production build             |
-| `mise run ci-preflight` | Run the full CI pipeline locally       |
+| Family | What it does | Run them all with |
+|---|---|---|
+| `lint-*` | fails without writing anything; each description says how to fix a failure | `mise run lint` |
+| writers (`fmt-*`, `toc`) | rewrite files: `fmt` runs ESLint's fixes, dprint and rumdl | `mise run fmt` |
+| `test` | runs the tests | `mise run test` |
+| `preflight`, `preflight-quick` | every lint and the tests, then the build (`preflight-quick` leaves out the build) | — |
+| `ci-*` | what one workflow job runs: `ci-preflight`, `ci-release` | — |
+
+The entry points beyond those:
+
+| Task | Description |
+|---|---|
+| `mise run install` | Install dependencies (frozen lockfile) |
+| `mise run dev` | Start the Nuxt dev server |
+| `mise run build` | Build the Nuxt application |
+| `mise run build-pages` | Build for GitHub Pages deployment |
+| `mise run preview` | Preview the production build |
 | `mise run build-trip-index` | Rebuild the by-objective trip report index |
+| `mise run renovate-dry-run` | List the updates Renovate would propose, writing nothing (needs `gh auth`) |
+| `mise run release` | Release with semantic-release; `--dry-run` previews ([releasing-and-publishing.md](releasing-and-publishing.md)) |
 
 The sections below cover the build, lint, and CI tasks in more detail; see
 [setup-development-environment.md](setup-development-environment.md) for
@@ -50,17 +53,19 @@ The sections below cover the build, lint, and CI tasks in more detail; see
 ## Linting and type checking
 
 ```bash
-mise run lint          # every lint below
-mise run lint-eslint   # eslint .
-mise run lint-fmt      # every lint-fmt-*: dprint check on the JSON, TOML and YAML
-mise run lint-markdown # rumdl check: the repository's Markdown, not the MDC pages
-mise run lint-types    # nuxt typecheck
+mise run lint      # every lint-* task
+mise run fmt       # fix what the formatters can, then re-run the lint that failed
 ```
+
+`lint-types` runs `pnpm typecheck`, which type-checks the Nuxt app with
+`nuxt typecheck` and the scripts under [scripts/](../scripts/) with `tsc`.
+`lint-markdown` checks the repository's Markdown, not the MDC pages under
+`content/`.
 
 ## Tests
 
 ```bash
-mise run test        # node --test 'scripts/**/*.test.ts'
+mise run test        # pnpm test: node --test over the *.test.ts files
 ```
 
 The tests cover the trip report index under
@@ -73,7 +78,8 @@ environment, the directories — is a parameter, so tests pass a stub in rather
 than patching a module, and assert on the fields of the typed errors in
 [errors.ts](../scripts/trip-report-index/errors.ts) rather than on message text.
 
-The Nuxt app itself has no tests.
+The app and the server have tests too (`app/**/*.test.ts` and
+`server/**/*.test.ts`), run by the same runner in the same `mise run test`.
 
 ## Building
 
@@ -101,52 +107,54 @@ the Nitro output, so a plain `mise run build` is not what ships.
 [`preflight.yml`](../.github/workflows/preflight.yml) workflow: `install` →
 `preflight` (every lint and `test` in parallel, then `build`). The build is in
 `preflight` because it is itself a check: a broken page fails the prerender.
+[`release.yml`](../.github/workflows/release.yml) runs `ci-release`: `install` →
+`release`.
 
 ## Bundling icon sets
 
-Icons are pulled from [Iconify](https://iconify.design/) (browse them at
-[icones.js.org](https://icones.js.org/)). To bundle every icon set the content
-references with the app, find which sets are in use and install them as
-dev dependencies:
-
-```bash
-brew install rg
-rg "i-[a-z0-9-]+:" .
-
-pnpm i -D \
-  @iconify-json/logos \
-  @iconify-json/lucide \
-  @iconify-json/material-symbols \
-  @iconify-json/noto \
-  @iconify-json/simple-icons \
-  @iconify-json/streamline-emojis \
-  @iconify-json/streamline-stickies-color
-```
+Icons come from [Iconify](https://iconify.design/) (browse them at
+[icones.js.org](https://icones.js.org/)), and the site uses only the Lucide set
+(`i-lucide-*`), from the `@iconify-json/lucide` package. The build bundles every
+icon it finds in use through `icon.clientBundle.scan` in
+[nuxt.config.ts](../nuxt.config.ts), so a new Lucide icon needs nothing more. An
+icon from another set needs that set's `@iconify-json/<set>` package beside
+Lucide's. Why, and the icons the scan cannot see, are in
+[ADR-002](architecture-decision-record.md#adr-002--bundle-icons-at-build-time-extending-the-icon-scan-rather-than-replacing-its-globs).
 
 ## Rebuilding the trip report index
 
 The region pages under
 [content/3.hiking-scrambling-beta/3.trip-reports/](../content/3.hiking-scrambling-beta/3.trip-reports/)
-are generated from six trip report blogs, not written by hand:
+are generated from the trip report sources registered in
+[sources/index.ts](../scripts/trip-report-index/sources/index.ts), not written
+by hand:
 
 ```bash
 mise run build-trip-index              # re-read the sources and rewrite the pages
 mise run build-trip-index -- --refresh # discard the HTTP cache first
+mise run build-trip-index -- --dry-run # report what would change, writing no page
+mise run build-trip-index -- --help    # every option
 ```
 
 Responses are cached under `node_modules/.cache/trip-report-index`, so iterating
 on a parser costs nothing; `--refresh` is what an actual content refresh uses. A
-full read is around 2,200 requests, throttled, and takes a quarter of an hour.
-Most are individual reports read only because their index gives no region: Bob
+full read runs to thousands of throttled requests and takes a while. Most are
+individual reports read only because their source's index gives no region (Bob
 Spirko's and Golden Scrambles' for a locality line, Andrew Nugara's for his
-links to neighbouring reports, and On-Top's for the trailhead's coordinates.
-Another 294 read the federal gazetteer, and 14 the USGS one for the American
+links to neighbouring reports, On-Top's for the trailhead's coordinates, among
+others). The rest read the federal gazetteer, and the USGS one for the American
 side of the border, whose place-name positions place objectives by the placed
 ones around them — see
 [ADR-007](architecture-decision-record.md#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)
 and
 [ADR-009](architecture-decision-record.md#adr-009--empty-the-catch-all-page-from-evidence-the-sources-already-publish).
-`--review-only` reports what would change without touching any page.
+`--dry-run` (`-n`; `--review-only` is kept as an alias) runs everything a real
+run does, the consistency checks and the basemap read included, and reports
+what would change without touching any page. The consistency checks run before
+the scrape, so a run that would fail them stops before fetching anything.
+
+The task exits 0 on success, 1 when the run fails, and 2 for a usage error: an
+unknown argument, or a missing `YOUTUBE_API_KEY`.
 
 The same run draws the region map the three section index pages show, from where
 the placed objectives are, and writes it as `app/assets/region-map.json` (the
@@ -158,8 +166,8 @@ see
 
 ### Annie Ouellet's YouTube channel needs an API key
 
-Six of the seven sources need nothing. The seventh, Annie Ouellet's channel, is
-read through the **YouTube Data API v3**, and the task **fails** unless
+Every other source needs nothing. Annie Ouellet's channel is read through the
+**YouTube Data API v3**, and the task **fails**, with exit code 2, unless
 `YOUTUBE_API_KEY` is set:
 
 ```bash
@@ -302,6 +310,7 @@ re-applied rather than reconstructed from the UI.
   with the same two URLs and `-X DELETE`. Needs admin on the repository; the
   dependency graph is a prerequisite and is on by default for public
   repositories.
+
 - **GitHub Pages builds from GitHub Actions** (Settings → Pages → Source), which
   is what lets [`publish.yml`](../.github/workflows/publish.yml) deploy the site
   — see [releasing-and-publishing.md](releasing-and-publishing.md). Create the
@@ -311,6 +320,93 @@ re-applied rather than reconstructed from the UI.
     gh api --method POST repos/iglootools/alberta-hiking-resources/pages -f build_type=workflow   # no Pages site yet
     gh api --method PUT repos/iglootools/alberta-hiking-resources/pages -f build_type=workflow    # existing site
     gh api repos/iglootools/alberta-hiking-resources/pages -q .build_type                         # expect workflow
+    ```
+
+- **The default workflow token is read-only, and Actions cannot approve pull
+  requests.** Every job declares its own `permissions`, so neither setting
+  changes what a workflow here can do; they are the floor for a job that forgets
+  to, which would otherwise get a read-write token, and they keep a compromised
+  workflow from approving its own pull request. This repository started
+  read-write with approval allowed, as older repositories do:
+
+    ```bash
+    gh api --method PUT repos/iglootools/alberta-hiking-resources/actions/permissions/workflow \
+      -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false
+    gh api repos/iglootools/alberta-hiking-resources/actions/permissions/workflow
+    # expect: {"default_workflow_permissions":"read","can_approve_pull_request_reviews":false}
+    ```
+
+  The `PUT` returns `204` and prints nothing. An organization-level policy can
+  override either; if the `GET` disagrees after the `PUT`, check
+  `gh api orgs/iglootools/actions/permissions/workflow` (needs an org admin).
+
+- **The `github-pages` environment accepts deployments only from named branches,
+  `main` among them, and from no tag**, which is what makes a `publish.yml` run
+  dispatched with `--ref <tag>` fail rather than deploy, as
+  [releasing-and-publishing.md](releasing-and-publishing.md#running-them-by-hand)
+  relies on. GitHub creates the environment on the first Pages deployment; the
+  policy is set on it:
+
+    ```bash
+    gh api --method PUT repos/iglootools/alberta-hiking-resources/environments/github-pages --input - <<'JSON'
+    { "deployment_branch_policy": { "protected_branches": false, "custom_branch_policies": true } }
+    JSON
+    gh api --method POST repos/iglootools/alberta-hiking-resources/environments/github-pages/deployment-branch-policies \
+      -f name=main -f type=branch
+    gh api repos/iglootools/alberta-hiking-resources/environments/github-pages/deployment-branch-policies \
+      -q '[.branch_policies[] | .name]'
+    # expect: ["gh-pages","main"]
+    ```
+
+  `gh-pages` is left from the old deploy, which pushed the site to a `gh-pages`
+  branch (see the comment in `publish.yml`); `main` is the one that matters, and
+  no `v*` tag may be added.
+
+- **The `iglootools-renovate-lock` GitHub App is installed, and its two secrets
+  reach this repository**, so
+  [`renovate-mise-lock.yml`](../.github/workflows/renovate-mise-lock.yml) pushes
+  the regenerated lock as the app and the preflight it triggers starts without
+  waiting for approval. The app and the organization secrets
+  `RENOVATE_LOCK_APP_CLIENT_ID` and `RENOVATE_LOCK_APP_PRIVATE_KEY` are set up
+  once for the whole organization, as the shared
+  [lock regenerator guide](https://github.com/iglootools/common/blob/main/guidelines/project-setup/shared-workflows.md#call-the-shared-lock-regenerator-on-renovate-branches)
+  describes; this public repository receives them with no step of its own.
+  Verify both:
+
+    ```bash
+    gh api repos/iglootools/alberta-hiking-resources/actions/organization-secrets -q '[.secrets[].name]'
+    # expect both names among them
+    gh api orgs/iglootools/installations \
+      -q '.installations[] | select(.app_slug == "iglootools-renovate-lock") | .repository_selection'
+    # expect: all (needs the admin:org scope)
+    ```
+
+  Without them the workflow still runs, pushing with `GITHUB_TOKEN`, and warns:
+  the next preflight then waits in `action_required`.
+
+- **Renovate is installed and has run here.** The
+  [Renovate app](https://github.com/apps/renovate) is installed on the
+  organization for all repositories (install it from that page otherwise), and
+  its first run opens the Dependency Dashboard issue, which is how to tell it
+  reads [renovate.json](../renovate.json):
+
+    ```bash
+    gh api orgs/iglootools/installations \
+      -q '.installations[] | select(.app_slug == "renovate") | .repository_selection'
+    # expect: all (needs the admin:org scope)
+    gh issue list -R iglootools/alberta-hiking-resources --author app/renovate \
+      --search 'Dependency Dashboard in:title' --state open
+    # expect: one open "Dependency Dashboard" issue
+    ```
+
+- **The dependency graph is on**, which
+  [`uv-dependency-submission.yml`](../.github/workflows/uv-dependency-submission.yml)
+  submits `uv.lock` to, and which Dependabot alerts are raised from. It is on by
+  default for public repositories:
+
+    ```bash
+    gh api repos/iglootools/alberta-hiking-resources/dependency-graph/sbom -q .sbom.name
+    # expect a name rather than a 404 or 403
     ```
 
 - **Private vulnerability reporting is on**, so the channel the organization's
@@ -387,7 +483,7 @@ re-applied rather than reconstructed from the UI.
   ```
 
   `preflight` (the job in `preflight.yml` that runs `ci-preflight`) must keep
-  reporting on every pull request. It runs on every push (`on: push` in
+  reporting on every pull request. It runs on every push (the `push` trigger in
   `preflight.yml`), which covers pull request branches; a `paths` or `branches`
   filter added there would leave the pull requests it skips unmergeable.
 

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { rm } from 'node:fs/promises'
+import { after, describe, it } from 'node:test'
 import { readUploads, requireApiKey } from '../sources/annie.ts'
 import { objectivesOf, relatedLinks } from '../sources/anugara.ts'
 import { trailheadOf } from '../sources/ontop.ts'
@@ -8,7 +9,11 @@ import { regionFromTags, scrapeBillKerr } from '../sources/billkerr.ts'
 import { regionOfLocality, scrapeSpectacularMountains, siteLinks, tripLocality } from '../sources/spectacularmountains.ts'
 import { scrapeCoastBackcountry } from '../sources/coastbackcountry.ts'
 import { readWordPress } from '../sources/wordpress.ts'
-import { stubFetcher } from './support.ts'
+import { scrapePeaksAndStreams } from '../sources/peaksandstreams.ts'
+import { scrapeSteepSheep } from '../sources/steepsheep.ts'
+import { PAGE_SIZE } from '../sources/selfhosted-wordpress.ts'
+import { createFetcher } from '../fetch.ts'
+import { stubFetcher, tempDir } from './support.ts'
 
 describe('requireApiKey', () => {
   it('returns the key from the environment it is given', () => {
@@ -54,6 +59,24 @@ describe('readWordPress', () => {
     const fetchText = stubFetcher(() => JSON.stringify({ error: 'unknown_blog', message: 'Unknown blog' }))
     await assert.rejects(readWordPress(fetchText, 'gone.wordpress.com', 'post'),
       { name: 'ApiError', api: 'WordPress.com gone.wordpress.com', detail: 'unknown_blog Unknown blog' })
+  })
+
+  it('does not cache an error the API reports in a 2xx body, so the next run asks again', async () => {
+    const cacheDir = await tempDir()
+    after(() => rm(cacheDir, { recursive: true, force: true }))
+    const bodies = [{ error: 'unknown_blog' }, { found: 1, posts: [{ title: 'Mount Temple', URL: 'https://b.test/temple' }] }]
+    let tick = 0
+    const fetchText = createFetcher(cacheDir, {
+      now: () => (tick += 1000),
+      fetchImpl: async () => new Response(JSON.stringify(bodies.shift()))
+    })
+    await assert.rejects(readWordPress(fetchText, 'b.test', 'post'), { name: 'ApiError' })
+    assert.deepEqual(await readWordPress(fetchText, 'b.test', 'post'), [{ title: 'Mount Temple', url: 'https://b.test/temple', categories: [] }])
+  })
+
+  it('names the URL of a 2xx body that is not JSON', async () => {
+    await assert.rejects(readWordPress(stubFetcher(() => '<html>Down for maintenance</html>'), 'b.test', 'post'),
+      (error: Error & { url: string }) => error.name === 'InvalidJsonError' && error.url.includes('/sites/b.test/posts/'))
   })
 })
 
@@ -242,6 +265,52 @@ describe('scrapeBillKerr', () => {
       ['Table Mountain', 'crowsnest-castle'],
       ['Ski up to Wawa Sunshine', 'banff'],
       ['Mount Sarrail', 'kananaskis-canmore']
+    ])
+  })
+})
+
+describe('tag and category lists longer than one page', () => {
+  /** WordPress's answer for `items` paged by PAGE_SIZE: each page in turn, then the 400 past the end. */
+  const paged = (url: string, items: readonly object[]): string | number => {
+    const page = Number(new URL(url).searchParams.get('page') ?? 1)
+    const batch = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    return batch.length > 0 ? JSON.stringify(batch) : 400
+  }
+  const filler = (count: number, name: string) => Array.from({ length: count }, (_, index) => ({ id: 1000 + index, name: `${name} ${index}` }))
+
+  it('reads a Peaks and Streams tag past the first hundred', async () => {
+    const tags = [...filler(PAGE_SIZE, 'ski'), { id: 7, name: 'Crowsnest Pass' }]
+    const fetchText = stubFetcher(url => url.includes('/tags?')
+      ? paged(url, tags)
+      : paged(url, [{ link: 'https://p/haig', title: { rendered: 'Mount Haig, 3 July, 2013' }, tags: [7] }]))
+    const reports = await scrapePeaksAndStreams(fetchText)
+    assert.deepEqual(reports.map(report => [report.title, report.sourceRegion]), [['Mount Haig', 'Crowsnest Pass']])
+  })
+
+  it('reads a Bill Kerr outing category past the first hundred', async () => {
+    const categories = [...filler(PAGE_SIZE, 'hockey'), { id: 7, name: 'scramble' }]
+    const fetchText = stubFetcher((url) => {
+      if (url.includes('/categories?')) return paged(url, categories)
+      if (url.includes('/tags?')) return paged(url, [])
+      return new URL(url).searchParams.get('categories') === '7'
+        ? paged(url, [{ link: 'https://b/1', title: { rendered: 'Scramble Chester Mountain Sept 3, 2022' }, tags: [] }])
+        : paged(url, [])
+    })
+    assert.deepEqual((await scrapeBillKerr(fetchText)).map(report => report.title), ['Chester Mountain'])
+  })
+})
+
+describe('scrapeSteepSheep', () => {
+  const pages = (...titles: string[]) => stubFetcher(() => JSON.stringify({
+    found: titles.length,
+    posts: titles.map((title, index) => ({ title, URL: `https://steepsheep.ca/${index}/` }))
+  }))
+
+  it('files a trip abroad by its country bracket, and states no region for the rest', async () => {
+    const reports = await scrapeSteepSheep(pages('Avalanche Peak (NZ) 1833m', 'Mount Nelson 3313m', 'About'))
+    assert.deepEqual(reports.map(report => [report.objectives, report.sourceRegion]), [
+      [['Avalanche Peak'], 'elsewhere'],
+      [['Mount Nelson'], undefined]
     ])
   })
 })

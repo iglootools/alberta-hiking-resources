@@ -1,19 +1,16 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { GuidebookIndex } from '../guidebooks.ts'
-import type { Inferred } from '../inference.ts'
-import type { RawReport } from '../types.ts'
-import { buildObjectives, regionsOf } from '../build.ts'
-import { NOTHING_INFERRED } from '../inference.ts'
+import type { Inferred, Objective, RawReport } from '../types.ts'
+import { buildObjectives } from '../build.ts'
+import { NOTHING_INFERRED, regionsOf } from '../types.ts'
 import { canonKey } from '../canon.ts'
-import { readGuidebooks } from '../guidebooks.ts'
-import { writeReview } from '../review.ts'
-import { stubFetcher } from './support.ts'
+import { renderReview } from '../review.ts'
 
-// A name no source or curation entry will ever mention, and a source id no
-// region map knows, so only the guidebook region below can place it.
+// A name no source or curation entry will ever mention, from a source that
+// states no region, so only the guidebook region below can place it.
 const NAME = 'Mount Testington'
-const report: RawReport = { sourceId: 'test', title: NAME, url: 'https://x.test/1', objectives: [NAME] }
+const report: RawReport = { sourceId: 'anugara', title: NAME, url: 'https://x.test/1', objectives: [NAME] }
 const guidebookRegion = (regionId: string): GuidebookIndex =>
   ({ entries: new Map(), regions: new Map([[canonKey(NAME), regionId]]) })
 
@@ -40,14 +37,14 @@ describe('buildObjectives', () => {
   })
 
   it('lets a curated region replace every other claim', () => {
-    // 'pringle mount' is curated to the Ghost in curation.ts.
-    const curated: RawReport = { ...report, title: 'Pringle Mount', objectives: ['Pringle Mount'], sourceId: 'spirko', sourceRegion: 'Banff' }
-    const [objective] = buildObjectives([curated]).objectives
+    const stated: RawReport = { ...report, sourceId: 'spirko', sourceRegion: 'Banff' }
+    const overrides = { [canonKey(NAME)]: 'ghost-front-ranges' }
+    const [objective] = buildObjectives([stated], undefined, NOTHING_INFERRED, overrides).objectives
     assert.deepEqual(objective?.claims, [{ regionId: 'ghost-front-ranges', signal: { kind: 'curated' } }])
   })
 
   it('places an objective from an inferred claim, keeping the signal', () => {
-    const claim = { regionId: 'kananaskis-canmore', signal: { kind: 'trailhead', sourceId: 'test' } } as const
+    const claim = { regionId: 'kananaskis-canmore', signal: { kind: 'trailhead', sourceId: 'anugara' } } as const
     const inferred: Inferred = { ...NOTHING_INFERRED, byReport: new Map([[report.url, [claim]]]) }
     const result = buildObjectives([report], undefined, inferred)
     assert.deepEqual(result.objectives[0]?.claims, [claim])
@@ -57,10 +54,10 @@ describe('buildObjectives', () => {
   it('sums one blog\u2019s link votes across its reports of one objective', () => {
     const second: RawReport = { ...report, url: 'https://x.test/2' }
     const linked = (agreeing: number, total: number) =>
-      [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'test', agreeing, total } } as const]
+      [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'anugara', agreeing, total } } as const]
     const inferred: Inferred = { ...NOTHING_INFERRED, byReport: new Map([[report.url, linked(2, 2)], [second.url, linked(3, 4)]]) }
     const [objective] = buildObjectives([report, second], undefined, inferred).objectives
-    assert.deepEqual(objective?.claims, [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'test', agreeing: 5, total: 6 } }])
+    assert.deepEqual(objective?.claims, [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'anugara', agreeing: 5, total: 6 } }])
   })
 
   it('does not let an inferred region rescue an objective a blog files out of scope', () => {
@@ -72,7 +69,7 @@ describe('buildObjectives', () => {
   })
 
   it('uses weak evidence only where nothing else places the objective', () => {
-    const weak = (regionId: string) => ({ regionId, signal: { kind: 'trailhead', sourceId: 'test', weak: true } } as const)
+    const weak = (regionId: string) => ({ regionId, signal: { kind: 'trailhead', sourceId: 'anugara', weak: true } } as const)
     const inferred: Inferred = {
       ...NOTHING_INFERRED,
       weak: { byReport: new Map([[report.url, [weak('banff'), weak('yoho')]]]), byKey: new Map() }
@@ -106,32 +103,25 @@ describe('buildObjectives', () => {
   })
 })
 
-describe('readGuidebooks', () => {
-  it('fails when a list yields fewer rows than its minimum', async () => {
-    await assert.rejects(readGuidebooks(stubFetcher(() => '<table></table>')),
-      { name: 'MinimumNotMetError', subject: '11000ers-of-the-canadian-rockies', found: 0, minimum: 50 })
-  })
-})
-
-describe('writeReview sections', () => {
+describe('renderReview sections', () => {
   const empty = { objectives: [], byRegion: new Map(), unplaced: [], dropped: [] }
   const on = new Date(Date.UTC(2026, 0, 1))
 
   it('lists what is new on the catch-all page', () => {
-    const objective = { key: 'k', name: 'Funnel Peak', claims: [], reports: [{ sourceId: 'x', title: 't', url: 'https://u', objectives: [] }] }
-    assert.match(writeReview(empty, on, { newlyUnsorted: [objective] }), /1 objectives are new[\s\S]*- \*\*Funnel Peak\*\* — x — https:\/\/u/)
+    const objective: Objective = { key: 'k', name: 'Funnel Peak', claims: [], reports: [{ sourceId: 'anugara', title: 't', url: 'https://u', objectives: [] }] }
+    assert.match(renderReview(empty, on, { newlyUnsorted: [objective] }), /1 objectives are new[\s\S]*- \*\*Funnel Peak\*\* — anugara — https:\/\/u/)
   })
 
   it('lists each dropped name under its reason', () => {
-    const review = writeReview({ ...empty, dropped: [{ key: 'puigmal', name: 'Puigmal', reason: 'filed-elsewhere', sourceIds: ['spectacularmountains'], url: 'https://u' }] }, on)
+    const review = renderReview({ ...empty, dropped: [{ key: 'puigmal', name: 'Puigmal', reason: 'filed-elsewhere', sourceIds: ['spectacularmountains'], url: 'https://u' }] }, on)
     assert.match(review, /### Filed by a blog[^\n]*\(1\)\n\n- `puigmal` \(spectacularmountains\) — https:\/\/u/)
   })
 })
 
-describe('writeReview', () => {
+describe('renderReview', () => {
   it('dates the worksheet in UTC from the date it is given', () => {
     // 03:00 UTC on the 2nd is still the 1st anywhere west of Greenwich.
-    const review = writeReview(
+    const review = renderReview(
       { objectives: [], byRegion: new Map(), unplaced: [], dropped: [] },
       new Date(Date.UTC(2026, 0, 2, 3))
     )

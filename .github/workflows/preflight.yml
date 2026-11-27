@@ -1,6 +1,10 @@
 name: preflight
 
-on: push
+on:
+  push:
+  # Re-run on demand without a dummy push: gh workflow run preflight.yml --ref <branch>
+  workflow_dispatch:
+  repository_dispatch:
 
 concurrency:
   # On main the group carries the commit sha, so every push gets a group of its own and
@@ -18,6 +22,10 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Read-only: the job runs install scripts, lints, tests and the build, all third-party
+    # code, on every branch Renovate's included, so it must not hold a token that can push.
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout

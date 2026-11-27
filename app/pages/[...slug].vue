@@ -52,7 +52,9 @@ defineOgImage('ContentPage', {
 
 const links = computed(() => {
   const links = []
-  if (toc?.bottom?.edit) {
+  // A generated page's edits would be overwritten by the next run of
+  // `mise run build-trip-index`; its corrections go in the indexer's curation file.
+  if (toc?.bottom?.edit && !page.value?.generated) {
     links.push({
       icon: 'i-lucide-external-link',
       label: 'Edit this page',

@@ -12,8 +12,8 @@
  * "Mount Kitchener" and "Mount Michener", both "Bow Peak" and "Owl Peak", both
  * "Mount Shark" and "Mount Shanks". Merging those would point a reader at beta
  * for the wrong mountain. Genuine spelling variants are curated by hand in
- * curation.ts's ALIASES instead, and `nearMisses` exists to surface candidates
- * for that file rather than to act on them.
+ * curation.ts's ALIASES instead, and review.ts's `nearMisses` exists to surface
+ * candidates for that file rather than to act on them.
  */
 import { ALIASES } from './curation.ts'
 
@@ -38,7 +38,8 @@ const ELEVATION = /\s+\d{3,5}\s*m\b/gi
 
 const COMPANION_SEPARATOR = /\s*(?:[,&+]|\band\b)\s*/
 
-function stripAccents(value: string): string {
+/** `value` with its accents removed: "Îyarhe" becomes "Iyarhe". */
+export function stripAccents(value: string): string {
   return value.normalize('NFD').replace(/\p{Mn}/gu, '')
 }
 

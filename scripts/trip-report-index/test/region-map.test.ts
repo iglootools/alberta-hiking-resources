@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { Extent, Grid, MapPoint } from '../region-map.ts'
-import { cellCount, dropIsolated, geoFeatures, projection, rasterize, rectangles, svgRegion } from '../region-map.ts'
+import { cellCount, dropIsolated, geoFeatures, projection, rasterize, rectangles, regionAt, svgRegion } from '../region-map.ts'
 
 const point = (regionId: string, lat: number, lon: number): MapPoint => ({ regionId, weight: 1, lat, lon })
 
@@ -29,11 +29,7 @@ describe('rasterize', () => {
     point('kananaskis-canmore', 50.85, -115.2)
   ], regionIds, EXTENT)
 
-  const at = (lat: number, lon: number) => {
-    const row = Math.floor((EXTENT.north - lat) / 0.05)
-    const col = Math.floor((lon - EXTENT.west) / 0.075)
-    return grid.cells[row * grid.cols + col]
-  }
+  const at = (lat: number, lon: number) => regionAt(grid, { lat, lon })
 
   it('gives a cell next to an objective that objective\'s region', () => {
     assert.equal(at(51.2, -115.6), 0)
@@ -52,7 +48,7 @@ describe('rasterize', () => {
 
 describe('rectangles', () => {
   it('merges a run repeated on the rows below into one rectangle', () => {
-    const grid: Grid = { extent: EXTENT, rows: 3, cols: 4, cells: [
+    const grid: Grid = { extent: EXTENT, cell: { lat: 0.05, lon: 0.075 }, rows: 3, cols: 4, cells: [
       0, 0, -1, -1,
       0, 0, -1, -1,
       -1, 0, 0, -1
@@ -62,7 +58,7 @@ describe('rectangles', () => {
 })
 
 describe('a region no cell went to', () => {
-  const empty: Grid = { extent: EXTENT, rows: 1, cols: 2, cells: [-1, -1] }
+  const empty: Grid = { extent: EXTENT, cell: { lat: 0.05, lon: 0.075 }, rows: 1, cols: 2, cells: [-1, -1] }
 
   it('has an empty SVG path and no label, so the map skips it rather than drawing nothing clickable', () => {
     const region = svgRegion(empty, 0, 'kootenay', 'Kootenay National Park', projection(EXTENT))

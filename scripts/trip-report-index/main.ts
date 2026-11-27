@@ -1,227 +1,42 @@
 /**
  * Builds the by-objective trip report index.
  *
- *   node scripts/trip-report-index/main.ts [--refresh] [--review-only]
+ *   mise run build-trip-index -- [--dry-run] [--refresh]
+ *   mise run build-trip-index -- --help     for the options (cli.ts)
  *
- * Normally run through `mise run build-trip-index`. It is never run by CI or at
- * build time: the output is committed, so a blog being down can delay a refresh
- * but can never break a deploy.
- *
- *   --refresh      discard the HTTP cache and re-read every source
- *   --review-only  report what would change without writing any page
+ * It is never run by CI or at build time: the output is committed, so a blog
+ * being down can delay a refresh but can never break a deploy.
  *
  * Besides the pages, it draws the region map the section index pages show
  * (region-map.ts), since the map's shapes come from the same placements.
+ *
+ * This file is only the entry point: it reads the command line, the
+ * environment and the repository's location, and reports a failure. The
+ * command line is parsed in cli.ts and the run itself is run.ts.
  */
-import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { BuildResult } from './build.ts'
-import type { Gazetteer } from './gazetteer.ts'
-import type { Objective } from './types.ts'
-import { buildObjectives } from './build.ts'
-import { checkIndexLinks, checkMirroredSections } from './checks.ts'
-import { MinimumNotMetError } from './errors.ts'
-import { clearCache, createFetcher } from './fetch.ts'
-import { readGazetteer } from './gazetteer.ts'
-import { readGuidebooks } from './guidebooks.ts'
-import { inferRegions } from './inference.ts'
-import { indent, shown } from './output.ts'
-import { readBasemap } from './basemap.ts'
-import { MAP_EXTENT, cellCount, dropIsolated, geoFeatures, mapPoints, projection, rasterize, svgRegion } from './region-map.ts'
-import { REGIONS, UNSORTED } from './regions.ts'
-import { isStated } from './types.ts'
-import { SOURCES } from './sources/index.ts'
-import { entryName, entryNames, renderRegionPage } from './render.ts'
-import { writeReview } from './review.ts'
+import { USAGE, exitCodeFor, parseCommandLine } from './cli.ts'
+import { repoPaths, runIndex } from './run.ts'
+import { readCredentials } from './sources/index.ts'
 
-const HERE = dirname(fileURLToPath(import.meta.url))
-const REPO = join(HERE, '..', '..')
-const PAGES_DIR = join(REPO, 'content', '3.hiking-scrambling-beta', '3.trip-reports')
-
-/**
- * The weather and accommodation sections are written by hand but use this same
- * region taxonomy, so a region added here needs a page in each of them too.
- */
-const MIRRORED_SECTIONS = [
-  join(REPO, 'content', '4.weather-trail-conditions', '2.popular-locations'),
-  join(REPO, 'content', '5.accommodation')
-]
-const CACHE_DIR = join(REPO, 'node_modules', '.cache', 'trip-report-index')
-const REVIEW_PATH = join(REPO, 'trip-report-review.md')
-
-/**
- * The SVG map's data is imported by its component, so it is bundled and
- * prerendered with the page. The GeoJSON is only fetched by the MapLibre
- * renderer, once a reader picks it, so it is a static file instead.
- */
-const MAP_SVG_PATH = join(REPO, 'app', 'assets', 'region-map.json')
-const MAP_GEOJSON_PATH = join(REPO, 'public', 'region-map', 'regions.geojson')
-
-/** A region drawn in fewer cells than this is hard to find or click on the map, and is reported. */
-const SMALL_REGION_CELLS = 20
-
-/** The index page is written by hand; the script owns every other page here. */
-const INDEX_PAGE = '01.index.md'
-
-async function scrapeAll(refresh: boolean) {
-  if (refresh) await clearCache(CACHE_DIR)
-  const fetchText = createFetcher(CACHE_DIR)
-
-  const reports = []
-  for (const source of SOURCES) {
-    const scraped = await source.scrape(fetchText)
-    if (scraped.length < source.minimumReports) {
-      throw new MinimumNotMetError(source.id, scraped.length, source.minimumReports, 'reports')
-    }
-    console.log(indent(`${source.label.padEnd(18)} ${String(scraped.length).padStart(5)} reports`))
-    reports.push(...scraped)
-  }
-  return reports
-}
-
-/**
- * Nuxt Content orders the sidebar by the filename, and it compares the numeric
- * prefix as a *string* — so `10.` sorts before `2.` and a folder past nine pages
- * lists itself in an order nobody chose. Zero-padding to two digits makes the
- * lexicographic order the numeric one. The prefix is stripped from the URL either
- * way, so padding changes the sidebar and nothing else.
- */
-function pageName(position: number, slug: string): string {
-  return `${String(position).padStart(2, '0')}.${slug}.md`
-}
-
-const UNSORTED_PAGE = pageName(REGIONS.length + 2, UNSORTED.id)
-
-/** The names on the catch-all page as committed, or none on the first run. */
-async function previouslyUnsorted(): Promise<Set<string>> {
-  try {
-    return entryNames(await readFile(join(PAGES_DIR, UNSORTED_PAGE), 'utf8'))
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return new Set()
-    throw error
-  }
-}
-
-async function pruneStalePages(keep: ReadonlySet<string>): Promise<string[]> {
-  const existing = await readdir(PAGES_DIR)
-  const stale = existing.filter(name =>
-    name.endsWith('.md') && name !== INDEX_PAGE && !keep.has(name))
-  for (const name of stale) await unlink(join(PAGES_DIR, name))
-  return stale
-}
-
-/**
- * Writes one page per region, then the catch-all page last. The catch-all is
- * not a region: the weather and accommodation sections mirror REGIONS, and
- * asking them to carry a forecast for "unsorted" would make no sense.
- *
- * Returns the page names, written or (with `reviewOnly`) merely planned.
- */
-async function writeRegionPages(result: BuildResult, reviewOnly: boolean): Promise<string[]> {
-  const pages = [
-    ...REGIONS.map((region, index) => ({
-      region,
-      objectives: result.byRegion.get(region.id) ?? [],
-      name: pageName(index + 2, region.id)
-    })),
-    { region: UNSORTED, objectives: result.unplaced, name: UNSORTED_PAGE }
-  ]
-
-  await mkdir(PAGES_DIR, { recursive: true })
-  for (const { region, objectives, name } of pages) {
-    if (!reviewOnly) await writeFile(join(PAGES_DIR, name), renderRegionPage(region, objectives), 'utf8')
-    console.log(indent(`${String(objectives.length).padStart(5)}  ${name}`))
-  }
-  return pages.map(page => page.name)
-}
-
-/** Prunes what no region produced, then runs the cross-section consistency checks. */
-async function finishPages(written: readonly string[]): Promise<void> {
-  const stale = await pruneStalePages(new Set(written))
-  for (const name of stale) console.log(indent(`removed stale page ${name}`))
-  const slugs = REGIONS.map(region => region.id)
-  await checkIndexLinks(join(PAGES_DIR, INDEX_PAGE), [...slugs, UNSORTED.id])
-  await checkMirroredSections(MIRRORED_SECTIONS, slugs)
-}
-
-/**
- * Draws the region map from the placements and writes both renderers' data.
- * Returns the regions drawn too small to click easily, for the summary.
- */
-async function writeRegionMap(result: BuildResult, gazetteer: Gazetteer, reviewOnly: boolean): Promise<string[]> {
-  const regionIds = REGIONS.map(region => region.id)
-  const grid = rasterize(dropIsolated(mapPoints(result.objectives, gazetteer)), regionIds)
-  const small = REGIONS.filter((_, index) => cellCount(grid, index) < SMALL_REGION_CELLS).map(region => region.id)
-  if (reviewOnly) return small
-
-  const project = projection()
-  const basemap = await readBasemap(createFetcher(CACHE_DIR), MAP_EXTENT, project)
-  const svg = {
-    width: project.width,
-    height: project.height,
-    regions: REGIONS.map((region, index) => ({ ...svgRegion(grid, index, region.id, region.title, project), group: region.group })),
-    ...basemap
-  }
-  const geojson = {
-    type: 'FeatureCollection',
-    features: REGIONS.flatMap((region, index) => geoFeatures(grid, index, region.id, region.title))
-  }
-  await mkdir(dirname(MAP_GEOJSON_PATH), { recursive: true })
-  await writeFile(MAP_SVG_PATH, `${JSON.stringify(svg)}\n`, 'utf8')
-  await writeFile(MAP_GEOJSON_PATH, `${JSON.stringify(geojson)}\n`, 'utf8')
-  console.log(indent(`region map  ${shown(MAP_SVG_PATH)}, ${shown(MAP_GEOJSON_PATH)}`))
-  return small
-}
-
-function printSummary(result: BuildResult, reportCount: number, newlyUnsorted: readonly Objective[], smallOnMap: readonly string[]): void {
-  const listings = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
-  const placed = result.objectives.length - result.unplaced.length
-  const multiRegion = result.objectives.filter(objective => new Set(objective.claims.map(claim => claim.regionId)).size > 1).length
-  const inferredOnly = result.objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated)).length
-  console.log(`\n${placed} objectives placed, ${listings} listings across ${REGIONS.length} pages, `
-    + `${reportCount} reports, ${result.dropped.length} out of scope.`)
-  console.log(`${multiRegion} in more than one region, ${inferredOnly} placed by inference alone, `
-    + `${result.unplaced.length} unplaced — see ${shown(REVIEW_PATH)}`)
-  if (newlyUnsorted.length > 0) {
-    console.log(`\n${newlyUnsorted.length} new on the catch-all page:`)
-    for (const objective of newlyUnsorted) console.log(indent(objective.name))
-  }
-  if (smallOnMap.length > 0) {
-    console.log(`\nDrawn in fewer than ${SMALL_REGION_CELLS} cells on the region map, mostly because their `
-      + 'objectives are shared with a neighbour:')
-    for (const regionId of smallOnMap) console.log(indent(regionId))
-  }
-}
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 async function main(): Promise<void> {
-  const refresh = process.argv.includes('--refresh')
-  const reviewOnly = process.argv.includes('--review-only')
-
-  // Fail before announcing or touching the network if a credential is missing.
-  for (const source of SOURCES) source.preflight?.()
-
-  console.log(`Scraping ${SOURCES.length} sources${refresh ? ' (cache cleared)' : ''}…`)
-  const reports = await scrapeAll(refresh)
-
-  const guidebooks = await readGuidebooks(createFetcher(CACHE_DIR))
-  console.log(indent(`${'Guidebook lists'.padEnd(18)} ${String(guidebooks.entries.size).padStart(5)} objectives`))
-  const gazetteer = await readGazetteer(createFetcher(CACHE_DIR))
-  console.log(indent(`${'Place names'.padEnd(18)} ${String(gazetteer.size).padStart(5)} names`))
-
-  // Twice: inference reads where the first build placed things, and the second
-  // lists every objective under every region a stated or inferred signal names.
-  const statedOnly = buildObjectives(reports, guidebooks)
-  const result = buildObjectives(reports, guidebooks, inferRegions(statedOnly, gazetteer))
-  // Read before the pages are rewritten: this is the page the run replaces.
-  const before = await previouslyUnsorted()
-  const newlyUnsorted = result.unplaced.filter(objective => !before.has(entryName(objective)))
-  const written = await writeRegionPages(result, reviewOnly)
-  if (!reviewOnly) await finishPages(written)
-  const smallOnMap = await writeRegionMap(result, gazetteer, reviewOnly)
-
-  await writeFile(REVIEW_PATH, writeReview(result, new Date(), { newlyUnsorted }), 'utf8')
-  printSummary(result, reports.length, newlyUnsorted, smallOnMap)
+  const command = parseCommandLine(process.argv.slice(2))
+  if (command.kind === 'help') {
+    console.log(USAGE)
+    return
+  }
+  // Read before the run announces itself or touches the network, so a missing
+  // credential fails in the first second.
+  const credentials = readCredentials(process.env)
+  await runIndex(repoPaths(REPO), {
+    refresh: command.refresh,
+    dryRun: command.dryRun,
+    startedAt: new Date(),
+    credentials
+  })
 }
 
 /**
@@ -233,5 +48,5 @@ await main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
   console.error(`\nFailed: ${message}\n`)
   if (process.env.DEBUG && error instanceof Error) console.error(error.stack)
-  process.exit(1)
+  process.exit(exitCodeFor(error))
 })

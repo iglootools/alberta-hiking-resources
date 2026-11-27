@@ -8,45 +8,17 @@
  * Parkway by two, and it is in both, on the boundary; a reader browsing either
  * should find it. Each claim keeps its signal so the page can say who says so.
  */
-import type { Claim, Objective, RawReport, Signal } from './types.ts'
+import type { BuildResult, Claim, Dropped, Inferred, Objective, RawReport, Signal } from './types.ts'
 import type { GuidebookIndex } from './guidebooks.ts'
-import type { Inferred } from './inference.ts'
+import type { RegionOverrides } from './curation.ts'
 import { REGION_OVERRIDES, REPORT_OBJECTIVES } from './curation.ts'
 import { displayName, objectiveKey } from './canon.ts'
 import { UnknownRegionError } from './errors.ts'
-import { NOTHING_INFERRED } from './inference.ts'
-import { OUT_OF_SCOPE, REGION_IDS, REGION_PRIORITY, areNeighbours, mappedRegionOf, mountainsOf, strongestStatedRegion } from './regions.ts'
-import { SOURCE_ORDER } from './sources/index.ts'
-import { isStated } from './types.ts'
-
-/**
- * Why a name group was left off every page. A wrong exclusion is otherwise
- * invisible — the objective simply disappears — so each is kept for the
- * worksheet rather than only counted.
- *
- * - `curated`: REGION_OVERRIDES says out-of-scope.
- * - `filed-elsewhere`: a blog files it somewhere this site does not cover
- *   (`sourceIds`), and nothing stated places it here.
- * - `outside`: a trailhead or place-name position is far from every region.
- */
-export interface Dropped {
-  readonly key: string
-  readonly name: string
-  readonly reason: 'curated' | 'filed-elsewhere' | 'outside'
-  readonly sourceIds: readonly string[]
-  readonly url: string
-}
-
-export interface BuildResult {
-  /** Every objective once, placed or not. */
-  readonly objectives: readonly Objective[]
-  /** Each region's objectives; an objective with claims on two regions is in both lists. */
-  readonly byRegion: ReadonlyMap<string, readonly Objective[]>
-  /** Objectives nothing places and no override covers. Input to curation. */
-  readonly unplaced: readonly Objective[]
-  /** Name groups left off every page as out of scope, with the reason. */
-  readonly dropped: readonly Dropped[]
-}
+import { OUT_OF_SCOPE, REGION_IDS, areNeighbours } from './regions.ts'
+import type { SourceId } from './sources/catalog.ts'
+import { REGION_PRIORITY, SOURCE_ORDER, rankIn } from './sources/catalog.ts'
+import { mappedRegionOf, mountainsOf, strongestStatedRegion } from './stated.ts'
+import { NOTHING_INFERRED, isStated, regionsOf } from './types.ts'
 
 /** Applies a curated REPORT_OBJECTIVES entry in place of the title's own parse. */
 function withCuratedObjectives(report: RawReport): RawReport {
@@ -67,10 +39,7 @@ function groupByObjective(reports: readonly RawReport[]): Map<string, RawReport[
   return groups
 }
 
-const sourceRank = (sourceId: string) => {
-  const index = SOURCE_ORDER.indexOf(sourceId)
-  return index === -1 ? SOURCE_ORDER.length : index
-}
+const sourceRank = (sourceId: string) => rankIn(SOURCE_ORDER, sourceId)
 
 /**
  * The name to print. Sources spell the same peak differently, so the one from
@@ -101,10 +70,12 @@ const KIND_RANK: Readonly<Record<Signal['kind'], number>> = {
   'curated': 0, 'stated': 1, 'tick-list': 2, 'sub-range': 3, 'companion': 4, 'linked': 5, 'trailhead': 6, 'named-place': 7
 }
 
+/** Sources as their claims rank: REGION_PRIORITY's first, then the rest in SOURCE_ORDER. */
+const CLAIM_SOURCE_ORDER = [...REGION_PRIORITY, ...SOURCE_ORDER.filter(sourceId => !REGION_PRIORITY.includes(sourceId))]
+
 function claimRank(claim: Claim): [number, number] {
   const sourceId = 'sourceId' in claim.signal ? claim.signal.sourceId : ''
-  const priority = REGION_PRIORITY.indexOf(sourceId)
-  return [KIND_RANK[claim.signal.kind], priority === -1 ? REGION_PRIORITY.length + sourceRank(sourceId) : priority]
+  return [KIND_RANK[claim.signal.kind], rankIn(CLAIM_SOURCE_ORDER, sourceId)]
 }
 
 function byStrength(left: Claim, right: Claim): number {
@@ -176,9 +147,6 @@ function splitHomonym(group: readonly RawReport[], mountains: readonly ReadonlyS
   return partitions
 }
 
-/** Claim kinds that say where an objective is rather than infer it: a blog, a tick-list, a curator. */
-const isAnchor = (claim: Claim) => claim.signal.kind === 'curated' || claim.signal.kind === 'tick-list' || isStated(claim)
-
 /** A vote's agreeing share, for ranking weak claims; 1 for a signal that does not count. */
 const share = (claim: Claim) => isVote(claim.signal) ? claim.signal.agreeing / claim.signal.total : 1
 
@@ -192,11 +160,11 @@ const share = (claim: Claim) => isVote(claim.signal) ? claim.signal.agreeing / c
  * compares a view with one he had in Kananaskis, and the vote counted it.
  */
 function coherent(claims: readonly Claim[]): Claim[] {
-  const anchors = claims.filter(isAnchor)
-  const anchorRegions = anchors.length > 0
-    ? anchors.map(claim => claim.regionId)
+  const stated = claims.filter(isStated)
+  const anchorRegions = stated.length > 0
+    ? stated.map(claim => claim.regionId)
     : [...claims].sort((left, right) => share(right) - share(left) || byStrength(left, right)).slice(0, 1).map(claim => claim.regionId)
-  return claims.filter(claim => isAnchor(claim) || anchorRegions.some(regionId => areNeighbours(regionId, claim.regionId)))
+  return claims.filter(claim => isStated(claim) || anchorRegions.some(regionId => areNeighbours(regionId, claim.regionId)))
 }
 
 /** Whether a report's own source files it outside every region. */
@@ -205,6 +173,7 @@ const filedAbroad = (report: RawReport) => mappedRegionOf(report) === OUT_OF_SCO
 interface Context {
   readonly guidebooks?: GuidebookIndex
   readonly inferred: Inferred
+  readonly overrides: RegionOverrides
 }
 
 /**
@@ -214,8 +183,8 @@ interface Context {
  * one heading, which puts Rogers Pass and the Kokanee Glacier 200 km apart in
  * one bucket — and listing it under their region as well would undo it.
  */
-function claimsOf(key: string, group: readonly RawReport[], { guidebooks, inferred }: Context): Claim[] {
-  const overridden = REGION_OVERRIDES[key]
+function claimsOf(key: string, group: readonly RawReport[], { guidebooks, inferred, overrides }: Context): Claim[] {
+  const overridden = overrides[key]
   if (overridden) return [{ regionId: overridden, signal: { kind: 'curated' } }]
 
   const tickList = guidebooks?.regions.get(key)
@@ -254,7 +223,7 @@ function objectiveOf(key: string, name: string, reports: readonly RawReport[], c
   }
 }
 
-function dropped(key: string, group: readonly RawReport[], reason: Dropped['reason'], sourceIds: readonly string[]): Dropped {
+function dropped(key: string, group: readonly RawReport[], reason: Dropped['reason'], sourceIds: readonly SourceId[]): Dropped {
   return { key, name: pickName(key, group), reason, sourceIds, url: group[0]?.url ?? '' }
 }
 
@@ -267,12 +236,12 @@ function dropped(key: string, group: readonly RawReport[], reason: Dropped['reas
  * Utah peak sharing a name with a Kananaskis one is still in Utah.
  */
 function place(key: string, group: readonly RawReport[], context: Context): Objective[] | Dropped {
-  if (REGION_OVERRIDES[key] === OUT_OF_SCOPE) return dropped(key, group, 'curated', [])
+  if (context.overrides[key] === OUT_OF_SCOPE) return dropped(key, group, 'curated', [])
   const name = pickName(key, group)
 
   const mountains = mountainsOf(group)
   if (mountains.length > 1) {
-    const fallback = REGION_OVERRIDES[key] ?? strongestStatedRegion(group)
+    const fallback = context.overrides[key] ?? strongestStatedRegion(group)
     // A tick-list entry is about one of the mountains, the one in its region:
     // Steven Song's Mount Murchison above Squamish is not the 11,000er.
     const tickRegion = context.guidebooks?.regions.get(key)
@@ -299,11 +268,6 @@ function place(key: string, group: readonly RawReport[], context: Context): Obje
   return [objectiveOf(key, name, group, weak, context.guidebooks)]
 }
 
-/** The distinct regions an objective is listed under, strongest first. */
-export function regionsOf(objective: Objective): string[] {
-  return [...new Set(objective.claims.map(claim => claim.regionId))]
-}
-
 function groupByRegion(objectives: readonly Objective[]): Map<string, Objective[]> {
   const byRegion = new Map<string, Objective[]>()
   for (const objective of objectives) {
@@ -322,14 +286,18 @@ function groupByRegion(objectives: readonly Objective[]): Map<string, Objective[
  *
  * `inferred` comes from inference.ts, which reads a first build made without
  * it; see there for why the build runs twice.
+ *
+ * `overrides` is curation.ts's REGION_OVERRIDES unless a test passes its own,
+ * so that a test of the builder does not break when curators edit the table.
  */
 export function buildObjectives(
   reports: readonly RawReport[],
   guidebooks?: GuidebookIndex,
-  inferred: Inferred = NOTHING_INFERRED
+  inferred: Inferred = NOTHING_INFERRED,
+  overrides: RegionOverrides = REGION_OVERRIDES
 ): BuildResult {
   const groups = [...groupByObjective(reports.map(withCuratedObjectives))]
-  const outcomes = groups.map(([key, group]) => place(key, group, { guidebooks, inferred }))
+  const outcomes = groups.map(([key, group]) => place(key, group, { guidebooks, inferred, overrides }))
   const objectives = outcomes.flatMap(outcome => Array.isArray(outcome) ? outcome : []).sort(byName)
 
   return {

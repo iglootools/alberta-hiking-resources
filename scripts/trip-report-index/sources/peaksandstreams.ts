@@ -11,12 +11,11 @@
 import type { Fetcher } from '../fetch.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
-import { decodeEntities } from '../html.ts'
+import { MONTHS, decodeEntities } from '../html.ts'
 import { PAGE_SIZE, readAllPages } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://peaksandstreams.com'
 
-const MONTHS = 'january|february|march|april|may|june|july|august|september|october|november|december'
 /** ", 3 July, 2013" and the like. */
 const TRAILING_DATE = new RegExp(`[\\s,-]+\\d{0,2}\\s*(?:${MONTHS})[a-z]*,?\\s*\\d{0,2},?\\s*\\d{4}\\s*$`, 'i')
 
@@ -49,8 +48,8 @@ function toReport(post: Post, tagNames: ReadonlyMap<number, string>): RawReport 
 }
 
 export async function scrapePeaksAndStreams(fetchText: Fetcher): Promise<RawReport[]> {
-  const tags = JSON.parse(await fetchText(
-    `${BASE}/wp-json/wp/v2/tags?per_page=100&_fields=id,name`)) as Tag[]
+  const tags = await readAllPages<Tag>(fetchText, page =>
+    `${BASE}/wp-json/wp/v2/tags?per_page=${PAGE_SIZE}&page=${page}&_fields=id,name`)
   const tagNames = new Map(tags.map(tag => [tag.id, decodeEntities(tag.name)]))
 
   const posts = await readAllPages<Post>(fetchText, page =>

@@ -14,11 +14,11 @@
  * shared with a neighbour — Kootenay, with Banff and the BC Rockies — comes out
  * as a sliver. The run prints the regions drawn that small.
  *
- * Everything here is pure; basemap.ts fetches, main.ts writes.
+ * Everything here is pure; basemap.ts fetches, run.ts writes.
  */
 import type { Gazetteer } from './gazetteer.ts'
 import type { Coordinates, Objective } from './types.ts'
-import { regionsOf } from './build.ts'
+import { regionsOf } from './types.ts'
 import { distanceKm } from './geo.ts'
 
 export interface Extent {
@@ -53,6 +53,8 @@ export interface MapPoint extends Coordinates {
 
 export interface Grid {
   readonly extent: Extent
+  /** One cell's size in degrees. */
+  readonly cell: { readonly lat: number, readonly lon: number }
   readonly rows: number
   readonly cols: number
   /** Row-major region indices into the `regionIds` the grid was drawn for; -1 is no region. */
@@ -74,11 +76,29 @@ export function dropIsolated(points: readonly MapPoint[], km = ISOLATION_KM): Ma
     other !== point && other.regionId === point.regionId && distanceKm(point, other) < km))
 }
 
+/**
+ * The `count` points nearest `at`, nearest first, and the earlier in `points`
+ * first among equally near ones, as a stable sort would order them.
+ *
+ * Kept as a bounded list rather than by sorting every point: this runs once
+ * per cell, some 25,000 times a run, and sorting thousands of points each time
+ * made drawing the map take tens of seconds.
+ */
+function nearestPoints(at: Coordinates, points: readonly MapPoint[], count: number): { point: MapPoint, km: number }[] {
+  const nearest: { point: MapPoint, km: number }[] = []
+  for (const point of points) {
+    const km = distanceKm(at, point)
+    if (nearest.length === count && km >= nearest[count - 1]!.km) continue
+    let index = nearest.length
+    while (index > 0 && nearest[index - 1]!.km > km) index -= 1
+    nearest.splice(index, 0, { point, km })
+    if (nearest.length > count) nearest.pop()
+  }
+  return nearest
+}
+
 function cellVote(at: Coordinates, points: readonly MapPoint[], regionIds: readonly string[]): number {
-  const nearest = points
-    .map(point => ({ point, km: distanceKm(at, point) }))
-    .sort((left, right) => left.km - right.km)
-    .slice(0, VOTERS)
+  const nearest = nearestPoints(at, points, VOTERS)
   if (nearest.length === 0 || nearest[0]!.km > REACH_KM) return -1
   const votes = new Map<string, number>()
   for (const { point, km } of nearest) votes.set(point.regionId, (votes.get(point.regionId) ?? 0) + point.weight / (km + 1))
@@ -114,16 +134,23 @@ export function rasterize(points: readonly MapPoint[], regionIds: readonly strin
   const cols = Math.ceil((extent.east - extent.west) / CELL.lon)
   const cells = Array.from({ length: rows * cols }, (_, index) => cellVote(
     cellCentre(extent, Math.floor(index / cols), index % cols), points, regionIds))
-  return despeckle({ extent, rows, cols, cells })
+  return despeckle({ extent, cell: CELL, rows, cols, cells })
 }
 
 function cellCentre(extent: Extent, row: number, col: number): Coordinates {
   return { lat: extent.north - (row + 0.5) * CELL.lat, lon: extent.west + (col + 0.5) * CELL.lon }
 }
 
+/** The region index of the cell holding `at`, or undefined outside the grid. */
+export function regionAt(grid: Grid, at: Coordinates): number | undefined {
+  const row = Math.floor((grid.extent.north - at.lat) / grid.cell.lat)
+  const col = Math.floor((at.lon - grid.extent.west) / grid.cell.lon)
+  return row < 0 || col < 0 || row >= grid.rows || col >= grid.cols ? undefined : grid.cells[row * grid.cols + col]
+}
+
 /** Cell edges as coordinates: row 0 is the north edge, col 0 the west. */
-const edgeLat = (grid: Grid, row: number) => round(grid.extent.north - row * CELL.lat)
-const edgeLon = (grid: Grid, col: number) => round(grid.extent.west + col * CELL.lon)
+const edgeLat = (grid: Grid, row: number) => round(grid.extent.north - row * grid.cell.lat)
+const edgeLon = (grid: Grid, col: number) => round(grid.extent.west + col * grid.cell.lon)
 const round = (value: number, places = 4) => Number(value.toFixed(places))
 
 /** [col, endCol) runs of one region on one row. */
