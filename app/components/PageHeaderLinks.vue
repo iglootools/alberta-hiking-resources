@@ -14,12 +14,13 @@ const items = [
   {
     label: 'Copy Markdown link',
     icon: 'i-lucide-link',
-    onSelect() {
-      copy(mdPath.value)
-      toast.add({
-        title: 'Copied to clipboard',
-        icon: 'i-lucide-check-circle'
-      })
+    async onSelect() {
+      if (await copyOrWarn(mdPath.value)) {
+        toast.add({
+          title: 'Copied to clipboard',
+          icon: 'i-lucide-check-circle'
+        })
+      }
     }
   },
   {
@@ -42,8 +43,31 @@ const items = [
   }
 ]
 
+function warn(title: string, description: string) {
+  toast.add({ title, description, color: 'error', icon: 'i-lucide-circle-x' })
+}
+
+/**
+ * Copies `text`, warning the reader when it could not be: `copy` resolves
+ * without error where the browser has no clipboard at all, and only leaves
+ * `copied` false.
+ */
+async function copyOrWarn(text: string): Promise<boolean> {
+  await copy(text)
+  if (!copied.value) warn('Could not copy', 'This browser does not allow copying to the clipboard.')
+  return copied.value
+}
+
 async function copyPage() {
-  copy(await $fetch<string>(`/raw${routePath.value}.md`))
+  let markdown: string
+  try {
+    markdown = await $fetch<string>(`/raw${routePath.value}.md`)
+  } catch (error) {
+    console.error('[PageHeaderLinks] could not fetch the page as Markdown', error)
+    warn('Could not copy the page', 'Its Markdown could not be fetched. Try again, or use View as Markdown.')
+    return
+  }
+  await copyOrWarn(markdown)
 }
 </script>
 
