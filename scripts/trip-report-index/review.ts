@@ -17,11 +17,12 @@ import { isStated } from './types.ts'
 /** Similarity above which two names are worth a human looking at them. */
 const NEAR_MISS_CUTOFF = 0.86
 
-const distinct = new Set(DISTINCT_NAMES.flatMap(([left, right]) => [`${left}|${right}`, `${right}|${left}`]))
+/** A pair of keys confirmed to be two objectives, as DISTINCT_NAMES lists them. */
+export type NamePair = readonly [string, string]
 
-/** Whether a candidate pair has been checked and found to be two objectives. */
-function isDistinct(left: string, right: string): boolean {
-  return distinct.has(`${left}|${right}`)
+/** Whether a candidate pair has been checked and found to be two objectives, either way round. */
+function isDistinct(distinctNames: readonly NamePair[], left: string, right: string): boolean {
+  return distinctNames.some(([a, b]) => (a === left && b === right) || (a === right && b === left))
 }
 
 function sources(objective: Objective): string {
@@ -139,15 +140,33 @@ function similarity(left: string, right: string): number {
   return total > 0 ? (2 * shared) / total : 0
 }
 
-function nearMissSection(result: BuildResult): string[] {
-  const keys = [...new Set(result.objectives.map(objective => objective.key))].sort()
-  const pairs: string[] = []
-  for (let index = 0; index < keys.length; index += 1) {
-    for (let other = index + 1; other < Math.min(index + 12, keys.length); other += 1) {
-      const [left, right] = [keys[index]!, keys[other]!]
-      if (similarity(left, right) >= NEAR_MISS_CUTOFF && !isDistinct(left, right)) pairs.push(`- \`${left}\` vs \`${right}\``)
+/**
+ * How many keys after each one, in sorted order, it is compared with. Spelling
+ * variants mostly share their first letters, so they sort close together, and
+ * comparing every pair of some 4,000 keys would cost millions of comparisons
+ * for little more.
+ */
+const NEAR_MISS_WINDOW = 11
+
+/**
+ * Pairs of keys whose spellings are close enough that they may be one
+ * objective, in sorted order, leaving out the pairs DISTINCT_NAMES has settled.
+ */
+export function nearMisses(keys: ReadonlySet<string>, distinctNames: readonly NamePair[] = DISTINCT_NAMES): [string, string][] {
+  const sorted = [...keys].sort()
+  const pairs: [string, string][] = []
+  for (let index = 0; index < sorted.length; index += 1) {
+    for (let other = index + 1; other <= Math.min(index + NEAR_MISS_WINDOW, sorted.length - 1); other += 1) {
+      const [left, right] = [sorted[index]!, sorted[other]!]
+      if (similarity(left, right) >= NEAR_MISS_CUTOFF && !isDistinct(distinctNames, left, right)) pairs.push([left, right])
     }
   }
+  return pairs
+}
+
+function nearMissSection(result: BuildResult): string[] {
+  const pairs = nearMisses(new Set(result.objectives.map(objective => objective.key)))
+    .map(([left, right]) => `- \`${left}\` vs \`${right}\``)
   return [
     `${pairs.length} near-miss name pairs. Most are distinct neighbouring peaks — Explor8ion`,
     'alone publishes both Mount Kitchener and Mount Michener. Add an ALIASES entry only',
@@ -182,7 +201,7 @@ export function bareNameCandidates(keys: ReadonlySet<string>): [string, string][
   return [...keys].sort().flatMap((key) => {
     if (GENERIC_WORD.test(key) || /\d/.test(key)) return []
     const forms = GENERIC_FORMS.map(form => form(key)).filter(form => keys.has(form))
-    return forms.length === 1 && !isDistinct(key, forms[0]!) ? [[key, forms[0]!] as [string, string]] : []
+    return forms.length === 1 && !isDistinct(DISTINCT_NAMES, key, forms[0]!) ? [[key, forms[0]!] as [string, string]] : []
   })
 }
 

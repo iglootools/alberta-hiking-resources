@@ -4,7 +4,7 @@ import { matchArea } from '../areas.ts'
 import { canonKey } from '../canon.ts'
 import { ALIASES, REGION_OVERRIDES } from '../curation.ts'
 import { OUT_OF_SCOPE, REGION_IDS } from '../regions.ts'
-import { bareNameCandidates } from '../review.ts'
+import { bareNameCandidates, nearMisses } from '../review.ts'
 
 describe('canonKey', () => {
   it('reads "Mtn" after a name as "Mountain", as "Mt." before one is "Mount"', () => {
@@ -39,6 +39,21 @@ describe('bareNameCandidates', () => {
 
   it('looks only at names without a generic of their own', () => {
     assert.deepEqual(bareNameCandidates(new Set(['wasootch ridge', 'mount wasootch ridge', 'gr123456', 'gr123456 peak'])), [])
+  })
+})
+
+describe('nearMisses', () => {
+  it('offers two spellings a letter apart', () => {
+    assert.deepEqual(nearMisses(new Set(['mount sir douglas', 'mount sir douglass']), []), [['mount sir douglas', 'mount sir douglass']])
+  })
+
+  it('leaves alone two names that only share a word', () => {
+    assert.deepEqual(nearMisses(new Set(['mount kitchener', 'mount michener']), []), [])
+  })
+
+  it('skips a pair confirmed to be two different places, whichever way round it is listed', () => {
+    const keys = new Set(['mount sir douglas', 'mount sir douglass'])
+    assert.deepEqual(nearMisses(keys, [['mount sir douglass', 'mount sir douglas']]), [])
   })
 })
 
