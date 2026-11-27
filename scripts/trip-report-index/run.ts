@@ -27,7 +27,7 @@ import { isStated } from './types.ts'
 import type { Credentials } from './sources/index.ts'
 import { SOURCES } from './sources/index.ts'
 import { entryName } from './render.ts'
-import { writeReview } from './review.ts'
+import { renderReview } from './review.ts'
 
 /** Where a run reads and writes. */
 export interface IndexPaths {
@@ -221,7 +221,7 @@ export async function writeIndex(
     await writeRegionMap(paths, map)
   }
 
-  await writeFile(paths.reviewPath, writeReview(result, startedAt, { newlyUnsorted }), 'utf8')
+  await writeFile(paths.reviewPath, renderReview(result, startedAt, { newlyUnsorted }), 'utf8')
   printSummary(paths.reviewPath, result, reportCount, newlyUnsorted, map.smallRegions, dryRun)
 }
 

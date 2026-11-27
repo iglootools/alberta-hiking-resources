@@ -266,7 +266,7 @@ export interface ReviewContext {
 }
 
 /** `generatedOn` is supplied by the caller, so the worksheet is a pure function of its inputs. */
-export function writeReview(result: BuildResult, generatedOn: Date, { newlyUnsorted = [] }: ReviewContext = {}): string {
+export function renderReview(result: BuildResult, generatedOn: Date, { newlyUnsorted = [] }: ReviewContext = {}): string {
   return [
     '# Trip report index — review',
     '',

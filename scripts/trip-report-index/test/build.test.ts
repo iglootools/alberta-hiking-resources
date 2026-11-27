@@ -7,7 +7,7 @@ import { buildObjectives, regionsOf } from '../build.ts'
 import { NOTHING_INFERRED } from '../inference.ts'
 import { canonKey } from '../canon.ts'
 import { readGuidebooks } from '../guidebooks.ts'
-import { writeReview } from '../review.ts'
+import { renderReview } from '../review.ts'
 import { stubFetcher } from './support.ts'
 
 // A name no source or curation entry will ever mention, and a source id no
@@ -113,25 +113,25 @@ describe('readGuidebooks', () => {
   })
 })
 
-describe('writeReview sections', () => {
+describe('renderReview sections', () => {
   const empty = { objectives: [], byRegion: new Map(), unplaced: [], dropped: [] }
   const on = new Date(Date.UTC(2026, 0, 1))
 
   it('lists what is new on the catch-all page', () => {
     const objective = { key: 'k', name: 'Funnel Peak', claims: [], reports: [{ sourceId: 'x', title: 't', url: 'https://u', objectives: [] }] }
-    assert.match(writeReview(empty, on, { newlyUnsorted: [objective] }), /1 objectives are new[\s\S]*- \*\*Funnel Peak\*\* — x — https:\/\/u/)
+    assert.match(renderReview(empty, on, { newlyUnsorted: [objective] }), /1 objectives are new[\s\S]*- \*\*Funnel Peak\*\* — x — https:\/\/u/)
   })
 
   it('lists each dropped name under its reason', () => {
-    const review = writeReview({ ...empty, dropped: [{ key: 'puigmal', name: 'Puigmal', reason: 'filed-elsewhere', sourceIds: ['spectacularmountains'], url: 'https://u' }] }, on)
+    const review = renderReview({ ...empty, dropped: [{ key: 'puigmal', name: 'Puigmal', reason: 'filed-elsewhere', sourceIds: ['spectacularmountains'], url: 'https://u' }] }, on)
     assert.match(review, /### Filed by a blog[^\n]*\(1\)\n\n- `puigmal` \(spectacularmountains\) — https:\/\/u/)
   })
 })
 
-describe('writeReview', () => {
+describe('renderReview', () => {
   it('dates the worksheet in UTC from the date it is given', () => {
     // 03:00 UTC on the 2nd is still the 1st anywhere west of Greenwich.
-    const review = writeReview(
+    const review = renderReview(
       { objectives: [], byRegion: new Map(), unplaced: [], dropped: [] },
       new Date(Date.UTC(2026, 0, 2, 3))
     )
