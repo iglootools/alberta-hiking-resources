@@ -14,8 +14,20 @@
 # Retires when remark-mdc releases a fix. Check with `npm view remark-mdc version` against
 # that issue, then delete this entry and that rule, run `pnpm install`, and confirm `mise run build`
 # prerenders /llms-full.txt.
+#
+# archiver's readdir-glob is raised to 4 because 3 depends on minimatch 10.2.6, whose glob
+# pattern preprocessing can be driven into quadratic work (GHSA-g3hv-75wg-m249). readdir-glob
+# 4.0.0's only change is that minimatch upgrade, to ^11.0.1, so its code is otherwise 3's.
+# archiver 8.0.0, the latest, still asks for readdir-glob ^3, and comes from nitropack 2,
+# which Nuxt 4 still installs although the server builds with Nitro v3 (ADR-013), and which
+# uses archiver only in its Azure preset.
+#
+# Retires when archiver asks for readdir-glob ^4, or when nitropack leaves the dependency tree
+# (Nuxt 5). Check with `pnpm view archiver dependencies.readdir-glob` and
+# `pnpm why archiver`, then delete this entry and run `pnpm install`.
 overrides:
   mdast-util-to-markdown: 2.1.2
+  archiver>readdir-glob: ^4.0.0
 
 allowBuilds:
   "@parcel/watcher": false
