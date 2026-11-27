@@ -220,9 +220,10 @@ First, getting a usable package manager:
 
 pnpm is squeezed from both sides: `packages:` became optional only in pnpm 10
 and `allowBuilds` is pnpm 11, so **this repo needs pnpm 10 or newer**, while the
-newest pnpm WebContainer can execute is older. `packageManager: pnpm@11.15.1` in
-[package.json](../package.json) does not help — WebContainer ignores it, and
-pnpm 10 honours it only by trying to upgrade into the version that cannot run.
+newest pnpm WebContainer can execute is older. The `packageManager` field in
+[package.json](../package.json) (`pnpm@11.15.1` when this was tested; newer
+since) does not help — WebContainer ignores it, and pnpm 10 honours it only by
+trying to upgrade into a version that cannot run.
 
 **npm gets past all of that, and still fails.** This is the part worth knowing,
 because it shows the package manager was never the real problem:

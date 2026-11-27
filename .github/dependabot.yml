@@ -32,7 +32,7 @@ updates:
   # "npm" is the ecosystem value for pnpm too; there is no "pnpm" value. What Dependabot
   # actually reads is the lockfile format, and pnpm-lock.yaml here is lockfileVersion 9.0,
   # which it understands. Worth re-checking when pnpm changes that number: GitHub documents
-  # support for pnpm v7-v10 while mise.toml pins v11, so we are already relying on the
+  # support for pnpm v7-v10 while mise.toml pins a newer pnpm, so we are already relying on the
   # lockfile format rather than the release being on their list. The failure mode is silent —
   # Dependabot keeps running, finds nothing, and reports green — so treat a lockfileVersion
   # bump as a prompt to confirm alerts are still being raised.
