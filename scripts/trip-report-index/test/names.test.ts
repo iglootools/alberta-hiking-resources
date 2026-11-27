@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { matchArea } from '../areas.ts'
 import { canonKey } from '../canon.ts'
+import { decodeEntities } from '../html.ts'
 import { ALIASES, REGION_OVERRIDES } from '../curation.ts'
 import { OUT_OF_SCOPE, REGION_IDS } from '../regions.ts'
 import { bareNameCandidates, nearMisses } from '../review.ts'
@@ -70,5 +71,20 @@ describe('curation', () => {
 
   it('aliases no spelling onto one that is itself aliased', () => {
     assert.deepEqual(Object.values(ALIASES).filter(target => target in ALIASES), [])
+  })
+})
+
+describe('decodeEntities', () => {
+  it('keeps the case of an accented letter', () => {
+    assert.equal(decodeEntities('&Icirc;yarhe &icirc;pan'), 'Îyarhe îpan')
+    assert.equal(decodeEntities('&Agrave; la carte'), 'À la carte')
+  })
+
+  it('decodes decimal and hexadecimal references', () => {
+    assert.equal(decodeEntities('Caf&#233; &#x2013; &#X41;'), 'Café – A')
+  })
+
+  it('leaves alone a reference that names no character, and a name it does not know', () => {
+    assert.equal(decodeEntities('&#99999999; &#x110000; &bogus;'), '&#99999999; &#x110000; &bogus;')
   })
 })
