@@ -132,6 +132,8 @@ by hand:
 ```bash
 mise run build-trip-index              # re-read the sources and rewrite the pages
 mise run build-trip-index -- --refresh # discard the HTTP cache first
+mise run build-trip-index -- --dry-run # report what would change, writing no page
+mise run build-trip-index -- --help    # every option
 ```
 
 Responses are cached under `node_modules/.cache/trip-report-index`, so iterating
@@ -146,7 +148,13 @@ ones around them — see
 [ADR-007](architecture-decision-record.md#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)
 and
 [ADR-009](architecture-decision-record.md#adr-009--empty-the-catch-all-page-from-evidence-the-sources-already-publish).
-`--review-only` reports what would change without touching any page.
+`--dry-run` (`-n`; `--review-only` is kept as an alias) runs everything a real
+run does, the consistency checks and the basemap read included, and reports
+what would change without touching any page. The consistency checks run before
+the scrape, so a run that would fail them stops before fetching anything.
+
+The task exits 0 on success, 1 when the run fails, and 2 for a usage error: an
+unknown argument, or a missing `YOUTUBE_API_KEY`.
 
 The same run draws the region map the three section index pages show, from where
 the placed objectives are, and writes it as `app/assets/region-map.json` (the
@@ -159,7 +167,8 @@ see
 ### Annie Ouellet's YouTube channel needs an API key
 
 Every other source needs nothing. Annie Ouellet's channel is read through the
-**YouTube Data API v3**, and the task **fails** unless `YOUTUBE_API_KEY` is set:
+**YouTube Data API v3**, and the task **fails**, with exit code 2, unless
+`YOUTUBE_API_KEY` is set:
 
 ```bash
 export YOUTUBE_API_KEY=...      # in your shell profile, not in the repo
