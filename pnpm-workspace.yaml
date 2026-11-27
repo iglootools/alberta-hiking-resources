@@ -25,6 +25,18 @@
 # Retires when archiver asks for readdir-glob ^4, or when nitropack leaves the dependency tree
 # (Nuxt 5). Check with `pnpm view archiver dependencies.readdir-glob` and
 # `pnpm why archiver`, then delete this entry and run `pnpm install`.
+#
+# zod 3.25.76 stays locked, with no override, although GHSA-mrhx-c7xc-m3w5 (memory exhaustion
+# validating oversized constrained collections; Dependabot alert #46) is fixed only in zod
+# 4.6.6. @nuxt/content 3.17.0, the latest, asks for zod ^3.25.76 (zod-to-json-schema and
+# @modelcontextprotocol/sdk then resolve their zod peer to it too), no 3.x release carries the
+# fix, and forcing zod 4 on Content would break its collection schemas. The exposure is
+# small: zod 3 validates this repository's own content at build time, and production is a
+# static site with no server to send it oversized input.
+#
+# Retires when @nuxt/content moves to zod 4. Check with
+# `pnpm view @nuxt/content dependencies.zod`, then run `pnpm install`, confirm `pnpm why zod`
+# lists no 3.x, and that Dependabot closes the alert.
 overrides:
   mdast-util-to-markdown: 2.1.2
   archiver>readdir-glob: ^4.0.0
