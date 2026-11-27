@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - "renovate/**"
+  # Regenerate the lock on demand without a dummy push:
+  # gh workflow run renovate-mise-lock.yml --ref renovate/<branch>
+  # No repository_dispatch: it always runs on the default branch, which the job below skips.
+  workflow_dispatch:
 
 # Avoid overlapping runs racing to push to the same branch. Stays here rather than in the shared
 # workflow because concurrency governs the run these triggers create.
@@ -13,6 +17,9 @@ concurrency:
 
 jobs:
   mise-lock:
+    # A manual dispatch names its own ref: run only on a Renovate branch, never push a
+    # regenerated lock to main or a contributor's branch.
+    if: startsWith(github.ref, 'refs/heads/renovate/')
     permissions:
       # Must be granted here. `permissions` in the called workflow is a ceiling on what the
       # caller allowed, not a grant of its own, so without this the job regenerates mise.lock

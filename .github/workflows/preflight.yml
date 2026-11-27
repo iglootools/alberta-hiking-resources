@@ -1,6 +1,10 @@
 name: preflight
 
-on: push
+on:
+  push:
+  # Re-run on demand without a dummy push: gh workflow run preflight.yml --ref <branch>
+  workflow_dispatch:
+  repository_dispatch:
 
 concurrency:
   # On main the group carries the commit sha, so every push gets a group of its own and
