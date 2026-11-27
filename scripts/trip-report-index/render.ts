@@ -26,13 +26,28 @@ const GENERATED_NOTE
     + '     changes are overwritten on the next run. Corrections go in\n'
     + '     scripts/trip-report-index/curation.ts. -->'
 
-/** Markdown special characters that appear in real objective names. */
+/**
+ * Markdown's special characters, and MDC's braces, which would otherwise read
+ * a name like "Peak {North}" as attributes.
+ */
 function escapeText(value: string): string {
-  return value.replace(/([\\`*_[\]<>])/g, '\\$1')
+  return value.replace(/([\\`*_[\]<>{}])/g, '\\$1')
 }
 
+/** A link title, between double quotes: a backslash escapes, so it is doubled, and a quote becomes a curly one. */
 function escapeTitle(value: string): string {
-  return value.replace(/"/g, '”')
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '”')
+}
+
+/**
+ * A scraped URL as a link destination. A space, `<` or `>` is percent-encoded,
+ * which a URL allows; a parenthesis cannot be, without changing the URL for
+ * some servers, so a destination holding one goes in angle brackets, where an
+ * unbalanced one cannot end the link early.
+ */
+function destination(url: string): string {
+  const encoded = url.replace(/[\s<>]/g, encodeURIComponent)
+  return /[()]/.test(encoded) ? `<${encoded}>` : encoded
 }
 
 /**
@@ -44,7 +59,7 @@ function renderLink(report: RawReport, objectiveName: string): string {
   const title = report.title.trim()
   const differs = title.toLowerCase() !== objectiveName.toLowerCase()
   const tooltip = differs ? ` "${escapeTitle(title)}"` : ''
-  return `[${label(report.sourceId)}](${report.url}${tooltip})`
+  return `[${label(report.sourceId)}](${destination(report.url)}${tooltip})`
 }
 
 /**
@@ -61,7 +76,7 @@ function renderLink(report: RawReport, objectiveName: string): string {
 function renderGuidebooks(objective: Objective): string {
   if (!objective.guidebooks?.length) return ''
   const marks = objective.guidebooks
-    .map(entry => `[${escapeText(entry.book)} — ${escapeText(entry.grade)}](${entry.url}){.tick-mark}`)
+    .map(entry => `[${escapeText(entry.book)} — ${escapeText(entry.grade)}](${destination(entry.url)}){.tick-mark}`)
     .join(', ')
   return ` · ${marks}`
 }

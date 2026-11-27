@@ -70,3 +70,23 @@ describe('renderRegionPage, A–Z sections', () => {
     assert.deepEqual(page.match(/^## .+$/gm), ['## I'])
   })
 })
+
+describe('renderRegionPage, scraped text', () => {
+  const objective = (name: string, report: Partial<Objective['reports'][number]>): Objective =>
+    ({ key: 'k', name, claims: [], reports: [{ sourceId: 'adamlaycock', title: name, url: 'https://a/x', objectives: [name], ...report }] })
+  const page = (entry: Objective) => renderRegionPage(region('banff'), [entry])
+
+  it('puts a URL holding a parenthesis in angle brackets, and encodes a space', () => {
+    assert.ok(page(objective('Bald Eagle Peak', { url: 'https://a/bald-eagle-(east) peak' }))
+      .includes('[Adam Laycock](<https://a/bald-eagle-(east)%20peak>)'))
+  })
+
+  it('escapes a backslash and a quote in a link title', () => {
+    assert.ok(page(objective('Mount Rae', { title: 'Rae "via" ridge\\' }))
+      .includes('[Adam Laycock](https://a/x "Rae ”via” ridge\\\\")'))
+  })
+
+  it('escapes MDC’s braces in a name', () => {
+    assert.ok(page(objective('Peak {North}', {})).includes('- **Peak \\{North\\}**'))
+  })
+})
