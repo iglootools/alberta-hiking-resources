@@ -82,9 +82,9 @@ export async function pruneStalePages(pagesDir: string, keep: ReadonlySet<string
  * not a region: the weather and accommodation sections mirror REGIONS, and
  * asking them to carry a forecast for "unsorted" would make no sense.
  *
- * Returns the page names, written or (with `reviewOnly`) merely planned.
+ * Returns the page names, written or (with `dryRun`) merely planned.
  */
-export async function writeRegionPages(pagesDir: string, result: BuildResult, reviewOnly: boolean): Promise<string[]> {
+export async function writeRegionPages(pagesDir: string, result: BuildResult, dryRun: boolean): Promise<string[]> {
   const pages = [
     ...REGIONS.map(region => ({ region, objectives: result.byRegion.get(region.id) ?? [] })),
     { region: UNSORTED, objectives: result.unplaced }
@@ -92,7 +92,7 @@ export async function writeRegionPages(pagesDir: string, result: BuildResult, re
 
   await mkdir(pagesDir, { recursive: true })
   for (const { region, objectives, name } of pages) {
-    if (!reviewOnly) await writeFile(join(pagesDir, name), renderRegionPage(region, objectives), 'utf8')
+    if (!dryRun) await writeFile(join(pagesDir, name), renderRegionPage(region, objectives), 'utf8')
     console.log(indent(`${String(objectives.length).padStart(5)}  ${name}`))
   }
   return pages.map(page => page.name)

@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   const credentials = readCredentials(process.env)
   await runIndex(repoPaths(REPO), {
     refresh: process.argv.includes('--refresh'),
-    reviewOnly: process.argv.includes('--review-only'),
+    dryRun: process.argv.includes('--review-only'),
     startedAt: new Date(),
     credentials
   })

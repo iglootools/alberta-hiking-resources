@@ -37,15 +37,15 @@ describe('writeIndex', async () => {
 
   it('writes the pages, the map and the review', async () => {
     const paths = await tree()
-    await writeIndex(paths, build, { reviewOnly: false, startedAt })
+    await writeIndex(paths, build, { dryRun: false, startedAt })
     assert.deepEqual((await readdir(paths.pagesDir)).sort(), [...GENERATED_PAGES].sort())
     assert.deepEqual((await readdir(join(paths.pagesDir, '..'))).sort(),
       ['pages', 'region-map', 'region-map.json', 'review.md'])
   })
 
-  it('writes only the review in review-only mode', async () => {
+  it('writes only the review in dry-run mode', async () => {
     const paths = await tree()
-    await writeIndex(paths, build, { reviewOnly: true, startedAt })
+    await writeIndex(paths, build, { dryRun: true, startedAt })
     assert.deepEqual(await readdir(paths.pagesDir), [])
     assert.deepEqual((await readdir(join(paths.pagesDir, '..'))).sort(), ['pages', 'review.md'])
   })
@@ -53,7 +53,7 @@ describe('writeIndex', async () => {
   it('writes nothing when the pages folder holds a page it did not generate', async () => {
     const paths = await tree()
     await writeFile(join(paths.pagesDir, '98.guide.md'), '# How to read the index\n')
-    await assert.rejects(writeIndex(paths, build, { reviewOnly: false, startedAt }), { name: 'UnknownPagesError' })
+    await assert.rejects(writeIndex(paths, build, { dryRun: false, startedAt }), { name: 'UnknownPagesError' })
     assert.deepEqual(await readdir(paths.pagesDir), ['98.guide.md'])
     assert.deepEqual(await readdir(join(paths.pagesDir, '..')), ['pages'])
   })

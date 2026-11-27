@@ -36,7 +36,7 @@ describe('region pages', async () => {
     assert.match(await readFile(join(dir, UNSORTED_PAGE), 'utf8'), new RegExp(UNPLACED))
   })
 
-  it('writes nothing in review-only mode, but still names the pages', async () => {
+  it('writes nothing in dry-run mode, but still names the pages', async () => {
     const dir = await pagesDir()
     const planned = await writeRegionPages(dir, result, true)
     assert.equal(planned.length, REGIONS.length + 1)

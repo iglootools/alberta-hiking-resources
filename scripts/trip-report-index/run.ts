@@ -68,7 +68,7 @@ export interface RunOptions {
   /** Discard the HTTP cache and re-read every source. */
   readonly refresh: boolean
   /** Report what would change without writing any page. */
-  readonly reviewOnly: boolean
+  readonly dryRun: boolean
   /** When the run started, as dated in the review worksheet. */
   readonly startedAt: Date
   /** Read by the entry point before the run, so a missing one stops it before any request. */
@@ -193,7 +193,7 @@ async function readIndex(cacheDir: string, { refresh, credentials }: RunOptions)
 
 /**
  * Writes the region pages, prunes the stale ones and writes the map, or with
- * `reviewOnly` only names the pages; then writes the review worksheet and
+ * `dryRun` only names the pages; then writes the review worksheet and
  * prints the summary.
  *
  * Fails with UnknownPagesError before writing anything when the pages folder
@@ -203,7 +203,7 @@ async function readIndex(cacheDir: string, { refresh, credentials }: RunOptions)
 export async function writeIndex(
   paths: IndexPaths,
   { reportCount, result, map }: IndexBuild,
-  { reviewOnly, startedAt }: Pick<RunOptions, 'reviewOnly' | 'startedAt'>
+  { dryRun, startedAt }: Pick<RunOptions, 'dryRun' | 'startedAt'>
 ): Promise<void> {
   const keep = new Set(GENERATED_PAGES)
   await findStalePages(paths.pagesDir, keep)
@@ -211,8 +211,8 @@ export async function writeIndex(
   const before = await previouslyUnsorted(paths.pagesDir)
   const newlyUnsorted = result.unplaced.filter(objective => !before.has(entryName(objective)))
 
-  await writeRegionPages(paths.pagesDir, result, reviewOnly)
-  if (!reviewOnly) {
+  await writeRegionPages(paths.pagesDir, result, dryRun)
+  if (!dryRun) {
     for (const name of await pruneStalePages(paths.pagesDir, keep)) console.log(indent(`removed stale page ${name}`))
     await writeRegionMap(paths, map)
   }
@@ -224,10 +224,10 @@ export async function writeIndex(
 /**
  * Runs the index once, printing its progress and summary.
  *
- * Everything that can fail runs before the first write, in review-only mode
+ * Everything that can fail runs before the first write, in dry-run mode
  * too: the consistency checks before the scrape, since they read only REGIONS
  * and hand-written files, and the basemap fetch with the scrape. A failure
- * therefore leaves the committed output whole, and review-only mode shows the
+ * therefore leaves the committed output whole, and dry-run mode shows the
  * failure a real run would hit.
  *
  * Throws the typed errors in errors.ts for a source that changed shape or a
