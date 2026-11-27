@@ -143,7 +143,7 @@ function groupByLetter(objectives: readonly Objective[]): Map<string, Objective[
  * The two sibling pages for the same region, rendered as buttons in the page
  * header. This is the payoff of the shared taxonomy in ADR-006 — the three
  * sections differ only in the section part of the path, so the links are
- * derivable rather than curated, and `checkMirroredSections` in main.ts has
+ * derivable rather than curated, and `checkMirroredSections` in checks.ts has
  * already failed the run if either target is missing.
  *
  * The catch-all page is the exception: it is not a region and has no sibling.

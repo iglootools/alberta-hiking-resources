@@ -14,7 +14,7 @@
  * shared with a neighbour — Kootenay, with Banff and the BC Rockies — comes out
  * as a sliver. The run prints the regions drawn that small.
  *
- * Everything here is pure; basemap.ts fetches, main.ts writes.
+ * Everything here is pure; basemap.ts fetches, run.ts writes.
  */
 import type { Gazetteer } from './gazetteer.ts'
 import type { Coordinates, Objective } from './types.ts'

@@ -69,7 +69,7 @@ export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
  * Automatic fuzzy matching is deliberately not used — see the note in canon.ts.
  * Explor8ion alone publishes both "Mount Kitchener" and "Mount Michener", so
  * anything edit-distance would merge here has to be checked by a human first.
- * `--review` lists near-miss candidates to work from.
+ * The review worksheet every run writes lists near-miss candidates to work from.
  */
 export const ALIASES: Readonly<Record<string, string>> = {
   // Spelling variants of one peak.
@@ -267,7 +267,7 @@ export const DISTINCT_NAMES: readonly (readonly [string, string])[] = [
  * a guidebook grouping that spans four regions. An objective only lands here if
  * it is also absent from every source that *does* publish a region, so the list
  * stays short — it is the residue after cross-source inheritance, not the whole
- * of either blog. `--review` prints the current residue in paste-ready form.
+ * of either blog. The review worksheet lists the current residue in paste-ready form.
  */
 export const REGION_OVERRIDES: Readonly<Record<string, string>> = {
   // --- Kananaskis Country and Canmore ---
