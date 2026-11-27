@@ -327,7 +327,8 @@ it is not.
 ### VS Code
 
 The extensions worth having — MDC syntax for `content/`, Vue (Volar), ESLint,
-and mise — are declared in the repo rather than listed here, so there is no
+mise, the dprint and rumdl formatters, and tombi for TOML — are declared in the
+repo rather than listed here, so there is no
 hand-maintained copy to fall out of date. They live in two files, which do
 different things:
 
@@ -345,20 +346,22 @@ What belongs in that list follows the shared rule in
 because a setting whose extension is absent is not an error — it is a silent
 no-op, and whoever cloned the repo cannot tell it apart from a working setup.
 
-This project commits no `.vscode/settings.json`, so today the four entries are
-there for capability rather than to back a setting. Apply the rule the moment
-one is added: a `mise.*` key needs `hverlin.mise-vscode` present to have a
-reader at all, and the same holds for any `vue.*` or `eslint.*` key.
+[.vscode/settings.json](../.vscode/settings.json) is committed, and its keys
+are what make some of these load-bearing: it names `dprint.dprint` as the
+formatter for JSON, TOML and YAML and `rvben.rumdl` for Markdown, with format on
+save, so without them saving formats nothing and `lint-fmt` or `lint-markdown`
+fails later; and its `mise.*` keys need `hverlin.mise-vscode` to have a reader
+at all. The rest are there for capability.
 
-Both files list the same four extensions, and the container still needs its own
+Both files list the same extensions, and the container still needs its own
 copy, because a dev container splits the editor in half. The UI runs on your
 machine, but language servers and linters run *inside* the container, since that
 is where the source and `node_modules` are — and extensions installed on your
 machine do not follow you across that boundary. A recommendation would not help
 there either, as there is nobody present to accept the prompt while the
 container is being created. Without the install list, a fresh container gives
-you an editor with no Vue intelligence, no ESLint feedback, and no MDC
-highlighting in `content/`.
+you an editor with no Vue intelligence, no ESLint feedback, no MDC
+highlighting in `content/`, and no format on save.
 
 Keep the two lists in step when changing either.
 
