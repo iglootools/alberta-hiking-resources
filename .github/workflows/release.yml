@@ -24,6 +24,14 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      # semantic-release pushes the version tag and creates the GitHub release.
+      contents: write
+      # @semantic-release/github comments on the issues a release resolves, and opens an issue
+      # when a release fails.
+      issues: write
+      # @semantic-release/github comments on the pull requests a release includes.
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
