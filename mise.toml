@@ -92,13 +92,18 @@ description = "Run the trip report index tests"
 run = "pnpm test"
 
 # Writers (guidelines/project-setup/formatting.md in iglootools/common). ESLint's stylistic rules
-# own the code.
+# own the code, so fmt-eslint formats it.
 [tasks.fmt]
-description = "Format the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; lint-fmt verifies only)"
+description = "Format the code with ESLint, and the JSON, TOML, YAML and Markdown with dprint and rumdl (rewrites files; lint-fmt verifies only)"
 run = [
+  { task = "fmt-eslint" },
   { task = "fmt-dprint" },
   { task = "fmt-rumdl" },
 ]
+
+[tasks.fmt-eslint]
+description = "Apply ESLint's automatic fixes, its stylistic rules included"
+run = "pnpm lint --fix"
 
 [tasks.fmt-dprint]
 description = "Format the JSON, TOML and YAML with dprint"
@@ -138,7 +143,7 @@ description = "Check that the JSON, TOML and YAML are formatted with dprint (fix
 run = "dprint check"
 
 [tasks.lint-eslint]
-description = "Lint the code with ESLint, its stylistic rules included"
+description = "Lint the code with ESLint, its stylistic rules included (fix what it can with `mise run fmt-eslint`)"
 run = "pnpm lint"
 
 [tasks.lint-markdown]
