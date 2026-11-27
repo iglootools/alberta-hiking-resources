@@ -47,14 +47,18 @@
 
   "customizations": {
     "vscode": {
-      // nuxt.mdc mirrors .vscode/extensions.json; the rest are the ones a
-      // contributor would otherwise have to discover from
-      // docs/setup-development-environment.md.
+      // Mirrors .vscode/extensions.json: keep the two lists in step. A
+      // container installs these rather than prompting for the
+      // recommendations, and .vscode/settings.json names dprint.dprint and
+      // rvben.rumdl as formatters, so without them format-on-save silently
+      // does nothing here.
       "extensions": [
         "nuxt.mdc",
         "Vue.volar",
         "dbaeumer.vscode-eslint",
-        "hverlin.mise-vscode"
+        "hverlin.mise-vscode",
+        "dprint.dprint",
+        "rvben.rumdl"
       ]
     }
   }
