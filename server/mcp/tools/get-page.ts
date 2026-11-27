@@ -26,6 +26,8 @@ WORKFLOW: This tool returns the complete page content including title, descripti
     try {
       const page = await queryCollection(event, 'docs')
         .where('path', '=', path)
+        // Pages only, not a folder's .navigation.yml (see list-pages).
+        .where('extension', '=', 'md')
         .select('title', 'path', 'description')
         .first()
 

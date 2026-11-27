@@ -26,7 +26,10 @@ OUTPUT: Returns a structured list with:
     const siteUrl = event.url.origin
 
     try {
+      // The collection also holds each folder's .navigation.yml, which is
+      // navigation metadata, not a page; the sitemap and llms.txt skip it too.
       const pages = await queryCollection(event, 'docs')
+        .where('extension', '=', 'md')
         .select('title', 'path', 'description')
         .all()
 
