@@ -24,6 +24,7 @@ import { INDEX_PAGE, previouslyUnsorted, pruneStalePages, writeRegionPages } fro
 import { MAP_EXTENT, cellCount, dropIsolated, geoFeatures, mapPoints, projection, rasterize, svgRegion } from './region-map.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { isStated } from './types.ts'
+import type { Credentials } from './sources/index.ts'
 import { SOURCES } from './sources/index.ts'
 import { entryName } from './render.ts'
 import { writeReview } from './review.ts'
@@ -70,18 +71,20 @@ export interface RunOptions {
   readonly reviewOnly: boolean
   /** When the run started, as dated in the review worksheet. */
   readonly startedAt: Date
+  /** Read by the entry point before the run, so a missing one stops it before any request. */
+  readonly credentials: Credentials
 }
 
 /** A region drawn in fewer cells than this is hard to find or click on the map, and is reported. */
 const SMALL_REGION_CELLS = 20
 
-async function scrapeAll(cacheDir: string, refresh: boolean) {
+async function scrapeAll(cacheDir: string, refresh: boolean, credentials: Credentials) {
   if (refresh) await clearCache(cacheDir)
   const fetchText = createFetcher(cacheDir)
 
   const reports = []
   for (const source of SOURCES) {
-    const scraped = await source.scrape(fetchText)
+    const scraped = await source.scrape(fetchText, credentials)
     if (scraped.length < source.minimumReports) {
       throw new MinimumNotMetError(source.id, scraped.length, source.minimumReports, 'reports')
     }
@@ -161,12 +164,9 @@ function printSummary(
  * Throws the typed errors in errors.ts for a source that changed shape, a
  * missing credential or a failed consistency check; main.ts reports them.
  */
-export async function runIndex(paths: IndexPaths, { refresh, reviewOnly, startedAt }: RunOptions): Promise<void> {
-  // Fail before announcing or touching the network if a credential is missing.
-  for (const source of SOURCES) source.preflight?.()
-
+export async function runIndex(paths: IndexPaths, { refresh, reviewOnly, startedAt, credentials }: RunOptions): Promise<void> {
   console.log(`Scraping ${SOURCES.length} sources${refresh ? ' (cache cleared)' : ''}…`)
-  const reports = await scrapeAll(paths.cacheDir, refresh)
+  const reports = await scrapeAll(paths.cacheDir, refresh, credentials)
 
   const guidebooks = await readGuidebooks(createFetcher(paths.cacheDir))
   console.log(indent(`${'Guidebook lists'.padEnd(18)} ${String(guidebooks.entries.size).padStart(5)} objectives`))

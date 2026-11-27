@@ -24,15 +24,24 @@ import { scrapeSteepSheep } from './steepsheep.ts'
 import { scrapeStevenSong } from './stevensong.ts'
 import { scrapeVirtualHiker } from './virtualhiker.ts'
 
+/** The secrets the sources need. Only YouTube needs one. */
+export interface Credentials {
+  readonly youtubeApiKey: string
+}
+
+/**
+ * Every source's credential, read from `env`, or a MissingCredentialError
+ * explaining how to get the one missing. The entry point calls it before any
+ * scraping starts, so a missing credential fails in the first second rather
+ * than after the other sources have been read.
+ */
+export function readCredentials(env: NodeJS.ProcessEnv): Credentials {
+  return { youtubeApiKey: requireApiKey(env) }
+}
+
 export interface SourceAdapter extends Source {
-  readonly scrape: (fetchText: Fetcher) => Promise<RawReport[]>
+  readonly scrape: (fetchText: Fetcher, credentials: Credentials) => Promise<RawReport[]>
   readonly minimumReports: number
-  /**
-   * Checked for every source before any scraping starts, so a missing
-   * credential fails in the first second rather than after the other sources
-   * have been read. Only YouTube needs one.
-   */
-  readonly preflight?: () => void
 }
 
 /**
@@ -80,7 +89,6 @@ export const SOURCES: readonly SourceAdapter[] = [
     label: 'Annie Ouellet',
     home: 'https://www.youtube.com/@AnnieSteveClimbingTheRockies',
     scrape: scrapeAnnie,
-    preflight: requireApiKey,
     minimumReports: 150
   },
   {

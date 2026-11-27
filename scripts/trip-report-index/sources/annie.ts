@@ -187,12 +187,11 @@ export async function readUploads(fetchText: Fetcher, key: string): Promise<{ ti
 }
 
 /**
- * The API key, or a failure explaining how to get one. Exported as the source's
- * preflight so the run stops before scraping anything rather than after five
- * minutes of reading every other site. `env` is a parameter so a test can
- * supply one without touching the process.
+ * The API key in `env`, or a failure explaining how to get one. Read by the
+ * run's preflight (`readCredentials`), so the run stops before scraping
+ * anything rather than after five minutes of reading every other site.
  */
-export function requireApiKey(env: NodeJS.ProcessEnv = process.env): string {
+export function requireApiKey(env: NodeJS.ProcessEnv): string {
   const key = env.YOUTUBE_API_KEY
   if (!key) {
     throw new MissingCredentialError('YOUTUBE_API_KEY', [
@@ -207,11 +206,13 @@ export function requireApiKey(env: NodeJS.ProcessEnv = process.env): string {
   return key
 }
 
-export async function scrapeAnnie(fetchText: Fetcher): Promise<RawReport[]> {
-  const key = requireApiKey()
-
+/**
+ * Every trip video on the channel, as reports. The key is read once, by the
+ * run's preflight (`readCredentials`), and passed in.
+ */
+export async function scrapeAnnie(fetchText: Fetcher, { youtubeApiKey }: { readonly youtubeApiKey: string }): Promise<RawReport[]> {
   const reports: RawReport[] = []
-  for (const { title, videoId } of await readUploads(fetchText, key)) {
+  for (const { title, videoId } of await readUploads(fetchText, youtubeApiKey)) {
     const parsed = parseTitle(title)
     if (!parsed || parsed.objectives.length === 0) continue
     reports.push({

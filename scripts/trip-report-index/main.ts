@@ -19,19 +19,28 @@
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { repoPaths, runIndex } from './run.ts'
+import { readCredentials } from './sources/index.ts'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+async function main(): Promise<void> {
+  // Read before the run announces itself or touches the network, so a missing
+  // credential fails in the first second.
+  const credentials = readCredentials(process.env)
+  await runIndex(repoPaths(REPO), {
+    refresh: process.argv.includes('--refresh'),
+    reviewOnly: process.argv.includes('--review-only'),
+    startedAt: new Date(),
+    credentials
+  })
+}
 
 /**
  * Most failures here are a missing credential or a source that changed shape —
  * things to read, not to debug — so only the message is printed. `DEBUG=1`
  * restores the stack for an actual bug in the script.
  */
-await runIndex(repoPaths(REPO), {
-  refresh: process.argv.includes('--refresh'),
-  reviewOnly: process.argv.includes('--review-only'),
-  startedAt: new Date()
-}).catch((error: unknown) => {
+await main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
   console.error(`\nFailed: ${message}\n`)
   if (process.env.DEBUG && error instanceof Error) console.error(error.stack)
