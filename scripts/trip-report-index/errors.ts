@@ -170,6 +170,26 @@ export class UnlinkedRegionsError extends Error {
   }
 }
 
+/**
+ * The generated pages' folder holds pages the indexer did not write. Only the
+ * index page there is hand-written; any other page is the script's to replace
+ * or delete, so it refuses rather than deleting someone's work.
+ */
+export class UnknownPagesError extends Error {
+  readonly dir: string
+  readonly pages: readonly string[]
+
+  constructor(dir: string, pages: readonly string[]) {
+    super(
+      `${shown(dir)} holds pages the indexer did not generate: ${pages.join(', ')}.\n`
+      + indent('Move each out of this folder: the indexer owns every page in it but the index.')
+    )
+    this.name = 'UnknownPagesError'
+    this.dir = dir
+    this.pages = pages
+  }
+}
+
 /** A weather or accommodation section has no page for some regions. */
 export class MissingMirroredPagesError extends Error {
   readonly dir: string
