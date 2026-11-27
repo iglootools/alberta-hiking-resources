@@ -40,7 +40,7 @@ describe('region pages', async () => {
     const dir = await pagesDir()
     const planned = await writeRegionPages(dir, result, true)
     assert.equal(planned.length, REGIONS.length + 1)
-    assert.deepEqual(await readdir(dir), [])
+    await assert.rejects(readdir(dir), { code: 'ENOENT' })
   })
 
   it('pads the position so the sidebar sorts numerically', () => {

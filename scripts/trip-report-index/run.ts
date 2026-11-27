@@ -67,7 +67,7 @@ export function repoPaths(repo: string): IndexPaths {
 export interface RunOptions {
   /** Discard the HTTP cache and re-read every source. */
   readonly refresh: boolean
-  /** Report what would change without writing any page. */
+  /** Report what would change, labelled `[dry-run]`, writing only the review worksheet. */
   readonly dryRun: boolean
   /** When the run started, as dated in the review worksheet. */
   readonly startedAt: Date
@@ -146,13 +146,14 @@ function printSummary(
   result: BuildResult,
   reportCount: number,
   newlyUnsorted: readonly Objective[],
-  smallOnMap: readonly string[]
+  smallOnMap: readonly string[],
+  dryRun: boolean
 ): void {
   const listings = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
   const placed = result.objectives.length - result.unplaced.length
   const multiRegion = result.objectives.filter(objective => new Set(objective.claims.map(claim => claim.regionId)).size > 1).length
   const inferredOnly = result.objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated)).length
-  console.log(`\n${placed} objectives placed, ${listings} listings across ${REGIONS.length} pages, `
+  console.log(`\n${dryRun ? '[dry-run] ' : ''}${placed} objectives placed, ${listings} listings across ${REGIONS.length} pages, `
     + `${reportCount} reports, ${result.dropped.length} out of scope.`)
   console.log(`${multiRegion} in more than one region, ${inferredOnly} placed by inference alone, `
     + `${result.unplaced.length} unplaced — see ${shown(reviewPath)}`)
@@ -206,19 +207,22 @@ export async function writeIndex(
   { dryRun, startedAt }: Pick<RunOptions, 'dryRun' | 'startedAt'>
 ): Promise<void> {
   const keep = new Set(GENERATED_PAGES)
-  await findStalePages(paths.pagesDir, keep)
+  const stale = await findStalePages(paths.pagesDir, keep)
   // Read before the pages are rewritten: this is the page the run replaces.
   const before = await previouslyUnsorted(paths.pagesDir)
   const newlyUnsorted = result.unplaced.filter(objective => !before.has(entryName(objective)))
 
   await writeRegionPages(paths.pagesDir, result, dryRun)
-  if (!dryRun) {
+  if (dryRun) {
+    for (const name of stale) console.log(indent(`[dry-run] Would remove stale page ${name}`))
+    console.log(indent(`[dry-run] Would write the region map to ${shown(paths.mapSvgPath)}, ${shown(paths.mapGeojsonPath)}`))
+  } else {
     for (const name of await pruneStalePages(paths.pagesDir, keep)) console.log(indent(`removed stale page ${name}`))
     await writeRegionMap(paths, map)
   }
 
   await writeFile(paths.reviewPath, writeReview(result, startedAt, { newlyUnsorted }), 'utf8')
-  printSummary(paths.reviewPath, result, reportCount, newlyUnsorted, map.smallRegions)
+  printSummary(paths.reviewPath, result, reportCount, newlyUnsorted, map.smallRegions, dryRun)
 }
 
 /**

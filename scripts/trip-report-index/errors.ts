@@ -103,6 +103,17 @@ export class PageLimitError extends Error {
   }
 }
 
+/** The command line asked for something the indexer does not offer. */
+export class UsageError extends Error {
+  readonly detail: string
+
+  constructor(detail: string) {
+    super(`${detail}\n${indent('Run mise run build-trip-index -- --help for the options.')}`)
+    this.name = 'UsageError'
+    this.detail = detail
+  }
+}
+
 /** A credential the run needs is not in the environment. */
 export class MissingCredentialError extends Error {
   readonly variable: string
