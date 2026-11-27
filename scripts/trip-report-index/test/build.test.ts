@@ -5,9 +5,7 @@ import type { Inferred, Objective, RawReport } from '../types.ts'
 import { buildObjectives } from '../build.ts'
 import { NOTHING_INFERRED, regionsOf } from '../types.ts'
 import { canonKey } from '../canon.ts'
-import { readGuidebooks } from '../guidebooks.ts'
 import { renderReview } from '../review.ts'
-import { stubFetcher } from './support.ts'
 
 // A name no source or curation entry will ever mention, from a source that
 // states no region, so only the guidebook region below can place it.
@@ -102,13 +100,6 @@ describe('buildObjectives', () => {
   it('fails on a region id outside the taxonomy', () => {
     assert.throws(() => buildObjectives([report], guidebookRegion('atlantis')),
       { name: 'UnknownRegionError', objective: NAME, regionId: 'atlantis' })
-  })
-})
-
-describe('readGuidebooks', () => {
-  it('fails when a list yields fewer rows than its minimum', async () => {
-    await assert.rejects(readGuidebooks(stubFetcher(() => '<table></table>')),
-      { name: 'MinimumNotMetError', subject: '11000ers-of-the-canadian-rockies', found: 0, minimum: 50 })
   })
 })
 

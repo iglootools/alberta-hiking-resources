@@ -21,6 +21,7 @@ import type { Fetcher } from './fetch.ts'
 import { objectiveKey, splitObjectives } from './canon.ts'
 import { MinimumNotMetError } from './errors.ts'
 import { matchArea } from './areas.ts'
+import { REGION_IDS } from './regions.ts'
 import { decodeEntities, tableRows, textOf } from './html.ts'
 
 /**
@@ -93,6 +94,17 @@ interface Mark {
 }
 
 /**
+ * The region a Region cell names, or undefined when it names none in the
+ * taxonomy. The shared matcher also answers `elsewhere` for Washington, Idaho
+ * or the Yukon; kept, that would become a tick-list claim for a region id the
+ * build does not know, and fail the whole run after every source was read.
+ */
+function regionOfCell(text: string): string | undefined {
+  const area = matchArea(text)
+  return area && REGION_IDS.has(area) ? area : undefined
+}
+
+/**
  * The marks in one table row, or undefined when it is not a data row — the
  * header, or a malformed one — so it does not count towards `minimumRows`.
  */
@@ -110,7 +122,7 @@ function marksOfRow(cells: readonly string[], { slug, book, mark }: ListSpec): M
     grade: mark(textOf(grade)),
     url: new URL(decodeEntities(href), `${BASE}${slug}`).href
   }
-  const area = region ? matchArea(textOf(region)) : undefined
+  const area = region ? regionOfCell(textOf(region)) : undefined
 
   // A list row can name several destinations ("Bourgeau Lake & Harvey
   // Pass"), split the same way a report title is so each one is marked.
