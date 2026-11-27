@@ -197,3 +197,35 @@ describe('readGazetteer', () => {
     await assert.rejects(readGazetteer(stubFetcher(() => '{}')), { name: 'SourceChangedError', source: 'gazetteer' })
   })
 })
+
+describe('inferRegions, by sub-range', () => {
+  const trip = (name: string, sourceRegion?: string): RawReport => ({
+    sourceId: 'explor8ion',
+    title: name,
+    url: `https://e/${name.toLowerCase().replace(/\s+/g, '-')}`,
+    objectives: [name],
+    subRange: 'Misty Range',
+    ...(sourceRegion ? { sourceRegion } : {})
+  })
+
+  it('places a report with no region of its own where most of its sub-range is', () => {
+    const unfiled = trip('Peak Untold')
+    const reports = [
+      trip('Peak One', 'kananaskis-country'),
+      trip('Peak Two', 'kananaskis-country'),
+      trip('Peak Three', 'kananaskis-country'),
+      trip('Peak Four', 'banff-national-park'),
+      unfiled
+    ]
+    const inferred = inferRegions(buildObjectives(reports), new Map())
+    assert.deepEqual(inferred.byReport.get(unfiled.url), [
+      { regionId: 'kananaskis-canmore', signal: { kind: 'sub-range', sourceId: 'explor8ion', subRange: 'Misty Range' } }
+    ])
+  })
+
+  it('leaves a report its own source places to that source', () => {
+    const filed = trip('Peak Four', 'banff-national-park')
+    const inferred = inferRegions(buildObjectives([trip('Peak One', 'kananaskis-country'), filed]), new Map())
+    assert.equal(inferred.byReport.get(filed.url), undefined)
+  })
+})
