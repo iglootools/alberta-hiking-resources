@@ -111,24 +111,14 @@ the Nitro output, so a plain `mise run build` is not what ships.
 
 ## Bundling icon sets
 
-Icons are pulled from [Iconify](https://iconify.design/) (browse them at
-[icones.js.org](https://icones.js.org/)). To bundle every icon set the content
-references with the app, find which sets are in use and install them as
-dev dependencies:
-
-```bash
-brew install rg
-rg "i-[a-z0-9-]+:" .
-
-pnpm i -D \
-  @iconify-json/logos \
-  @iconify-json/lucide \
-  @iconify-json/material-symbols \
-  @iconify-json/noto \
-  @iconify-json/simple-icons \
-  @iconify-json/streamline-emojis \
-  @iconify-json/streamline-stickies-color
-```
+Icons come from [Iconify](https://iconify.design/) (browse them at
+[icones.js.org](https://icones.js.org/)), and the site uses only the Lucide set
+(`i-lucide-*`), from the `@iconify-json/lucide` package. The build bundles every
+icon it finds in use through `icon.clientBundle.scan` in
+[nuxt.config.ts](../nuxt.config.ts), so a new Lucide icon needs nothing more. An
+icon from another set needs that set's `@iconify-json/<set>` package beside
+Lucide's. Why, and the icons the scan cannot see, are in
+[ADR-002](architecture-decision-record.md#adr-002--bundle-icons-at-build-time-extending-the-icon-scan-rather-than-replacing-its-globs).
 
 ## Rebuilding the trip report index
 
