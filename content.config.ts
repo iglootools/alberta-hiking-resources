@@ -18,6 +18,9 @@ export default defineContentConfig({
       },
       schema: z.object({
         sitemap: defineSitemapSchema(),
+        // Set by `mise run build-trip-index` on the pages it writes, which the
+        // next run overwrites: [...slug].vue offers no "Edit this page" on them.
+        generated: z.boolean().optional(),
         links: z.array(z.object({
           label: z.string(),
           icon: z.string(),

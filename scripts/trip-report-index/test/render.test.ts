@@ -55,3 +55,10 @@ describe('renderRegionPage, empty', () => {
     assert.doesNotMatch(page, /0 objectives indexed/)
   })
 })
+
+describe('renderRegionPage, frontmatter', () => {
+  it('marks every page it writes as generated, so the site offers no edit link', () => {
+    assert.match(renderRegionPage(region('banff'), [bowPeak]), /^---\n(?:.*\n)*?generated: true\n(?:.*\n)*?---\n/)
+    assert.match(renderRegionPage(UNSORTED, []), /^---\n(?:.*\n)*?generated: true\n(?:.*\n)*?---\n/)
+  })
+})

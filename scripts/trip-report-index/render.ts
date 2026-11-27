@@ -174,10 +174,15 @@ function crossLinkLine(region: Region): string[] {
   ]
 }
 
+/**
+ * `generated: true` hides the page's "Edit this page" link (content.config.ts):
+ * an edit made there would be overwritten by the next run.
+ */
 function frontmatter(region: Region): string {
   return ['---',
     `title: ${region.title}`,
     `description: ${region.description}`,
+    'generated: true',
     'navigation:',
     `  icon: ${region.icon}`,
     ...crossLinks(region),
