@@ -45,10 +45,7 @@ jobs:
           # renovate: datasource=github-releases depName=jdx/mise
           version: 2026.11.12
 
-      - name: Install dependencies
-        run: mise run install
-
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: mise run ci-release

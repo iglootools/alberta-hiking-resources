@@ -79,6 +79,13 @@ run = [
   { task = "preflight" },
 ]
 
+[tasks.ci-release]
+description = "Install, then release (what the release workflow runs)"
+run = [
+  { task = "install" },
+  { task = "release" },
+]
+
 [tasks.test]
 description = "Run the trip report index tests"
 run = "pnpm test"
@@ -168,6 +175,12 @@ run = "uv run --no-sync iglootools common check-pins"
 description = "Build the Nuxt application for GitHub Pages deployment"
 depends = ["install"]
 run = "pnpm build:pages"
+
+# docs/releasing-and-publishing.md. Configured in .releaserc.json; needs GITHUB_TOKEN. Outside CI,
+# semantic-release only reports what it would release.
+[tasks.release]
+description = "Tag the next version from the commits on main with semantic-release (CI runs it through ci-release)"
+run = "pnpm exec semantic-release"
 
 [tasks.build-trip-index]
 description = "Rebuild the by-objective trip report index from the source blogs"
