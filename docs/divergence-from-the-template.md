@@ -173,6 +173,12 @@ itself is described in [architecture.md](architecture.md).
   `@types/geojson` is declared alongside it because `RegionMapLibre.vue` imports
   its types by name; it otherwise arrives only through `maplibre-gl`. Both are
   on trial with the map (ADR-010) and go if the SVG renderer is chosen.
+- `nitro` is a dependency, pinned to its release candidate, which is what makes
+  Nuxt 4.7 build the server with Nitro v3 rather than the template's Nitro v2
+  ([ADR-013](architecture-decision-record.md#adr-013--build-the-server-with-nitro-v3-without-the-compatibility-layer)).
+  `lru-cache` is declared without an import because of it: nuxt-og-image mounts
+  an `lru-cache` storage driver, and Nitro v3 no longer resolves a driver's
+  library from Nuxt's dependencies.
 
 ## Other `nuxt.config.ts` tweaks
 
@@ -208,6 +214,11 @@ itself is described in [architecture.md](architecture.md).
   showing errors in the page's problems badge. CI's `nuxt typecheck` stays the
   gate, so checking at build time too would only repeat it. It depends on the
   OG image component's rename (below).
+- `nitroLegacy: false` turns off Nitro v3's Nitro v2 compatibility layer for
+  this project's server code, so the MCP tools in `server/mcp/tools/` are
+  written for Nitro v3 where the template's still use Nitro v2's `useEvent()`
+  and global `$fetch`
+  ([ADR-013](architecture-decision-record.md#adr-013--build-the-server-with-nitro-v3-without-the-compatibility-layer)).
 - `ui.eslint` is the template's, with `RegionMapSvg`'s scoped-style classes
   added to its `ignore` list beside `StarsBg`'s.
 - `llms.sections` rewritten from the 2 demo sections to the 8 real sections;

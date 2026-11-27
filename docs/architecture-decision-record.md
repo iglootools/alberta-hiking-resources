@@ -95,6 +95,11 @@ twice, in prose there and in ADR form here.
   - [Decision](#decision-11)
   - [Rationale](#rationale-11)
   - [Consequences](#consequences-11)
+- [ADR-013 — Build the server with Nitro v3, without the compatibility layer](#adr-013--build-the-server-with-nitro-v3-without-the-compatibility-layer)
+  - [Context](#context-12)
+  - [Decision](#decision-12)
+  - [Rationale](#rationale-12)
+  - [Consequences](#consequences-12)
 <!-- tocstop -->
 
 ## ADR-001 — Use ESLint (not Biome) for linting and formatting
@@ -1042,3 +1047,86 @@ moves — not ahead of it.
   `@nuxt/ui` 4.13 moved to `@nuxt/fonts` 1.2, whose `fontless` 1.x no longer
   depends on `esbuild`. It was the exception that proves the rule, not a
   precedent for upgrading ahead of the stack.
+
+---
+
+## ADR-013 — Build the server with Nitro v3, without the compatibility layer
+
+**Date:** 2026-11-27
+**Status:** Accepted
+
+### Context
+
+Nuxt 4 builds its server with Nitro v2 (`nitropack`) by default. From Nuxt 4.7,
+a project that lists `nitro` among its dependencies builds with Nitro v3
+instead, the server Nuxt 5 uses by default. On Nuxt 4, Nitro v3 runs behind a
+compatibility layer, `nitroLegacy`, which keeps code written for Nitro v2 and
+h3 v1 working. Nuxt removes the layer in Nuxt 6. Upstream calls this highly
+experimental, as Nitro v3 is still a release candidate.
+
+Nitro v3's headline gain, server throughput, does not reach this site's
+visitors: the site is prerendered and served as static files from GitHub
+Pages, with no server in production. Nitro still runs the prerender.
+
+A trial build compared every prerendered file with Nitro v2's output for the
+same commit. The site came out the same, OG images byte-identical, apart from
+three things:
+
+- `/changelog` is better. Under Nitro v2, its prerendered HTML contained none of
+  the release notes, which only rendered in the browser after hydration, on the
+  live site too. Under Nitro v3 they are rendered into the HTML.
+- Six `/_og-static-fonts/` files that nothing references are no longer copied.
+- The robots `<meta>` tag of `200.html` and `404.html` moves within `<head>`.
+
+Without the layer, the two MCP tools in `server/mcp/tools/` failed at runtime:
+they called Nitro v2's `useEvent()` and the global `$fetch`, which Nitro v3
+does not provide. The build itself passed, so only a run of the tools showed
+it.
+
+### Decision
+
+Build with Nitro v3: `nitro` is a dependency, pinned to its release candidate.
+Turn the compatibility layer off for our own code (`nitroLegacy: false`), and
+write server code against Nitro v3, h3 v2 and `nuxt/server`.
+
+### Rationale
+
+- [ADR-012](#adr-012--follow-the-versions-the-nuxt-stack-supports) has the
+  project follow what the Nuxt stack supports. Nitro v3 is not run ahead of
+  the stack: Nuxt 4.7 provides it as a documented opt-in, and Nuxt 5 makes it
+  the default. What is accepted is its release-candidate status.
+- That risk is bounded here. With no production server, a Nitro v3 defect can
+  only show up in the build: the prerendered files are what ships, and they
+  were compared file by file before adopting it.
+- Without the layer, server code that depends on Nitro v2 fails now, in a
+  change made to move off it, rather than when Nuxt 6 removes the layer. The
+  MCP tools were exactly that case.
+- It fixes the prerendered `/changelog`, a defect of the Nitro v2 build that no
+  change to our code had addressed.
+
+### Consequences
+
+- **Our server code is Nitro v3 code.** Code that needs the request event and is
+  not handed one, as MCP tool handlers are not, uses `currentRequestEvent()`
+  from `server/utils/request-event.ts`, which builds an h3 v2 event on the
+  request Nitro v3's async context holds. In-process requests to the app's own
+  routes use `serverFetch` from `nuxt/server`; there is no global `$fetch`.
+- **A storage driver's library must be declared.** Nitro v3 no longer resolves
+  it from Nuxt's dependencies, so `lru-cache` is a dependency, for the
+  `lru-cache` storage driver nuxt-og-image mounts. A missing one fails a CI
+  build, naming the package.
+- **Module code still gets the layer**, whatever `nitroLegacy` says. The build
+  warns about modules still written for Nitro v2: `NUXT_B9003` for
+  `@nuxt/icon` and `@nuxtjs/mcp-toolkit`, `NUXT_B9002` for handlers without a
+  route in `@nuxtjs/robots`, `nuxt-agent-discovery` and `nuxt-site-config`, and
+  `NUXT_B9001` for the `externals` option that `@nuxt/icon`,
+  `@nuxtjs/color-mode` and `nuxt-site-config` set. They are the modules' to
+  fix, and need nothing from this project until Nuxt 6.
+- **`nitro` is pinned exactly** while it is a release candidate, whose versions
+  carry no semver promise; Renovate proposes each new one.
+- **Going back** means removing `nitro` (and `lru-cache`) from the
+  dependencies and `nitroLegacy` from `nuxt.config.ts`, and reverting the MCP
+  tools to Nitro v2's `useEvent()`.
+- **Revisit** when Nuxt 5 makes Nitro v3 the default, which retires the opt-in,
+  or if a Nitro v3 release changes the prerendered output in a way the build
+  comparison would have caught.
