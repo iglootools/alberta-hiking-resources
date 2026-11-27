@@ -4,9 +4,7 @@ const route = useRoute()
 const config = useRuntimeConfig()
 
 const { data: navigation } = await useAsyncData('navigation', () => queryCollectionNavigation('docs'))
-const { data: files } = useLazyAsyncData('search', () => queryCollectionSearchSections('docs'), {
-  server: false
-})
+const files = useSearchFiles()
 
 useHead({
   meta: [
