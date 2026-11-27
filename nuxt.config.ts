@@ -297,6 +297,14 @@ export default defineNuxtConfig({
     name: siteTitle
   },
 
+  // The server builds with Nitro v3 because `nitro` is a dependency (Nuxt 4.7
+  // reads package.json; there is no config switch), and without the Nitro v2
+  // compatibility layer, so our own server code is written for Nitro v3 and
+  // h3 v2 now rather than when Nuxt 6 removes the layer. Module code still gets
+  // the layer whatever this says. See ADR-013 in
+  // docs/architecture-decision-record.md.
+  nitroLegacy: false,
+
   // Site is deployed as a fully prerendered static bundle to GitHub Pages,
   // so there is no runtime Nitro server to handle dynamic OG image generation.
   // zeroRuntime strips the runtime endpoint and silences the URL-signing warning.
