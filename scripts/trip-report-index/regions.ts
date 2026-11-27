@@ -482,10 +482,6 @@ export function mountainsOf(reports: readonly RawReport[]): Set<string>[] {
   }
 }
 
-export function isHomonym(reports: readonly RawReport[]): boolean {
-  return mountainsOf(reports).length > 1
-}
-
 /**
  * The region stated by the most trusted blog among `reports`, or undefined
  * when none states one we cover.
