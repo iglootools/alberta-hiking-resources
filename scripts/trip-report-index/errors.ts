@@ -48,6 +48,23 @@ export class RequestTimeoutError extends Error {
 }
 
 /**
+ * A 2xx response that should have been JSON and is not, such as a maintenance
+ * page served as 200. `url` is redacted with `redactKey`.
+ */
+export class InvalidJsonError extends Error {
+  readonly url: string
+  readonly detail: string
+
+  constructor(url: string, detail: string) {
+    const shownUrl = redactKey(url)
+    super(`Not JSON from ${shownUrl}: ${detail}`)
+    this.name = 'InvalidJsonError'
+    this.url = shownUrl
+    this.detail = detail
+  }
+}
+
+/**
  * A source or list yielded fewer items than its guard allows: the site has
  * almost certainly changed shape, and the fix is the parser, never the minimum.
  */

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readdir, rm } from 'node:fs/promises'
 import { after, describe, it } from 'node:test'
-import { createFetcher, fetchUnlessStatus } from '../fetch.ts'
+import { createFetcher, fetchJson, fetchUnlessStatus } from '../fetch.ts'
 import { stubFetcher, tempDir } from './support.ts'
 
 describe('fetchUnlessStatus', () => {
@@ -98,5 +98,56 @@ describe('createFetcher', async () => {
     ])
     const fetchImpl = async () => new Response(body, { headers: { 'content-type': 'text/html' } })
     assert.match(await createFetcher(cacheDir, { now, fetchImpl })('https://x.test/1252'), /Mont é$/)
+  })
+})
+
+describe('fetchJson', async () => {
+  const cacheDir = await tempDir()
+  after(() => rm(cacheDir, { recursive: true, force: true }))
+
+  let tick = 0
+  const now = () => (tick += 1000)
+  /** A fetcher over `cacheDir` answering `bodies` in turn, counting live requests. */
+  const answering = (...bodies: string[]) => {
+    const live = { count: 0 }
+    const fetchImpl = async () => new Response(bodies[live.count++] ?? bodies.at(-1))
+    return { fetchText: createFetcher(cacheDir, { now, fetchImpl }), live }
+  }
+  const rejectError = (value: { error?: string }) => {
+    if (value.error) throw new Error(value.error)
+  }
+
+  it('parses the body, then serves it from the cache', async () => {
+    const { fetchText, live } = answering('{"ok":true}')
+    assert.deepEqual(await fetchJson(fetchText, 'https://x.test/ok'), { ok: true })
+    assert.deepEqual(await fetchJson(fetchText, 'https://x.test/ok'), { ok: true })
+    assert.equal(live.count, 1)
+  })
+
+  it('does not cache a body the caller rejects', async () => {
+    const { fetchText, live } = answering('{"error":"quota"}', '{"items":[]}')
+    await assert.rejects(fetchJson(fetchText, 'https://x.test/api', rejectError), { message: 'quota' })
+    assert.deepEqual(await fetchJson(fetchText, 'https://x.test/api', rejectError), { items: [] })
+    assert.equal(live.count, 2)
+  })
+
+  it('evicts a cached body the caller now rejects', async () => {
+    const { fetchText, live } = answering('{"error":"stale"}', '{"items":[]}')
+    await fetchJson(fetchText, 'https://x.test/old')
+    await assert.rejects(fetchJson(fetchText, 'https://x.test/old', rejectError), { message: 'stale' })
+    assert.deepEqual(await fetchJson(fetchText, 'https://x.test/old', rejectError), { items: [] })
+    assert.equal(live.count, 2)
+  })
+
+  it('fails naming the URL on a body that is not JSON, and does not cache it', async () => {
+    const { fetchText, live } = answering('<html>Down for maintenance</html>', '[]')
+    await assert.rejects(fetchJson(fetchText, 'https://x.test/json?key=SECRET'),
+      { name: 'InvalidJsonError', url: 'https://x.test/json?key=REDACTED' })
+    assert.deepEqual(await fetchJson(fetchText, 'https://x.test/json?key=SECRET'), [])
+    assert.equal(live.count, 2)
+  })
+
+  it('checks the body from a fetcher that ignores the check', async () => {
+    await assert.rejects(fetchJson(stubFetcher(() => '{"error":"x"}'), 'https://x.test/stub', rejectError), { message: 'x' })
   })
 })

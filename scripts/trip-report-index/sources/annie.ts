@@ -16,6 +16,7 @@
  * give a region as well as a name.
  */
 import type { Fetcher } from '../fetch.ts'
+import { fetchJson } from '../fetch.ts'
 import { indent } from '../output.ts'
 import { ApiError, MissingCredentialError, SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
@@ -154,11 +155,15 @@ interface ChannelPage {
   readonly error?: { readonly message?: string }
 }
 
+/** Rejects a 2xx body carrying an API error, so it is never cached. */
+const rejectApiError = (api: string) => (body: { readonly error?: { readonly message?: string } }) => {
+  if (body.error) throw new ApiError(api, body.error.message ?? 'unknown error')
+}
+
 /** Every upload on the channel, oldest page first. */
 export async function readUploads(fetchText: Fetcher, key: string): Promise<{ title: string, videoId: string }[]> {
-  const channel = JSON.parse(await fetchText(
-    `${API}/channels?part=contentDetails&forHandle=${HANDLE}&key=${key}`)) as ChannelPage
-  if (channel.error) throw new ApiError('YouTube channels', channel.error.message ?? 'unknown error')
+  const channel = await fetchJson<ChannelPage>(fetchText,
+    `${API}/channels?part=contentDetails&forHandle=${HANDLE}&key=${key}`, rejectApiError('YouTube channels'))
 
   const uploads = channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
   if (!uploads) throw new SourceChangedError('annie', `no uploads playlist for @${HANDLE}`)
@@ -166,10 +171,10 @@ export async function readUploads(fetchText: Fetcher, key: string): Promise<{ ti
   const videos: { title: string, videoId: string }[] = []
   let pageToken = ''
   do {
-    const page = JSON.parse(await fetchText(
+    const page = await fetchJson<PlaylistPage>(fetchText,
       `${API}/playlistItems?part=snippet&playlistId=${uploads}`
-      + `&maxResults=${PAGE_SIZE}&key=${key}${pageToken ? `&pageToken=${pageToken}` : ''}`)) as PlaylistPage
-    if (page.error) throw new ApiError('YouTube playlistItems', page.error.message ?? 'unknown error')
+      + `&maxResults=${PAGE_SIZE}&key=${key}${pageToken ? `&pageToken=${pageToken}` : ''}`,
+      rejectApiError('YouTube playlistItems'))
 
     for (const item of page.items ?? []) {
       const title = item.snippet?.title?.trim()

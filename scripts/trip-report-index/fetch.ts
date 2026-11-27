@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { HttpError, RequestTimeoutError, redactKey } from './errors.ts'
+import { HttpError, InvalidJsonError, RequestTimeoutError, redactKey } from './errors.ts'
 
 /** Courtesy delay between live requests to the same host, in milliseconds. */
 const THROTTLE_MS = 300
@@ -25,8 +25,18 @@ const REQUEST_TIMEOUT_MS = 30_000
 const USER_AGENT
   = 'alberta-hiking-resources trip-report indexer (+https://www.alberta-hiking-resources.org)'
 
+/**
+ * Fetches a URL's body, from the cache when it holds one.
+ *
+ * `accept` lets the caller reject a 2xx body before it is cached, by throwing:
+ * an API error in the body or a maintenance page served as 200. Without it the
+ * never-expiring cache would replay the bad body on every later run, and the
+ * only way out would be `--refresh`, which drops every cached response. A
+ * cached body `accept` rejects is evicted and the error rethrown, so the next
+ * run asks again. `fetchJson` is the usual way to pass one.
+ */
 export interface Fetcher {
-  (url: string): Promise<string>
+  (url: string, accept?: (body: string) => void): Promise<string>
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -84,19 +94,55 @@ export function createFetcher(
 ): Fetcher {
   let lastRequest = 0
 
-  return async function fetchText(url: string): Promise<string> {
+  return async function fetchText(url: string, accept: (body: string) => void = () => {}): Promise<string> {
     const path = cachePath(cacheDir, url)
     const cached = await readCached(path)
-    if (cached !== undefined) return cached
+    if (cached !== undefined) {
+      try {
+        accept(cached)
+      } catch (error) {
+        await rm(path, { force: true })
+        throw error
+      }
+      return cached
+    }
 
     const wait = THROTTLE_MS - (now() - lastRequest)
     if (wait > 0) await sleep(wait)
     lastRequest = now()
 
     const text = await requestLive(fetchImpl, url, timeoutMs)
-
+    accept(text)
     await writeCached(path, text)
     return text
+  }
+}
+
+/**
+ * Fetches `url` and parses it as JSON, caching the body only once it parses and
+ * `check` accepts the value. `check` throws to reject it, as for an API error
+ * reported in a 2xx body. A body that is not JSON fails as an InvalidJsonError
+ * naming the URL, where `JSON.parse` alone would name none.
+ */
+export async function fetchJson<T>(fetchText: Fetcher, url: string, check: (value: T) => void = () => {}): Promise<T> {
+  const parse = (body: string): T => {
+    const value = parseJson<T>(url, body)
+    check(value)
+    return value
+  }
+  let accepted: { value: T } | undefined
+  const body = await fetchText(url, (text) => {
+    accepted = { value: parse(text) }
+  })
+  // A fetcher that ignores `accept`, such as a test's stub, still gets checked.
+  return accepted ? accepted.value : parse(body)
+}
+
+function parseJson<T>(url: string, body: string): T {
+  try {
+    return JSON.parse(body) as T
+  } catch (error) {
+    throw new InvalidJsonError(url, (error as Error).message)
   }
 }
 
