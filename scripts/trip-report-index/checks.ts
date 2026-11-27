@@ -5,6 +5,7 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { basename } from 'node:path'
 import { MissingMirroredPagesError, UnlinkedRegionsError } from './errors.ts'
+import { TRIP_REPORTS, regionPath } from './sections.ts'
 
 /**
  * Fails when the hand-written index does not link a region, which is the one
@@ -13,7 +14,7 @@ import { MissingMirroredPagesError, UnlinkedRegionsError } from './errors.ts'
  */
 export async function checkIndexLinks(indexPath: string, slugs: readonly string[]): Promise<void> {
   const index = await readFile(indexPath, 'utf8')
-  const missing = slugs.filter(slug => !index.includes(`/hiking-scrambling-beta/trip-reports/${slug}`))
+  const missing = slugs.filter(slug => !index.includes(regionPath(TRIP_REPORTS, slug)))
   if (missing.length > 0) throw new UnlinkedRegionsError(basename(indexPath), missing)
 }
 

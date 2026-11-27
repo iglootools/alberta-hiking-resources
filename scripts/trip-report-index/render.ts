@@ -15,6 +15,7 @@
 import type { Claim, Objective, RawReport, Signal } from './types.ts'
 import type { Region } from './regions.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
+import { ACCOMMODATION, TRIP_REPORTS, WEATHER, regionPath } from './sections.ts'
 import { sourceLabel as label } from './sources/catalog.ts'
 
 const REGION_TITLES = new Map(REGIONS.map(region => [region.id, region.title]))
@@ -87,7 +88,7 @@ function describeClaims(claims: readonly Claim[]): string {
 
 function regionLabel(regionId: string, here: Region): string {
   const title = REGION_TITLES.get(regionId) ?? regionId
-  return regionId === here.id ? `**${title}**` : `[${title}](/hiking-scrambling-beta/trip-reports/${regionId})`
+  return regionId === here.id ? `**${title}**` : `[${title}](${regionPath(TRIP_REPORTS, regionId)})`
 }
 
 /**
@@ -151,10 +152,10 @@ function crossLinks(region: Region): string[] {
     'links:',
     '  - label: Weather',
     '    icon: i-lucide-cloud-sun',
-    `    to: /weather-trail-conditions/popular-locations/${region.id}`,
+    `    to: ${regionPath(WEATHER, region.id)}`,
     '  - label: Accommodation',
     '    icon: i-lucide-tent-tree',
-    `    to: /accommodation/${region.id}`
+    `    to: ${regionPath(ACCOMMODATION, region.id)}`
   ]
 }
 
@@ -167,8 +168,8 @@ function crossLinks(region: Region): string[] {
 function crossLinkLine(region: Region): string[] {
   if (region.id === UNSORTED.id) return []
   return [
-    `Planning a trip here? Check the [forecast](/weather-trail-conditions/popular-locations/${region.id})`,
-    `and find [somewhere to sleep](/accommodation/${region.id}) for the same area.`,
+    `Planning a trip here? Check the [forecast](${regionPath(WEATHER, region.id)})`,
+    `and find [somewhere to sleep](${regionPath(ACCOMMODATION, region.id)}) for the same area.`,
     ''
   ]
 }

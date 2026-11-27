@@ -22,6 +22,7 @@ import { readBasemap } from './basemap.ts'
 import { GENERATED_PAGES, INDEX_PAGE, findStalePages, previouslyUnsorted, pruneStalePages, writeRegionPages } from './pages.ts'
 import { MAP_EXTENT, cellCount, dropIsolated, geoFeatures, mapPoints, projection, rasterize, svgRegion } from './region-map.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
+import { ACCOMMODATION, TRIP_REPORTS, WEATHER } from './sections.ts'
 import { isStated } from './types.ts'
 import type { Credentials } from './sources/index.ts'
 import { SOURCES } from './sources/index.ts'
@@ -51,11 +52,8 @@ export interface IndexPaths {
 /** The paths of a real run, inside the repository at `repo`. */
 export function repoPaths(repo: string): IndexPaths {
   return {
-    pagesDir: join(repo, 'content', '3.hiking-scrambling-beta', '3.trip-reports'),
-    mirroredSections: [
-      join(repo, 'content', '4.weather-trail-conditions', '2.popular-locations'),
-      join(repo, 'content', '5.accommodation')
-    ],
+    pagesDir: join(repo, 'content', ...TRIP_REPORTS.dir),
+    mirroredSections: [WEATHER, ACCOMMODATION].map(section => join(repo, 'content', ...section.dir)),
     cacheDir: join(repo, 'node_modules', '.cache', 'trip-report-index'),
     reviewPath: join(repo, 'trip-report-review.md'),
     mapSvgPath: join(repo, 'app', 'assets', 'region-map.json'),
