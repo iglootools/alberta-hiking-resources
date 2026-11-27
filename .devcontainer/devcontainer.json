@@ -26,7 +26,10 @@
   //
   // If a native module ever builds here but fails in CI, this is the first place
   // to look, and pinning back to `ubuntu-24.04` is the fix.
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu26.04",
+  //
+  // Pinned by digest so the base changes only through a reviewed diff; Renovate's
+  // devcontainer manager moves the digest with the tag.
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu26.04@sha256:e15941f70f26542ef9b0ef4bb64f88b8ecdfe8c3372e730ab6e405792805e742",
 
   // onCreateCommand rather than postCreateCommand so that Codespaces prebuilds
   // bake the apt packages, the toolchain, and node_modules into the image. Left
