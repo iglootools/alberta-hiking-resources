@@ -14,7 +14,7 @@ import { tempDir } from './support.ts'
 // a guidebook region, one nothing places.
 const PLACED = 'Mount Testington'
 const UNPLACED = 'Peak Untestable'
-const reportOf = (name: string): RawReport => ({ sourceId: 'test', title: name, url: `https://x.test/${name}`, objectives: [name] })
+const reportOf = (name: string): RawReport => ({ sourceId: 'anugara', title: name, url: `https://x.test/${name}`, objectives: [name] })
 const result = buildObjectives([reportOf(PLACED), reportOf(UNPLACED)],
   { entries: new Map(), regions: new Map([[canonKey(PLACED), 'banff']]) })
 

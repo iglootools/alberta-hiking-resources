@@ -106,7 +106,7 @@ describe('inferRegions', () => {
   })
 
   it('names each nearby region weakly when a trailhead sits between them', () => {
-    const between = [
+    const between: RawReport[] = [
       { sourceId: 'spirko', title: 'Yoho One', url: 'https://p/4', objectives: ['Yoho One'], sourceRegion: 'Field' },
       { sourceId: 'spirko', title: 'Yoho Two', url: 'https://p/5', objectives: ['Yoho Two'], sourceRegion: 'Field' }
     ]

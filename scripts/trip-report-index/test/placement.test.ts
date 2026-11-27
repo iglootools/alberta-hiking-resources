@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { Claim, Inferred, RawReport } from '../types.ts'
+import type { SourceId } from '../sources/catalog.ts'
 import { buildObjectives } from '../build.ts'
 import { objectiveKey } from '../canon.ts'
-import { NEIGHBOUR_IDS, REGIONS, REGION_IDS, areNeighbours, mountainsOf } from '../regions.ts'
+import { NEIGHBOUR_IDS, REGIONS, REGION_IDS, areNeighbours } from '../regions.ts'
+import { mountainsOf } from '../stated.ts'
 import { NOTHING_INFERRED, regionsOf } from '../types.ts'
 
 // A name no curation entry mentions, so only the reports below decide.
 const NAME = 'Mount Testington'
 let next = 0
-const filed = (sourceId: string, sourceRegion: string): RawReport =>
+const filed = (sourceId: SourceId, sourceRegion: string): RawReport =>
   ({ sourceId, sourceRegion, title: NAME, url: `https://x.test/${next++}`, objectives: [NAME] })
 
 const regionSets = (reports: readonly RawReport[]) =>

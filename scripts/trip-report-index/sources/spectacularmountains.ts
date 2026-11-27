@@ -74,7 +74,7 @@ export function tripLocality(text: string): string | undefined {
 /**
  * A locality as a region id, `elsewhere`, or — for a Canadian locality the
  * keyword table does not know — `locality:` and its first part ("locality:Castle"),
- * which regions.ts maps where the author's usage is consistent. "Castle"
+ * which catalog.ts maps where the author's usage is consistent. "Castle"
  * alone cannot go in the shared table, where it would also catch Castle
  * Mountain in Banff; on this site it always means the Castle parks.
  *

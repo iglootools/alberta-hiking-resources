@@ -10,7 +10,7 @@ import { tempDir } from './support.ts'
 
 const build: IndexBuild = {
   reportCount: 1,
-  result: buildObjectives([{ sourceId: 'test', title: 'Peak Untestable', url: 'https://x.test/1', objectives: ['Peak Untestable'] }]),
+  result: buildObjectives([{ sourceId: 'anugara', title: 'Peak Untestable', url: 'https://x.test/1', objectives: ['Peak Untestable'] }]),
   map: { svg: { regions: [] }, geojson: { features: [] }, smallRegions: [] }
 }
 const startedAt = new Date('2026-01-01T00:00:00Z')

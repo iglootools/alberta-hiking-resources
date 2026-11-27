@@ -10,9 +10,10 @@
  */
 
 import type { GuidebookEntry } from './guidebooks.ts'
+import type { SourceId } from './sources/catalog.ts'
 
 export interface RawReport {
-  readonly sourceId: string
+  readonly sourceId: SourceId
   /** The report's own title, shown when it differs from the objective name. */
   readonly title: string
   readonly url: string
@@ -52,15 +53,15 @@ export interface Coordinates {
  * inference.ts).
  */
 export type Signal
-  = | { readonly kind: 'stated', readonly sourceId: string }
+  = | { readonly kind: 'stated', readonly sourceId: SourceId }
     | { readonly kind: 'curated' }
     | { readonly kind: 'tick-list' }
-    | { readonly kind: 'sub-range', readonly sourceId: string, readonly subRange: string }
+    | { readonly kind: 'sub-range', readonly sourceId: SourceId, readonly subRange: string }
     /** `agreeing` of the `total` placed reports this one links to are in the region. */
-    | { readonly kind: 'linked', readonly sourceId: string, readonly agreeing: number, readonly total: number, readonly weak?: true }
+    | { readonly kind: 'linked', readonly sourceId: SourceId, readonly agreeing: number, readonly total: number, readonly weak?: true }
     /** `agreeing` of the `total` placed objectives that share a report with this one are in the region. */
-    | { readonly kind: 'companion', readonly sourceId: string, readonly agreeing: number, readonly total: number, readonly weak?: true }
-    | { readonly kind: 'trailhead', readonly sourceId: string, readonly weak?: true }
+    | { readonly kind: 'companion', readonly sourceId: SourceId, readonly agreeing: number, readonly total: number, readonly weak?: true }
+    | { readonly kind: 'trailhead', readonly sourceId: SourceId, readonly weak?: true }
     /** The objective's name, found on the map, among objectives placed in the region. */
     | { readonly kind: 'named-place', readonly weak?: true }
 
@@ -108,7 +109,7 @@ export interface Dropped {
   readonly key: string
   readonly name: string
   readonly reason: 'curated' | 'filed-elsewhere' | 'outside'
-  readonly sourceIds: readonly string[]
+  readonly sourceIds: readonly SourceId[]
   readonly url: string
 }
 

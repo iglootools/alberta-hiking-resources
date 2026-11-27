@@ -46,7 +46,8 @@ import type { Gazetteer } from './gazetteer.ts'
 import type { Landmark } from './geo.ts'
 import type { BuildResult, Claim, Coordinates, Inferred, Objective, RawReport } from './types.ts'
 import { nearestRegion } from './geo.ts'
-import { OUT_OF_SCOPE, mappedRegionOf } from './regions.ts'
+import { OUT_OF_SCOPE } from './regions.ts'
+import { mappedRegionOf } from './stated.ts'
 import { isStated } from './types.ts'
 
 /** The winning region's minimum share of a vote. Below it, nothing is inferred. */

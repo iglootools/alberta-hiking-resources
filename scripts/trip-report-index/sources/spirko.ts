@@ -22,7 +22,7 @@ import type { RawReport } from '../types.ts'
 import { anchors, textOf } from '../html.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
-import { REGION_MAP } from '../regions.ts'
+import { REGION_MAP } from './catalog.ts'
 
 const BASE = 'http://bobspirko.ca/'
 

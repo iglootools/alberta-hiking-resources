@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { GuidebookIndex } from '../guidebooks.ts'
-import type { Inferred, RawReport } from '../types.ts'
+import type { Inferred, Objective, RawReport } from '../types.ts'
 import { buildObjectives } from '../build.ts'
 import { NOTHING_INFERRED, regionsOf } from '../types.ts'
 import { canonKey } from '../canon.ts'
@@ -9,10 +9,10 @@ import { readGuidebooks } from '../guidebooks.ts'
 import { renderReview } from '../review.ts'
 import { stubFetcher } from './support.ts'
 
-// A name no source or curation entry will ever mention, and a source id no
-// region map knows, so only the guidebook region below can place it.
+// A name no source or curation entry will ever mention, from a source that
+// states no region, so only the guidebook region below can place it.
 const NAME = 'Mount Testington'
-const report: RawReport = { sourceId: 'test', title: NAME, url: 'https://x.test/1', objectives: [NAME] }
+const report: RawReport = { sourceId: 'anugara', title: NAME, url: 'https://x.test/1', objectives: [NAME] }
 const guidebookRegion = (regionId: string): GuidebookIndex =>
   ({ entries: new Map(), regions: new Map([[canonKey(NAME), regionId]]) })
 
@@ -46,7 +46,7 @@ describe('buildObjectives', () => {
   })
 
   it('places an objective from an inferred claim, keeping the signal', () => {
-    const claim = { regionId: 'kananaskis-canmore', signal: { kind: 'trailhead', sourceId: 'test' } } as const
+    const claim = { regionId: 'kananaskis-canmore', signal: { kind: 'trailhead', sourceId: 'anugara' } } as const
     const inferred: Inferred = { ...NOTHING_INFERRED, byReport: new Map([[report.url, [claim]]]) }
     const result = buildObjectives([report], undefined, inferred)
     assert.deepEqual(result.objectives[0]?.claims, [claim])
@@ -56,10 +56,10 @@ describe('buildObjectives', () => {
   it('sums one blog\u2019s link votes across its reports of one objective', () => {
     const second: RawReport = { ...report, url: 'https://x.test/2' }
     const linked = (agreeing: number, total: number) =>
-      [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'test', agreeing, total } } as const]
+      [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'anugara', agreeing, total } } as const]
     const inferred: Inferred = { ...NOTHING_INFERRED, byReport: new Map([[report.url, linked(2, 2)], [second.url, linked(3, 4)]]) }
     const [objective] = buildObjectives([report, second], undefined, inferred).objectives
-    assert.deepEqual(objective?.claims, [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'test', agreeing: 5, total: 6 } }])
+    assert.deepEqual(objective?.claims, [{ regionId: 'banff', signal: { kind: 'linked', sourceId: 'anugara', agreeing: 5, total: 6 } }])
   })
 
   it('does not let an inferred region rescue an objective a blog files out of scope', () => {
@@ -71,7 +71,7 @@ describe('buildObjectives', () => {
   })
 
   it('uses weak evidence only where nothing else places the objective', () => {
-    const weak = (regionId: string) => ({ regionId, signal: { kind: 'trailhead', sourceId: 'test', weak: true } } as const)
+    const weak = (regionId: string) => ({ regionId, signal: { kind: 'trailhead', sourceId: 'anugara', weak: true } } as const)
     const inferred: Inferred = {
       ...NOTHING_INFERRED,
       weak: { byReport: new Map([[report.url, [weak('banff'), weak('yoho')]]]), byKey: new Map() }
@@ -117,8 +117,8 @@ describe('renderReview sections', () => {
   const on = new Date(Date.UTC(2026, 0, 1))
 
   it('lists what is new on the catch-all page', () => {
-    const objective = { key: 'k', name: 'Funnel Peak', claims: [], reports: [{ sourceId: 'x', title: 't', url: 'https://u', objectives: [] }] }
-    assert.match(renderReview(empty, on, { newlyUnsorted: [objective] }), /1 objectives are new[\s\S]*- \*\*Funnel Peak\*\* — x — https:\/\/u/)
+    const objective: Objective = { key: 'k', name: 'Funnel Peak', claims: [], reports: [{ sourceId: 'anugara', title: 't', url: 'https://u', objectives: [] }] }
+    assert.match(renderReview(empty, on, { newlyUnsorted: [objective] }), /1 objectives are new[\s\S]*- \*\*Funnel Peak\*\* — anugara — https:\/\/u/)
   })
 
   it('lists each dropped name under its reason', () => {

@@ -18,7 +18,7 @@
  * shared with a different mountain, published by a source with no region of
  * its own. The exact-match key merges it into the other peak, and because no
  * single source files the name under two regions, the homonym split in
- * regions.ts never fires. Giving the report a name of its own is what keeps it
+ * stated.ts never fires. Giving the report a name of its own is what keeps it
  * off the wrong page. Only add a report you have read.
  */
 export const REPORT_OBJECTIVES: Readonly<Record<string, readonly string[]>> = {
