@@ -29,6 +29,12 @@ export function pageName(position: number, slug: string): string {
 
 export const UNSORTED_PAGE = pageName(REGIONS.length + 2, UNSORTED.id)
 
+/** Every page a run writes, in the order it writes them. */
+export const GENERATED_PAGES: readonly string[] = [
+  ...REGIONS.map((region, index) => pageName(index + 2, region.id)),
+  UNSORTED_PAGE
+]
+
 /** The names on the catch-all page as committed, or none on the first run. */
 export async function previouslyUnsorted(pagesDir: string): Promise<Set<string>> {
   try {
@@ -80,13 +86,9 @@ export async function pruneStalePages(pagesDir: string, keep: ReadonlySet<string
  */
 export async function writeRegionPages(pagesDir: string, result: BuildResult, reviewOnly: boolean): Promise<string[]> {
   const pages = [
-    ...REGIONS.map((region, index) => ({
-      region,
-      objectives: result.byRegion.get(region.id) ?? [],
-      name: pageName(index + 2, region.id)
-    })),
-    { region: UNSORTED, objectives: result.unplaced, name: UNSORTED_PAGE }
-  ]
+    ...REGIONS.map(region => ({ region, objectives: result.byRegion.get(region.id) ?? [] })),
+    { region: UNSORTED, objectives: result.unplaced }
+  ].map((page, index) => ({ ...page, name: GENERATED_PAGES[index]! }))
 
   await mkdir(pagesDir, { recursive: true })
   for (const { region, objectives, name } of pages) {

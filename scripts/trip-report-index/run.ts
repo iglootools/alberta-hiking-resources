@@ -20,7 +20,7 @@ import { readGuidebooks } from './guidebooks.ts'
 import { inferRegions } from './inference.ts'
 import { indent, shown } from './output.ts'
 import { readBasemap } from './basemap.ts'
-import { INDEX_PAGE, previouslyUnsorted, pruneStalePages, writeRegionPages } from './pages.ts'
+import { GENERATED_PAGES, INDEX_PAGE, findStalePages, previouslyUnsorted, pruneStalePages, writeRegionPages } from './pages.ts'
 import { MAP_EXTENT, cellCount, dropIsolated, geoFeatures, mapPoints, projection, rasterize, svgRegion } from './region-map.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { isStated } from './types.ts'
@@ -94,27 +94,33 @@ async function scrapeAll(cacheDir: string, refresh: boolean, credentials: Creden
   return reports
 }
 
-/** Prunes what no region produced, then runs the cross-section consistency checks. */
-async function finishPages(paths: IndexPaths, written: readonly string[]): Promise<void> {
-  const stale = await pruneStalePages(paths.pagesDir, new Set(written))
-  for (const name of stale) console.log(indent(`removed stale page ${name}`))
+/**
+ * Fails when the hand-written content around the pages has drifted from the
+ * regions: the index lacks a card, or the weather or accommodation section
+ * lacks a page. They read only REGIONS and hand-written files, so they run
+ * before anything is written.
+ */
+async function checkConsistency(paths: IndexPaths): Promise<void> {
   const slugs = REGIONS.map(region => region.id)
   await checkIndexLinks(join(paths.pagesDir, INDEX_PAGE), [...slugs, UNSORTED.id])
   await checkMirroredSections(paths.mirroredSections, slugs)
 }
 
-/**
- * Draws the region map from the placements and writes both renderers' data.
- * Returns the regions drawn too small to click easily, for the summary.
- */
-async function writeRegionMap(paths: IndexPaths, result: BuildResult, gazetteer: Gazetteer, reviewOnly: boolean): Promise<string[]> {
+/** Both renderers' data, and the regions drawn too small to click easily, for the summary. */
+export interface RegionMap {
+  readonly svg: object
+  readonly geojson: object
+  readonly smallRegions: readonly string[]
+}
+
+/** Draws the region map from the placements over the Natural Earth basemap, which it fetches. */
+async function drawRegionMap(cacheDir: string, result: BuildResult, gazetteer: Gazetteer): Promise<RegionMap> {
   const regionIds = REGIONS.map(region => region.id)
   const grid = rasterize(dropIsolated(mapPoints(result.objectives, gazetteer)), regionIds)
-  const small = REGIONS.filter((_, index) => cellCount(grid, index) < SMALL_REGION_CELLS).map(region => region.id)
-  if (reviewOnly) return small
+  const smallRegions = REGIONS.filter((_, index) => cellCount(grid, index) < SMALL_REGION_CELLS).map(region => region.id)
 
   const project = projection()
-  const basemap = await readBasemap(createFetcher(paths.cacheDir), MAP_EXTENT, project)
+  const basemap = await readBasemap(createFetcher(cacheDir), MAP_EXTENT, project)
   const svg = {
     width: project.width,
     height: project.height,
@@ -125,11 +131,14 @@ async function writeRegionMap(paths: IndexPaths, result: BuildResult, gazetteer:
     type: 'FeatureCollection',
     features: REGIONS.flatMap((region, index) => geoFeatures(grid, index, region.id, region.title))
   }
+  return { svg, geojson, smallRegions }
+}
+
+async function writeRegionMap(paths: IndexPaths, map: RegionMap): Promise<void> {
   await mkdir(dirname(paths.mapGeojsonPath), { recursive: true })
-  await writeFile(paths.mapSvgPath, `${JSON.stringify(svg)}\n`, 'utf8')
-  await writeFile(paths.mapGeojsonPath, `${JSON.stringify(geojson)}\n`, 'utf8')
+  await writeFile(paths.mapSvgPath, `${JSON.stringify(map.svg)}\n`, 'utf8')
+  await writeFile(paths.mapGeojsonPath, `${JSON.stringify(map.geojson)}\n`, 'utf8')
   console.log(indent(`region map  ${shown(paths.mapSvgPath)}, ${shown(paths.mapGeojsonPath)}`))
-  return small
 }
 
 function printSummary(
@@ -158,32 +167,73 @@ function printSummary(
   }
 }
 
-/**
- * Runs the index once, printing its progress and summary.
- *
- * Throws the typed errors in errors.ts for a source that changed shape, a
- * missing credential or a failed consistency check; main.ts reports them.
- */
-export async function runIndex(paths: IndexPaths, { refresh, reviewOnly, startedAt, credentials }: RunOptions): Promise<void> {
-  console.log(`Scraping ${SOURCES.length} sources${refresh ? ' (cache cleared)' : ''}…`)
-  const reports = await scrapeAll(paths.cacheDir, refresh, credentials)
+/** What the sources yield once placed and drawn: everything the run writes, not yet written. */
+export interface IndexBuild {
+  readonly reportCount: number
+  readonly result: BuildResult
+  readonly map: RegionMap
+}
 
-  const guidebooks = await readGuidebooks(createFetcher(paths.cacheDir))
+/** Reads every source and reference list, places the objectives and draws the map. Writes nothing. */
+async function readIndex(cacheDir: string, { refresh, credentials }: RunOptions): Promise<IndexBuild> {
+  console.log(`Scraping ${SOURCES.length} sources${refresh ? ' (cache cleared)' : ''}…`)
+  const reports = await scrapeAll(cacheDir, refresh, credentials)
+
+  const guidebooks = await readGuidebooks(createFetcher(cacheDir))
   console.log(indent(`${'Guidebook lists'.padEnd(18)} ${String(guidebooks.entries.size).padStart(5)} objectives`))
-  const gazetteer = await readGazetteer(createFetcher(paths.cacheDir))
+  const gazetteer = await readGazetteer(createFetcher(cacheDir))
   console.log(indent(`${'Place names'.padEnd(18)} ${String(gazetteer.size).padStart(5)} names`))
 
   // Twice: inference reads where the first build placed things, and the second
   // lists every objective under every region a stated or inferred signal names.
   const statedOnly = buildObjectives(reports, guidebooks)
   const result = buildObjectives(reports, guidebooks, inferRegions(statedOnly, gazetteer))
+  return { reportCount: reports.length, result, map: await drawRegionMap(cacheDir, result, gazetteer) }
+}
+
+/**
+ * Writes the region pages, prunes the stale ones and writes the map, or with
+ * `reviewOnly` only names the pages; then writes the review worksheet and
+ * prints the summary.
+ *
+ * Fails with UnknownPagesError before writing anything when the pages folder
+ * holds a page the indexer did not generate, so a failure leaves the committed
+ * output whole rather than half rewritten.
+ */
+export async function writeIndex(
+  paths: IndexPaths,
+  { reportCount, result, map }: IndexBuild,
+  { reviewOnly, startedAt }: Pick<RunOptions, 'reviewOnly' | 'startedAt'>
+): Promise<void> {
+  const keep = new Set(GENERATED_PAGES)
+  await findStalePages(paths.pagesDir, keep)
   // Read before the pages are rewritten: this is the page the run replaces.
   const before = await previouslyUnsorted(paths.pagesDir)
   const newlyUnsorted = result.unplaced.filter(objective => !before.has(entryName(objective)))
-  const written = await writeRegionPages(paths.pagesDir, result, reviewOnly)
-  if (!reviewOnly) await finishPages(paths, written)
-  const smallOnMap = await writeRegionMap(paths, result, gazetteer, reviewOnly)
+
+  await writeRegionPages(paths.pagesDir, result, reviewOnly)
+  if (!reviewOnly) {
+    for (const name of await pruneStalePages(paths.pagesDir, keep)) console.log(indent(`removed stale page ${name}`))
+    await writeRegionMap(paths, map)
+  }
 
   await writeFile(paths.reviewPath, writeReview(result, startedAt, { newlyUnsorted }), 'utf8')
-  printSummary(paths.reviewPath, result, reports.length, newlyUnsorted, smallOnMap)
+  printSummary(paths.reviewPath, result, reportCount, newlyUnsorted, map.smallRegions)
+}
+
+/**
+ * Runs the index once, printing its progress and summary.
+ *
+ * Everything that can fail runs before the first write, in review-only mode
+ * too: the consistency checks before the scrape, since they read only REGIONS
+ * and hand-written files, and the basemap fetch with the scrape. A failure
+ * therefore leaves the committed output whole, and review-only mode shows the
+ * failure a real run would hit.
+ *
+ * Throws the typed errors in errors.ts for a source that changed shape or a
+ * failed consistency check; main.ts reports them.
+ */
+export async function runIndex(paths: IndexPaths, options: RunOptions): Promise<void> {
+  await checkConsistency(paths)
+  await writeIndex(paths, await readIndex(paths.cacheDir, options), options)
 }
