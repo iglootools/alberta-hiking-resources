@@ -8,10 +8,19 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { HttpError, redactKey } from './errors.ts'
+import { HttpError, RequestTimeoutError, redactKey } from './errors.ts'
 
 /** Courtesy delay between live requests to the same host, in milliseconds. */
 const THROTTLE_MS = 300
+
+/**
+ * How long one live request, body included, may take. undici's own limits are
+ * five minutes for the headers and five for the body, so a host that accepts
+ * the connection and stalls would otherwise hold the run silently for minutes
+ * per URL. The largest response, a Natural Earth file of a few megabytes,
+ * takes a second or two.
+ */
+const REQUEST_TIMEOUT_MS = 30_000
 
 const USER_AGENT
   = 'alberta-hiking-resources trip-report indexer (+https://www.alberta-hiking-resources.org)'
@@ -52,12 +61,13 @@ async function readCached(path: string): Promise<string | undefined> {
  * a meta tag, which `fetch` does not consult, so its accented names would
  * otherwise arrive mojibaked.
  *
- * `now` (the throttle's clock) and `fetchImpl` are parameters so a test can
- * drive the fetcher without the network or the wall clock.
+ * `now` (the throttle's clock), `fetchImpl` and `timeoutMs` are parameters so a
+ * test can drive the fetcher without the network or the wall clock.
  */
 export function createFetcher(
   cacheDir: string,
-  { now = Date.now, fetchImpl = fetch }: { now?: () => number, fetchImpl?: typeof fetch } = {}
+  { now = Date.now, fetchImpl = fetch, timeoutMs = REQUEST_TIMEOUT_MS }:
+  { now?: () => number, fetchImpl?: typeof fetch, timeoutMs?: number } = {}
 ): Fetcher {
   let lastRequest = 0
 
@@ -70,15 +80,25 @@ export function createFetcher(
     if (wait > 0) await sleep(wait)
     lastRequest = now()
 
-    const response = await fetchImpl(url, { headers: { 'user-agent': USER_AGENT } })
-    if (!response.ok) throw new HttpError(response.status, response.statusText, url)
-
-    const buffer = Buffer.from(await response.arrayBuffer())
-    const text = decode(buffer, response.headers.get('content-type') ?? '')
+    const text = await requestLive(fetchImpl, url, timeoutMs)
 
     await mkdir(cacheDir, { recursive: true })
     await writeFile(path, text, 'utf8')
     return text
+  }
+}
+
+/** The decoded body of a live request, failing with the URL on a non-2xx or a timeout. */
+async function requestLive(fetchImpl: typeof fetch, url: string, timeoutMs: number): Promise<string> {
+  const signal = AbortSignal.timeout(timeoutMs)
+  try {
+    const response = await fetchImpl(url, { headers: { 'user-agent': USER_AGENT }, signal })
+    if (!response.ok) throw new HttpError(response.status, response.statusText, url)
+    const buffer = Buffer.from(await response.arrayBuffer())
+    return decode(buffer, response.headers.get('content-type') ?? '')
+  } catch (error) {
+    if (signal.aborted && (error as Error).name === 'TimeoutError') throw new RequestTimeoutError(url, timeoutMs)
+    throw error
   }
 }
 

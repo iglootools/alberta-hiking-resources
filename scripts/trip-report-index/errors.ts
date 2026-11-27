@@ -33,6 +33,20 @@ export class HttpError extends Error {
   }
 }
 
+/** A live request took longer than the fetcher allows. `url` is redacted with `redactKey`. */
+export class RequestTimeoutError extends Error {
+  readonly url: string
+  readonly timeoutMs: number
+
+  constructor(url: string, timeoutMs: number) {
+    const shownUrl = redactKey(url)
+    super(`No complete response within ${timeoutMs / 1000} s from ${shownUrl}`)
+    this.name = 'RequestTimeoutError'
+    this.url = shownUrl
+    this.timeoutMs = timeoutMs
+  }
+}
+
 /**
  * A source or list yielded fewer items than its guard allows: the site has
  * almost certainly changed shape, and the fix is the parser, never the minimum.

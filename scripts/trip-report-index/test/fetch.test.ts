@@ -52,6 +52,17 @@ describe('createFetcher', async () => {
     )
   })
 
+  it('gives up on a host that stalls, naming the URL', async () => {
+    // Answers only when aborted, as a stalled connection does.
+    const fetchImpl = async (_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) =>
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason)))
+    await assert.rejects(
+      createFetcher(cacheDir, { now, fetchImpl, timeoutMs: 10 })('https://x.test/stalls'),
+      { name: 'RequestTimeoutError', url: 'https://x.test/stalls', timeoutMs: 10 }
+    )
+  })
+
   it('serves a repeat request from the cache', async () => {
     let calls = 0
     const fetchImpl = async () => {
