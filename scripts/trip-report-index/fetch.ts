@@ -184,6 +184,24 @@ export async function fetchUnlessStatus(
   }
 }
 
+/**
+ * `fetchJson`, answering undefined for one expected HTTP status as
+ * `fetchUnlessStatus` does: the 400 a paginated API answers past its last page.
+ */
+export async function fetchJsonUnlessStatus<T>(
+  fetchText: Fetcher,
+  url: string,
+  status: number,
+  check: (value: T) => void = () => {}
+): Promise<T | undefined> {
+  try {
+    return await fetchJson(fetchText, url, check)
+  } catch (error) {
+    if (error instanceof HttpError && error.status === status) return undefined
+    throw error
+  }
+}
+
 function decode(buffer: Buffer, contentType: string): string {
   const declared = /charset=([\w-]+)/i.exec(contentType)?.[1]
     ?? /charset=["']?([\w-]+)/i.exec(buffer.subarray(0, 2048).toString('latin1'))?.[1]

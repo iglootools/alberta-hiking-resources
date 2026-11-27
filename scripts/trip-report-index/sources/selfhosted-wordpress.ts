@@ -7,7 +7,7 @@
  */
 import type { Fetcher } from '../fetch.ts'
 import { PageLimitError, SourceChangedError } from '../errors.ts'
-import { fetchUnlessStatus } from '../fetch.ts'
+import { fetchJsonUnlessStatus } from '../fetch.ts'
 import { decodeEntities } from '../html.ts'
 
 /** Items per request; every caller's URL must ask for exactly this many. */
@@ -34,6 +34,16 @@ export interface WordPressPost {
 }
 
 /**
+ * A `fetchJson` check rejecting anything but an array, as `/wp-json/` answers
+ * every collection. `source` names the failure; it defaults to the URL.
+ */
+export function expectArray(url: string, source = url): (value: unknown) => void {
+  return (value) => {
+    if (!Array.isArray(value)) throw new SourceChangedError(source, `expected a JSON array at ${url}`)
+  }
+}
+
+/**
  * Every item of a paginated `/wp-json/wp/v2/` collection, `urlOf(page)` giving
  * each page's URL.
  *
@@ -48,12 +58,10 @@ export async function readAllPages<T>(
 ): Promise<T[]> {
   const items: T[] = []
   for (let page = 1; page <= MAX_PAGES; page += 1) {
-    const body = await fetchUnlessStatus(fetchText, urlOf(page), 400)
-    if (body === undefined) return items
-
-    const batch: unknown = JSON.parse(body)
-    if (!Array.isArray(batch)) throw new SourceChangedError(urlOf(page), 'expected a JSON array')
-    items.push(...(batch as T[]))
+    const url = urlOf(page)
+    const batch = await fetchJsonUnlessStatus<T[]>(fetchText, url, 400, expectArray(url))
+    if (batch === undefined) return items
+    items.push(...batch)
     if (batch.length < PAGE_SIZE) return items
   }
   throw new PageLimitError(urlOf(1), MAX_PAGES)

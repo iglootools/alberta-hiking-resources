@@ -20,6 +20,7 @@
  * nothing near them could be inferred.
  */
 import type { Fetcher } from './fetch.ts'
+import { fetchJson } from './fetch.ts'
 import type { Coordinates } from './types.ts'
 import { objectiveKey } from './canon.ts'
 import { MinimumNotMetError, SourceChangedError } from './errors.ts'
@@ -96,13 +97,15 @@ function tileUrls(): string[] {
 }
 
 async function readTile(fetchText: Fetcher, url: string): Promise<Feature[]> {
-  const body = JSON.parse(await fetchText(url)) as { items?: ApiItem[] }
-  if (!Array.isArray(body.items)) throw new SourceChangedError('gazetteer', `no items array at ${url}`)
-  if (body.items.length >= PAGE) {
+  const body = await fetchJson<{ items?: ApiItem[] }>(fetchText, url, (value) => {
+    if (!Array.isArray(value.items)) throw new SourceChangedError('gazetteer', `no items array at ${url}`)
+  })
+  const items = body.items!
+  if (items.length >= PAGE) {
     throw new SourceChangedError('gazetteer', `${url} returned a full page; split the tiles`)
   }
   const featureClass = /concise=(\w+)/.exec(url)?.[1] ?? ''
-  return body.items.map(item => ({ name: item.name, lat: item.latitude, lon: item.longitude, featureClass }))
+  return items.map(item => ({ name: item.name, lat: item.latitude, lon: item.longitude, featureClass }))
 }
 
 function usTileUrls(): string[] {
@@ -127,12 +130,14 @@ function usTileUrls(): string[] {
 
 /** One GNIS tile. Its features are all landforms, so they rank as mountains when a name is also a lake. */
 async function readUsTile(fetchText: Fetcher, url: string): Promise<Feature[]> {
-  const body = JSON.parse(await fetchText(url)) as { features?: UsFeature[], exceededTransferLimit?: boolean }
-  if (!Array.isArray(body.features)) throw new SourceChangedError('gazetteer', `no features array at ${url}`)
-  if (body.exceededTransferLimit || body.features.length >= US_PAGE) {
+  const body = await fetchJson<{ features?: UsFeature[], exceededTransferLimit?: boolean }>(fetchText, url, (value) => {
+    if (!Array.isArray(value.features)) throw new SourceChangedError('gazetteer', `no features array at ${url}`)
+  })
+  const features = body.features!
+  if (body.exceededTransferLimit || features.length >= US_PAGE) {
     throw new SourceChangedError('gazetteer', `${url} returned a full page; split the tiles`)
   }
-  return body.features.flatMap((feature) => {
+  return features.flatMap((feature) => {
     const name = feature.attributes?.gaz_name
     const [lon, lat] = feature.geometry?.points?.[0] ?? [feature.geometry?.x, feature.geometry?.y]
     return name && typeof lat === 'number' && typeof lon === 'number' ? [{ name, lat, lon, featureClass: 'MTN' }] : []

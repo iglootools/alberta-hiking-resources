@@ -9,7 +9,8 @@
  * is fetched for it — one request per route, once, against the cache.
  */
 import type { Fetcher } from '../fetch.ts'
-import { fetchUnlessStatus } from '../fetch.ts'
+import { fetchJson, fetchUnlessStatus } from '../fetch.ts'
+import { SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
 import { matchArea } from '../areas.ts'
@@ -45,7 +46,11 @@ async function regionOf(fetchText: Fetcher, url: string): Promise<string | undef
 }
 
 export async function scrapeAdamLaycock(fetchText: Fetcher): Promise<RawReport[]> {
-  const index = JSON.parse(await fetchText(CONTENT_INDEX)) as Record<string, Entry>
+  const index = await fetchJson<Record<string, Entry>>(fetchText, CONTENT_INDEX, (value) => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new SourceChangedError('adamlaycock', `expected an object of pages at ${CONTENT_INDEX}`)
+    }
+  })
   const routes = Object.entries(index)
     // Matched without regard to case: the site moved from `Routes/Akamina-Ridge`
     // to `routes/akamina-ridge` in September 2026, and a test on the exact

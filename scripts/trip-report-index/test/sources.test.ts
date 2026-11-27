@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { rm } from 'node:fs/promises'
+import { after, describe, it } from 'node:test'
 import { readUploads, requireApiKey } from '../sources/annie.ts'
 import { objectivesOf, relatedLinks } from '../sources/anugara.ts'
 import { trailheadOf } from '../sources/ontop.ts'
@@ -8,7 +9,8 @@ import { regionFromTags, scrapeBillKerr } from '../sources/billkerr.ts'
 import { regionOfLocality, scrapeSpectacularMountains, siteLinks, tripLocality } from '../sources/spectacularmountains.ts'
 import { scrapeCoastBackcountry } from '../sources/coastbackcountry.ts'
 import { readWordPress } from '../sources/wordpress.ts'
-import { stubFetcher } from './support.ts'
+import { createFetcher } from '../fetch.ts'
+import { stubFetcher, tempDir } from './support.ts'
 
 describe('requireApiKey', () => {
   it('returns the key from the environment it is given', () => {
@@ -54,6 +56,24 @@ describe('readWordPress', () => {
     const fetchText = stubFetcher(() => JSON.stringify({ error: 'unknown_blog', message: 'Unknown blog' }))
     await assert.rejects(readWordPress(fetchText, 'gone.wordpress.com', 'post'),
       { name: 'ApiError', api: 'WordPress.com gone.wordpress.com', detail: 'unknown_blog Unknown blog' })
+  })
+
+  it('does not cache an error the API reports in a 2xx body, so the next run asks again', async () => {
+    const cacheDir = await tempDir()
+    after(() => rm(cacheDir, { recursive: true, force: true }))
+    const bodies = [{ error: 'unknown_blog' }, { found: 1, posts: [{ title: 'Mount Temple', URL: 'https://b.test/temple' }] }]
+    let tick = 0
+    const fetchText = createFetcher(cacheDir, {
+      now: () => (tick += 1000),
+      fetchImpl: async () => new Response(JSON.stringify(bodies.shift()))
+    })
+    await assert.rejects(readWordPress(fetchText, 'b.test', 'post'), { name: 'ApiError' })
+    assert.deepEqual(await readWordPress(fetchText, 'b.test', 'post'), [{ title: 'Mount Temple', url: 'https://b.test/temple', categories: [] }])
+  })
+
+  it('names the URL of a 2xx body that is not JSON', async () => {
+    await assert.rejects(readWordPress(stubFetcher(() => '<html>Down for maintenance</html>'), 'b.test', 'post'),
+      (error: Error & { url: string }) => error.name === 'InvalidJsonError' && error.url.includes('/sites/b.test/posts/'))
   })
 })
 

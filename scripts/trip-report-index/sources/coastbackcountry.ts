@@ -18,7 +18,8 @@ import type { Fetcher } from '../fetch.ts'
 import { SourceChangedError } from '../errors.ts'
 import type { RawReport } from '../types.ts'
 import { splitObjectives } from '../canon.ts'
-import { readSelfHostedPosts } from './selfhosted-wordpress.ts'
+import { fetchJson } from '../fetch.ts'
+import { expectArray, readSelfHostedPosts } from './selfhosted-wordpress.ts'
 
 const BASE = 'https://coastbackcountry.com'
 
@@ -46,7 +47,7 @@ interface Category { readonly id: number, readonly slug: string }
 
 async function categoryIds(fetchText: Fetcher): Promise<Map<string, number>> {
   const url = `${BASE}/wp-json/wp/v2/categories?slug=${TRIPS},${NOT_A_TRIP}&_fields=id,slug`
-  const categories = JSON.parse(await fetchText(url)) as Category[]
+  const categories = await fetchJson<Category[]>(fetchText, url, expectArray(url, 'coastbackcountry'))
   const ids = new Map(categories.map(category => [category.slug, category.id]))
   for (const slug of [TRIPS, NOT_A_TRIP]) {
     if (!ids.has(slug)) throw new SourceChangedError('coastbackcountry', `no "${slug}" category any more (${url})`)
