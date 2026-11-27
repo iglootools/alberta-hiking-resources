@@ -11,6 +11,7 @@ rumdl = "0.3.4"
 # iglootools/common's mise.toml.
 "npm:renovate" = { version = "44.239.1", trust_policy_excludes = ["@yarnpkg/libzip@3.2.2"], allow_builds = ["re2"] }
 shellcheck = "0.11.0"
+actionlint = "1.7.12"
 # python and uv run the shared iglootools commands, a dev dependency in pyproject.toml
 # (guidelines/project-setup/iglootools-cli.md in iglootools/common). This is not a Python
 # project: nothing else here uses them.
@@ -106,6 +107,7 @@ run = [
   { task = "lint-fmt" },
   { task = "lint-eslint" },
   { task = "lint-shell" },
+  { task = "lint-github-actions" },
   { task = "lint-markdown" },
   { task = "lint-types" },
   { task = "lint-renovate" },
@@ -142,6 +144,10 @@ run = "pnpm typecheck"
 [tasks.lint-shell]
 description = "Lint the tracked shell scripts with shellcheck"
 run = "uv run --no-sync iglootools shell lint"
+
+[tasks.lint-github-actions]
+description = "Lint the tracked GitHub Actions workflows with actionlint"
+run = "uv run --no-sync iglootools github lint"
 
 # Tables of contents (guidelines/documentation/layout.md in iglootools/common). The site's pages
 # under content/ go without one: app/pages/[...slug].vue renders its own.
