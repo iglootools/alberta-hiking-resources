@@ -17,7 +17,7 @@ app follows its upstream template in
 - [Out of scope](#out-of-scope)
 - [Exceptions](#exceptions)
   - [Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`](#exempt-replacement-pin-and-lock-file-maintenance-updates-from-minimumreleaseage)
-  - [Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start](#tolerate-stackblitz-bypassing-minimumreleaseage-while-it-cannot-start)
+  - [Tolerate StackBlitz's unlocked, unverified install while it cannot start](#tolerate-stackblitzs-unlocked-unverified-install-while-it-cannot-start)
   - [Do not call the shared link checker until the docs need one](#do-not-call-the-shared-link-checker-until-the-docs-need-one)
 <!-- tocstop -->
 
@@ -54,21 +54,30 @@ and the `lockFileMaintenance` override, and check on the Dependency Dashboard
 that the next lock-file maintenance update is not held for
 `renovate/stability-days`. Restore them if it is.
 
-### Tolerate StackBlitz bypassing `minimumReleaseAge` while it cannot start
+### Tolerate StackBlitz's unlocked, unverified install while it cannot start
 
 Overrides
-[dependency-automation.md › Extend the shared Renovate presets](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md#extend-the-shared-renovate-presets):
-[.stackblitzrc](../.stackblitzrc) boots via npm, which cannot read
-`pnpm-lock.yaml`, so it resolves fresh from the `package.json` ranges on every
-boot and bypasses the base preset's 14-day hold entirely.
+[dependency-automation.md › Extend the shared Renovate presets](https://github.com/iglootools/common/blob/main/guidelines/project-setup/dependency-automation.md#extend-the-shared-renovate-presets)
+and
+[general.md › Pin or lock every dependency, and have CI assert the lock](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md#pin-or-lock-every-dependency-and-have-ci-assert-the-lock):
+[.stackblitzrc](../.stackblitzrc) opens two holes.
 
-**Why:** the hole is tolerable only because nothing can start that way:
+- It boots via npm, which cannot read `pnpm-lock.yaml`, so it resolves fresh
+  from the `package.json` ranges on every boot and bypasses the base preset's
+  14-day hold entirely.
+- Its `npm_config_sqlite3_binary_host_mirror` has prebuild-install fetch the
+  native `sqlite3` binding from `registry.npmmirror.com`, a third-party host
+  the project does not control, with no checksum.
+
+**Why:** the holes are tolerable only because nothing can start that way:
 StackBlitz cannot run this project, as
 [setup-development-environment.md](setup-development-environment.md#stackblitz-does-not-currently-work)
-records.
+records. The mirror stays because it is what gets the boot as far as it goes,
+so that the day WebContainer allows native addons the project simply starts.
 
-**Retires when:** StackBlitz becomes able to run the project. Close the hole
-*before* anyone relies on it, not after.
+**Retires when:** StackBlitz becomes able to run the project. Close both holes
+*before* anyone relies on it, not after: install from the lock, and fetch the
+`sqlite3` binding from its own release or drop the mirror.
 
 ### Do not call the shared link checker until the docs need one
 
