@@ -18,6 +18,7 @@ app follows its upstream template in
 - [Exceptions](#exceptions)
   - [Exempt replacement, pin and lock-file-maintenance updates from `minimumReleaseAge`](#exempt-replacement-pin-and-lock-file-maintenance-updates-from-minimumreleaseage)
   - [Tolerate StackBlitz's unlocked, unverified install while it cannot start](#tolerate-stackblitzs-unlocked-unverified-install-while-it-cannot-start)
+  - [Install the dev container's mise unpinned, from its apt repository](#install-the-dev-containers-mise-unpinned-from-its-apt-repository)
   - [Do not call the shared link checker until the docs need one](#do-not-call-the-shared-link-checker-until-the-docs-need-one)
 <!-- tocstop -->
 
@@ -78,6 +79,23 @@ so that the day WebContainer allows native addons the project simply starts.
 **Retires when:** StackBlitz becomes able to run the project. Close both holes
 *before* anyone relies on it, not after: install from the lock, and fetch the
 `sqlite3` binding from its own release or drop the mirror.
+
+### Install the dev container's mise unpinned, from its apt repository
+
+Overrides
+[general.md › Pin or lock every dependency, and have CI assert the lock](https://github.com/iglootools/common/blob/main/guidelines/coding/general.md#pin-or-lock-every-dependency-and-have-ci-assert-the-lock):
+[.devcontainer/setup.sh](../.devcontainer/setup.sh) installs whatever mise
+release mise's apt repository carries when the container is built.
+
+**Why:** that repository's index carries only the current release, so a pinned
+`apt-get install mise=<version>` would fail the day the version is superseded,
+and it is GPG-verified, unlike `curl | sh`. mise is not what is pinned but what
+reads the pins: the tools come from `mise.toml` and `mise.lock` whichever mise
+installs them. The comment in `setup.sh` holds the full reasoning.
+
+**Retires when:** mise itself needs a pin, such as a `mise.lock` format only
+newer releases read. Download that release's binary instead and verify it
+against its `SHASUMS256.txt`, as the comment describes.
 
 ### Do not call the shared link checker until the docs need one
 
