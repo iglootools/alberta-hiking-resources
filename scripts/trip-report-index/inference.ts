@@ -127,11 +127,15 @@ function linkShares(placed: readonly ReadonlySet<string>[]): [string, number][] 
     .sort((left, right) => right[1] - left[1])
 }
 
-function linkedClaim(report: RawReport, regionId: string, placed: readonly ReadonlySet<string>[], weak: boolean): Claim {
+/**
+ * A claim for `regionId` from a vote among `placed` neighbours of `report`:
+ * the reports it links to, or the objectives it covers alongside this one.
+ */
+function voteClaim(kind: 'linked' | 'companion', report: RawReport, regionId: string, placed: readonly ReadonlySet<string>[], weak: boolean): Claim {
   return {
     regionId,
     signal: {
-      kind: 'linked',
+      kind,
       sourceId: report.sourceId,
       agreeing: placed.filter(set => set.has(regionId)).length,
       total: placed.length,
@@ -148,7 +152,7 @@ export function linkVote(
   const placed = placedLinks(report, regions)
   if (placed.length < MIN_LINKS) return undefined
   const [regionId, share] = linkShares(placed)[0]!
-  return share >= MIN_SHARE ? linkedClaim(report, regionId, placed, false) : undefined
+  return share >= MIN_SHARE ? voteClaim('linked', report, regionId, placed, false) : undefined
 }
 
 /** Every region a report's links point at with a meaningful share, however few they are. */
@@ -157,7 +161,7 @@ export function weakLinkVotes(report: RawReport, regions: ReadonlyMap<string, Re
   if (placed.length === 0) return []
   return linkShares(placed)
     .filter(([, share]) => share >= WEAK_MIN_SHARE)
-    .map(([regionId]) => linkedClaim(report, regionId, placed, true))
+    .map(([regionId]) => voteClaim('linked', report, regionId, placed, true))
 }
 
 /**
@@ -299,18 +303,8 @@ function inferFromNames(findings: Findings, objectives: readonly Objective[], ga
  * Mount Henry other blogs place is in Jasper.
  */
 function inferFromCompanions(findings: Findings, objectives: readonly Objective[]): void {
-  const occurrences = new Map<string, number>()
-  for (const objective of objectives) occurrences.set(objective.key, (occurrences.get(objective.key) ?? 0) + 1)
-  const unique = objectives.filter(objective => occurrences.get(objective.key) === 1)
-
-  const placedByUrl = new Map<string, { key: string, regions: Set<string> }[]>()
-  for (const objective of unique) {
-    const regions = statedRegions(objective)
-    if (regions.size === 0) continue
-    for (const report of objective.reports) {
-      placedByUrl.set(report.url, [...(placedByUrl.get(report.url) ?? []), { key: objective.key, regions }])
-    }
-  }
+  const unique = uniquelyNamed(objectives)
+  const placedByUrl = placedObjectivesByUrl(unique)
 
   for (const objective of unique) {
     if (statedRegions(objective).size > 0) continue
@@ -319,20 +313,30 @@ function inferFromCompanions(findings: Findings, objectives: readonly Objective[
       if (placed.length === 0) continue
       const shares = linkShares(placed)
       const [regionId, share] = shares[0]!
-      const claim = (region: string, weak: boolean): Claim => ({
-        regionId: region,
-        signal: {
-          kind: 'companion',
-          sourceId: report.sourceId,
-          agreeing: placed.filter(set => set.has(region)).length,
-          total: placed.length,
-          ...(weak ? { weak: true } : {})
-        }
-      })
-      if (share >= MIN_SHARE) findings.add(objective.key, claim(regionId, false))
-      else findings.addWeak(objective.key, shares.filter(([, weight]) => weight >= WEAK_MIN_SHARE).map(([region]) => claim(region, true)))
+      if (share >= MIN_SHARE) findings.add(objective.key, voteClaim('companion', report, regionId, placed, false))
+      else findings.addWeak(objective.key, shares.filter(([, weight]) => weight >= WEAK_MIN_SHARE).map(([region]) => voteClaim('companion', report, region, placed, true)))
     }
   }
+}
+
+/** The objectives whose name no other objective shares. */
+function uniquelyNamed(objectives: readonly Objective[]): Objective[] {
+  const occurrences = new Map<string, number>()
+  for (const objective of objectives) occurrences.set(objective.key, (occurrences.get(objective.key) ?? 0) + 1)
+  return objectives.filter(objective => occurrences.get(objective.key) === 1)
+}
+
+/** The placed objectives among `objectives`, with their stated regions, under the URL of each report covering them. */
+function placedObjectivesByUrl(objectives: readonly Objective[]): Map<string, { key: string, regions: Set<string> }[]> {
+  const placedByUrl = new Map<string, { key: string, regions: Set<string> }[]>()
+  for (const objective of objectives) {
+    const regions = statedRegions(objective)
+    if (regions.size === 0) continue
+    for (const report of objective.reports) {
+      placedByUrl.set(report.url, [...(placedByUrl.get(report.url) ?? []), { key: objective.key, regions }])
+    }
+  }
+  return placedByUrl
 }
 
 /** Every report, once, across all objectives. */
