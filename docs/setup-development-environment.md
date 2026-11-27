@@ -109,11 +109,12 @@ pnpm versions ([mise.toml](../mise.toml)) and acts as the task runner.
 ### Environment variables
 
 One task needs a credential; nothing else here does, and neither the dev server
-nor the build ever asks for one.
+nor the build ever asks for one. The other variable is optional.
 
 | Variable | Needed by | Without it |
 |---|---|---|
 | `YOUTUBE_API_KEY` | `mise run build-trip-index` | the task **fails in preflight**, before fetching or writing anything |
+| `NUXT_PUBLIC_SITE_URL` | the dev server and the build, read in [nuxt.config.ts](../nuxt.config.ts) for the site URL, canonical links, the sitemap, the OG images and the `llms.txt` domain | the production URL, `https://www.alberta-hiking-resources.org`, which is what the deployed build uses |
 
 `mise run build-trip-index` regenerates the by-objective
 [trip report pages](../content/3.hiking-scrambling-beta/3.trip-reports/) from
