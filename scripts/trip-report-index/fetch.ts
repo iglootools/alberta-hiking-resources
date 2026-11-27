@@ -6,8 +6,8 @@
  * expires; `--refresh` clears it, which is what a real refresh run uses.
  */
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { HttpError, RequestTimeoutError, redactKey } from './errors.ts'
 
 /** Courtesy delay between live requests to the same host, in milliseconds. */
@@ -56,6 +56,19 @@ async function readCached(path: string): Promise<string | undefined> {
 }
 
 /**
+ * Caches `text` at `path`, all or nothing. Written beside it first and renamed
+ * into place, because the cache never expires: a write cut short by Ctrl-C would
+ * otherwise be served as the complete response on every later run, and a
+ * truncated index page parses quietly into fewer reports.
+ */
+async function writeCached(path: string, text: string): Promise<void> {
+  await mkdir(dirname(path), { recursive: true })
+  const partial = `${path}.${process.pid}.partial`
+  await writeFile(partial, text, 'utf8')
+  await rename(partial, path)
+}
+
+/**
  * Builds a fetcher over `cacheDir`. Decoding is explicit rather than left to
  * `Response.text()`: goldenscrambles.ca is windows-1252 and declares it only in
  * a meta tag, which `fetch` does not consult, so its accented names would
@@ -82,8 +95,7 @@ export function createFetcher(
 
     const text = await requestLive(fetchImpl, url, timeoutMs)
 
-    await mkdir(cacheDir, { recursive: true })
-    await writeFile(path, text, 'utf8')
+    await writeCached(path, text)
     return text
   }
 }

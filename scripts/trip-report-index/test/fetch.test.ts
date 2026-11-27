@@ -75,6 +75,15 @@ describe('createFetcher', async () => {
     assert.equal(calls, 1)
   })
 
+  it('leaves only the complete entry in the cache once a response is written', async () => {
+    const dir = await tempDir()
+    after(() => rm(dir, { recursive: true, force: true }))
+    await createFetcher(dir, { now, fetchImpl: async () => new Response('whole') })('https://x.test/whole')
+    const entries = await readdir(dir)
+    assert.equal(entries.length, 1)
+    assert.match(entries[0]!, /^[0-9a-f]{32}\.html$/)
+  })
+
   it('does not cache a failure', async () => {
     const before = (await readdir(cacheDir)).length
     const fetchImpl = async () => new Response('', { status: 500 })
