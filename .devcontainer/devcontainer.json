@@ -1,13 +1,16 @@
 {
-  // A full Linux environment for the project, usable from GitHub Codespaces,
-  // CodeSandbox, or the VS Code Dev Containers extension against local Docker.
+  // A full Linux environment for the project, usable from GitHub Codespaces or
+  // the VS Code Dev Containers extension against local Docker. CodeSandbox is not
+  // one of them: it retired repository import
+  // (docs/setup-development-environment.md, "Why CodeSandbox is not listed").
   //
-  // This exists alongside .stackblitzrc, which covers StackBlitz. The two are
-  // not interchangeable: StackBlitz runs Node compiled to WebAssembly inside a
-  // browser tab, so there is no container for a devcontainer.json to describe
-  // and no way to load the project's native addons. StackBlitz is the
-  // no-account, instant path for previewing content edits; this is the one where
-  // `mise run ci-preflight` -- lints, tests, build -- actually runs.
+  // This exists alongside .stackblitzrc, which is not an alternative to it:
+  // StackBlitz runs Node compiled to WebAssembly inside a browser tab, so there
+  // is no container for a devcontainer.json to describe and no way to load the
+  // project's native addons, and it cannot run this project at all
+  // (docs/setup-development-environment.md, "StackBlitz (does not currently
+  // work)"). This is where `mise run ci-preflight` -- lints, tests, build --
+  // actually runs.
   "name": "Alberta Hiking Resources",
 
   // A plain Ubuntu base rather than a Node image, because mise installs Node and
