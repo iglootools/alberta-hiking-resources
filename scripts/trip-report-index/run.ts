@@ -23,7 +23,7 @@ import { GENERATED_PAGES, INDEX_PAGE, findStalePages, previouslyUnsorted, pruneS
 import { MAP_EXTENT, cellCount, dropIsolated, geoFeatures, mapPoints, projection, rasterize, svgRegion } from './region-map.ts'
 import { REGIONS, UNSORTED } from './regions.ts'
 import { ACCOMMODATION, TRIP_REPORTS, WEATHER } from './sections.ts'
-import { isStated } from './types.ts'
+import { isInferredOnly, isMultiRegion } from './types.ts'
 import type { Credentials } from './sources/index.ts'
 import { SOURCES } from './sources/index.ts'
 import { entryName } from './render.ts'
@@ -148,8 +148,8 @@ function printSummary(
 ): void {
   const listings = [...result.byRegion.values()].reduce((sum, list) => sum + list.length, 0)
   const placed = result.objectives.length - result.unplaced.length
-  const multiRegion = result.objectives.filter(objective => new Set(objective.claims.map(claim => claim.regionId)).size > 1).length
-  const inferredOnly = result.objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated)).length
+  const multiRegion = result.objectives.filter(isMultiRegion).length
+  const inferredOnly = result.objectives.filter(isInferredOnly).length
   console.log(`\n${dryRun ? '[dry-run] ' : ''}${placed} objectives placed, ${listings} listings across ${REGIONS.length} pages, `
     + `${reportCount} reports, ${result.dropped.length} out of scope.`)
   console.log(`${multiRegion} in more than one region, ${inferredOnly} placed by inference alone, `

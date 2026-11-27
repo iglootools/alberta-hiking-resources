@@ -95,6 +95,16 @@ export function regionsOf(objective: Objective): string[] {
   return [...new Set(objective.claims.map(claim => claim.regionId))]
 }
 
+/** Whether an objective is listed under more than one region. */
+export function isMultiRegion(objective: Objective): boolean {
+  return regionsOf(objective).length > 1
+}
+
+/** Whether an objective is placed, but by nothing a blog, a tick-list or a curator states. */
+export function isInferredOnly(objective: Objective): boolean {
+  return objective.claims.length > 0 && !objective.claims.some(isStated)
+}
+
 /**
  * Why a name group was left off every page. A wrong exclusion is otherwise
  * invisible — the objective simply disappears — so each is kept for the

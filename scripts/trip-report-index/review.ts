@@ -10,7 +10,7 @@
 import type { BuildResult, Claim, Dropped, Objective } from './types.ts'
 import { DISTINCT_NAMES } from './curation.ts'
 import { REGIONS } from './regions.ts'
-import { isStated, regionsOf } from './types.ts'
+import { isInferredOnly, isMultiRegion, regionsOf } from './types.ts'
 
 /** Similarity above which two names are worth a human looking at them. */
 const NEAR_MISS_CUTOFF = 0.86
@@ -69,7 +69,7 @@ function claimsText(objective: Objective): string {
 }
 
 function multiRegionSection(objectives: readonly Objective[]): string[] {
-  const listed = objectives.filter(objective => regionsOf(objective).length > 1)
+  const listed = objectives.filter(isMultiRegion)
   if (listed.length === 0) return ['No objective is listed in more than one region.', '']
   return [
     `${listed.length} objectives listed in more than one region, strongest claim first. That is`,
@@ -106,7 +106,7 @@ function splitSection(objectives: readonly Objective[]): string[] {
 }
 
 function inferredOnlySection(objectives: readonly Objective[]): string[] {
-  const inferred = objectives.filter(objective => objective.claims.length > 0 && !objective.claims.some(isStated))
+  const inferred = objectives.filter(isInferredOnly)
   if (inferred.length === 0) return ['No objective is placed by inference alone.', '']
   return [
     `${inferred.length} objectives placed only by inference. These are the ones to spot-check:`,
