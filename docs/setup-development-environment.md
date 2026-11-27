@@ -117,8 +117,10 @@ nor the build ever asks for one.
 
 `mise run build-trip-index` regenerates the by-objective
 [trip report pages](../content/3.hiking-scrambling-beta/3.trip-reports/) from
-seven sources. Six are plain websites; the seventh, Annie Ouellet's YouTube
-channel, is read through the YouTube Data API, which is keyed:
+the sources in
+[sources/index.ts](../scripts/trip-report-index/sources/index.ts). All but one
+are plain websites; Annie Ouellet's YouTube channel is read through the YouTube
+Data API, which is keyed:
 
 ```bash
 export YOUTUBE_API_KEY=...        # in your shell profile

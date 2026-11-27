@@ -124,7 +124,9 @@ Lucide's. Why, and the icons the scan cannot see, are in
 
 The region pages under
 [content/3.hiking-scrambling-beta/3.trip-reports/](../content/3.hiking-scrambling-beta/3.trip-reports/)
-are generated from six trip report blogs, not written by hand:
+are generated from the trip report sources registered in
+[sources/index.ts](../scripts/trip-report-index/sources/index.ts), not written
+by hand:
 
 ```bash
 mise run build-trip-index              # re-read the sources and rewrite the pages
@@ -133,11 +135,11 @@ mise run build-trip-index -- --refresh # discard the HTTP cache first
 
 Responses are cached under `node_modules/.cache/trip-report-index`, so iterating
 on a parser costs nothing; `--refresh` is what an actual content refresh uses. A
-full read is around 2,200 requests, throttled, and takes a quarter of an hour.
-Most are individual reports read only because their index gives no region: Bob
+full read runs to thousands of throttled requests and takes a while. Most are
+individual reports read only because their source's index gives no region (Bob
 Spirko's and Golden Scrambles' for a locality line, Andrew Nugara's for his
-links to neighbouring reports, and On-Top's for the trailhead's coordinates.
-Another 294 read the federal gazetteer, and 14 the USGS one for the American
+links to neighbouring reports, On-Top's for the trailhead's coordinates, among
+others). The rest read the federal gazetteer, and the USGS one for the American
 side of the border, whose place-name positions place objectives by the placed
 ones around them — see
 [ADR-007](architecture-decision-record.md#adr-007--list-an-objective-under-every-region-a-signal-names-and-show-the-signals)
@@ -155,9 +157,8 @@ see
 
 ### Annie Ouellet's YouTube channel needs an API key
 
-Six of the seven sources need nothing. The seventh, Annie Ouellet's channel, is
-read through the **YouTube Data API v3**, and the task **fails** unless
-`YOUTUBE_API_KEY` is set:
+Every other source needs nothing. Annie Ouellet's channel is read through the
+**YouTube Data API v3**, and the task **fails** unless `YOUTUBE_API_KEY` is set:
 
 ```bash
 export YOUTUBE_API_KEY=...      # in your shell profile, not in the repo
